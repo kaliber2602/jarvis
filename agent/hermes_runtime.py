@@ -1,6 +1,6 @@
 """
 Hermes Agent Runtime Engine:
-Executes the agent loop, reasoning, planning, tool selection,
+Executes the agent loop, reasoning with Qwen LLM, planning, tool selection,
 and computer-use operations with event streaming and structured entity interpretation.
 """
 
@@ -17,6 +17,7 @@ from typing import Any, Callable
 from .agent_events import AgentEvent, EventType
 from .app_registry import AppRegistry
 from .base_client import AgentResponse
+from .llm.qwen_provider import LLMPlanResult, QwenProvider, get_llm_provider
 from .normalizer import InterpretationContext, VoiceNormalizationPipeline
 from .tool_registry import ToolRegistry
 from .tools.browser_tool import BrowserTool
@@ -30,7 +31,7 @@ log = logging.getLogger("hermes_runtime")
 class HermesRuntime:
     """
     Independent Agent Runtime based on Hermes Agent architecture.
-    Handles planning, tool dispatching, execution monitoring, and response synthesis.
+    Handles Qwen LLM reasoning, planning, tool dispatching, execution monitoring, and response synthesis.
     """
 
     def __init__(self):
@@ -42,6 +43,7 @@ class HermesRuntime:
         # Active sessions tracking
         self.active_sessions: set[str] = set()
         self.tool_registry = ToolRegistry.get_instance()
+        self.qwen_provider = get_llm_provider()
 
     def start_session(self, session_id: str) -> bool:
         self.active_sessions.add(session_id)
@@ -117,7 +119,7 @@ class HermesRuntime:
         interpretation_context: InterpretationContext | dict[str, Any] | None = None,
     ) -> AgentResponse:
         """
-        Reason about the user instruction, execute intermediate tools, and return the voice response.
+        Reason about user instruction with Qwen LLM, execute tools, and synthesize English voice response.
         """
         def emit(evt_type: EventType, payload: dict[str, Any] | None = None):
             if event_cb:
@@ -133,8 +135,8 @@ class HermesRuntime:
                     log.warning("[HERMES_RUNTIME] Error in event callback: %s", e)
 
         emit(EventType.AGENT_STARTED, {"instruction": instruction})
-        emit(EventType.AGENT_THINKING, {"status": "Analyzing request and planning actions..."})
-        await asyncio.sleep(0.3)
+        emit(EventType.AGENT_THINKING, {"status": "Analyzing request with Qwen reasoning..."})
+        await asyncio.sleep(0.15)
 
         # Plan the actions needed for the instruction
         plan = self._plan_instruction(instruction, interpretation_context=interpretation_context)
@@ -154,10 +156,10 @@ class HermesRuntime:
             executed_tools.append({"tool": tool_name, "params": params, "result": result})
 
             emit(EventType.AGENT_TOOL_FINISHED, {"tool": tool_name, "result": result})
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.1)
 
         emit(EventType.AGENT_VERIFYING, {"status": "Verifying execution results..."})
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(0.1)
 
         reply_text = plan.get("speech_response", "Task completed, sir.")
         emit(EventType.AGENT_COMPLETED, {"response": reply_text, "tools_count": len(executed_tools)})
@@ -175,7 +177,7 @@ class HermesRuntime:
         interpretation_context: InterpretationContext | dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
-        Intelligent intent reasoning, phonetic voice normalization, and multi-step plan generation.
+        Intelligent intent reasoning, Qwen LLM planning, and multi-step plan generation.
         """
         # 0. Obtain InterpretationContext
         if interpretation_context is None:
@@ -195,7 +197,23 @@ class HermesRuntime:
                 "speech_response": ctx.clarification_prompt,
             }
 
-        # 0.2 Check Voice Memory for direct overrides
+        # 0.2 Try Qwen LLM Reasoning if available and configured
+        if self.qwen_provider.is_available():
+            try:
+                llm_plan = self.qwen_provider.generate_plan(
+                    instruction=ctx.normalized_transcript or text,
+                    available_tools=self.tool_registry.get_all_schemas(),
+                    context=ctx.to_dict(),
+                )
+                if llm_plan is not None and (llm_plan.actions or llm_plan.speech_response):
+                    return {
+                        "actions": llm_plan.actions,
+                        "speech_response": llm_plan.speech_response,
+                    }
+            except Exception as e:
+                log.debug("[HERMES_RUNTIME] Qwen LLM reasoning fallback to rule planner: %s", e)
+
+        # 0.3 Check Voice Memory for direct overrides
         normalized, was_corrected = VoiceMemory.get_instance().normalize(ctx.normalized_transcript or text)
         cleaned = normalized.strip().lower()
         actions: list[dict[str, Any]] = []

@@ -1,18 +1,23 @@
 """
 Voice Activity Detection (VAD) with rolling pre-buffer,
-adaptive energy thresholding, and continuous speech boundary detection.
+adaptive energy thresholding, Silero neural VAD, and continuous speech boundary detection.
 """
 
 from __future__ import annotations
 
-from collections import deque
+import logging
+import os
 import numpy as np
+
+from .vad_provider import EnergyVADProvider, SileroVADProvider, VADProvider
+
+log = logging.getLogger("vad")
 
 
 class AudioVAD:
     """
-    Real-time Voice Activity Detector (VAD) with rolling pre-buffer,
-    adaptive energy thresholding, and silence tolerance.
+    Backward-compatible Voice Activity Detector (VAD) adapter.
+    Delegates to configured VAD provider (SileroVADProvider or EnergyVADProvider).
     """
 
     def __init__(
@@ -22,19 +27,39 @@ class AudioVAD:
         speech_start_chunks: int = 2,  # ~160ms speech confirmation
         end_silence_ms: int = 650,     # 650ms continuous silence for end-of-utterance
         max_utterance_s: float = 10.0,
+        provider_name: str | None = None,
     ):
         self.sample_rate = sample_rate
-        self.pre_roll = deque(maxlen=pre_roll_chunks)
-        self.speech_start_chunks = speech_start_chunks
-        self.end_silence_chunks = max(3, int(end_silence_ms / 80))
-        self.max_utterance_chunks = int(max_utterance_s * 1000 / 80)
+        prov = provider_name or os.environ.get("VAD_PROVIDER", "silero").strip().lower()
+        self.provider_name = prov
 
-        self.state = "SILENCE"  # SILENCE, SPEAKING
-        self.consecutive_speech = 0
-        self.consecutive_silence = 0
-        self.utterance_chunks: list[bytes] = []
+        if prov == "silero":
+            self._provider: VADProvider = SileroVADProvider(
+                sample_rate=sample_rate,
+                speech_start_chunks=speech_start_chunks,
+                end_silence_ms=end_silence_ms,
+                max_utterance_s=max_utterance_s,
+                pre_roll_chunks=pre_roll_chunks,
+            )
+        else:
+            self._provider = EnergyVADProvider(
+                sample_rate=sample_rate,
+                pre_roll_chunks=pre_roll_chunks,
+                speech_start_chunks=speech_start_chunks,
+                end_silence_ms=end_silence_ms,
+                max_utterance_s=max_utterance_s,
+            )
 
-    def feed(self, chunk: np.ndarray, is_speech: bool) -> tuple[str, bytes | None]:
+    @property
+    def state(self) -> str:
+        if hasattr(self._provider, "state"):
+            return self._provider.state
+        return "SILENCE"
+
+    def is_speech(self, chunk: np.ndarray) -> bool:
+        return self._provider.is_speech(chunk)
+
+    def feed(self, chunk: np.ndarray, is_speech: bool | None = None) -> tuple[str, bytes | None]:
         """
         Feed an audio frame to the VAD.
         Returns:
@@ -42,47 +67,8 @@ class AudioVAD:
             event_name can be "SILENCE", "SPEECH_START", "SPEAKING", "SPEECH_END".
             pcm_bytes is populated when event_name is "SPEECH_END".
         """
-        pcm_bytes = (np.clip(chunk, -1.0, 1.0) * 32767).astype(np.int16).tobytes()
-
-        if self.state == "SILENCE":
-            self.pre_roll.append(pcm_bytes)
-            if is_speech:
-                self.consecutive_speech += 1
-                if self.consecutive_speech >= self.speech_start_chunks:
-                    self.state = "SPEAKING"
-                    self.consecutive_silence = 0
-                    self.utterance_chunks = list(self.pre_roll)
-                    return "SPEECH_START", None
-            else:
-                self.consecutive_speech = 0
-            return "SILENCE", None
-
-        elif self.state == "SPEAKING":
-            self.utterance_chunks.append(pcm_bytes)
-            if is_speech:
-                self.consecutive_silence = 0
-            else:
-                self.consecutive_silence += 1
-
-            # End of utterance reached?
-            if (
-                self.consecutive_silence >= self.end_silence_chunks
-                or len(self.utterance_chunks) >= self.max_utterance_chunks
-            ):
-                self.state = "SILENCE"
-                self.consecutive_speech = 0
-                self.consecutive_silence = 0
-                full_pcm = b"".join(self.utterance_chunks)
-                self.utterance_chunks = []
-                return "SPEECH_END", full_pcm
-
-            return "SPEAKING", None
-
-        return "SILENCE", None
+        return self._provider.feed(chunk, is_speech_flag=is_speech)
 
     def reset(self) -> None:
         """Reset the VAD state machine and clear all utterance buffers."""
-        self.state = "SILENCE"
-        self.consecutive_speech = 0
-        self.consecutive_silence = 0
-        self.utterance_chunks = []
+        self._provider.reset()

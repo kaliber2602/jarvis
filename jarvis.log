@@ -4642,3 +4642,207 @@
 2026-08-28 22:34:35 [INFO] [HERMES_RUNTIME] Session closed: 5a1a1bfb
 2026-08-28 22:34:35 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\133ac38c254194538895ff7e.wav
 2026-08-28 22:34:36 [INFO] [JARVIS] Session ended -> UI hidden. Background wake detector ready.
+2026-08-29 00:56:12 [INFO] JarvisBridge WebSocket server started on ws://127.0.0.1:8765
+2026-08-29 00:56:13 [INFO] server listening on 127.0.0.1:8765
+2026-08-29 00:56:13 [INFO] Launched Jarvis desktop UI overlay process (hidden by default, PID: 16444).
+2026-08-29 00:56:13 [INFO] Initializing OpenWakeWord neural model ('hey_jarvis')...
+2026-08-29 00:56:13 [INFO] OpenWakeWord model ready (keyword: 'hey_jarvis', confidence threshold=0.55).
+2026-08-29 00:56:13 [INFO] connection open
+2026-08-29 00:56:13 [INFO] [BRIDGE] UI client connected: ('127.0.0.1', 49636)
+2026-08-29 00:56:14 [INFO] [AUDIO] Ownership transfer: NONE -> TRIGGER
+2026-08-29 00:56:14 [INFO] ===============================================================
+2026-08-29 00:56:14 [INFO]  JARVIS RUNTIME COORDINATOR — HERMES AGENT & SINGLE AUDIO OWNER
+2026-08-29 00:56:14 [INFO] ===============================================================
+2026-08-29 00:56:14 [INFO]  Microphone Invariant: Central AudioManager (Single Stream)
+2026-08-29 00:56:14 [INFO]  Mode 1: TRIGGER MODE (Claps & Deterministic Shortcuts)
+2026-08-29 00:56:14 [INFO]  Mode 2: CHAT MODE (VAD + STT + Hermes Agent + Computer Use)
+2026-08-29 00:56:14 [INFO]  Activation: 'Hey Jarvis, I need your help' -> Chat Mode & Hermes
+2026-08-29 00:56:14 [INFO]  Deactivation: 'Jarvis, go to sleep' -> Return to Trigger Mode
+2026-08-29 00:56:14 [INFO]  Audio capture: Rate=16000 Hz, Block=80 ms
+2026-08-29 00:56:14 [INFO] ===============================================================
+2026-08-29 00:56:14 [INFO] Audio devices:
+    0 Microsoft Sound Mapper - Input, MME (2 in, 0 out)
+>   1 Microphone (MCHOSE K20), MME (1 in, 0 out)
+    2 Voicemeeter Out A4 (VB-Audio Vo, MME (8 in, 0 out)
+    3 Voicemeeter Out B2 (VB-Audio Vo, MME (8 in, 0 out)
+    4 Voicemeeter Out A3 (VB-Audio Vo, MME (8 in, 0 out)
+    5 Voicemeeter Out B1 (VB-Audio Vo, MME (8 in, 0 out)
+    6 Voicemeeter Out A1 (VB-Audio Vo, MME (8 in, 0 out)
+    7 Voicemeeter Out A2 (VB-Audio Vo, MME (8 in, 0 out)
+    8 Voicemeeter Out B3 (VB-Audio Vo, MME (8 in, 0 out)
+    9 Voicemeeter Out A5 (VB-Audio Vo, MME (8 in, 0 out)
+   10 Microsoft Sound Mapper - Output, MME (0 in, 2 out)
+<  11 Realtek HD Audio 2nd output (Re, MME (0 in, 2 out)
+   12 Voicemeeter VAIO3 Input (VB-Aud, MME (0 in, 8 out)
+   13 Speakers (Realtek(R) Audio), MME (0 in, 8 out)
+   14 SAMSUNG (NVIDIA High Definition, MME (0 in, 2 out)
+   15 Realtek Digital Output (Realtek, MME (0 in, 2 out)
+   16 Voicemeeter AUX Input (VB-Audio, MME (0 in, 8 out)
+   17 Voicemeeter In 3 (VB-Audio Voic, MME (0 in, 8 out)
+   18 Voicemeeter Input (VB-Audio Voi, MME (0 in, 8 out)
+   19 Voicemeeter In 4 (VB-Audio Voic, MME (0 in, 8 out)
+   20 Voicemeeter In 5 (VB-Audio Voic, MME (0 in, 8 out)
+   21 Voicemeeter In 2 (VB-Audio Voic, MME (0 in, 8 out)
+   22 Speakers (MCHOSE K20), MME (0 in, 8 out)
+   23 Voicemeeter In 1 (VB-Audio Voic, MME (0 in, 8 out)
+   24 Primary Sound Capture Driver, Windows DirectSound (2 in, 0 out)
+   25 Microphone (MCHOSE K20), Windows DirectSound (1 in, 0 out)
+   26 Voicemeeter Out A4 (VB-Audio Voicemeeter VAIO), Windows DirectSound (8 in, 0 out)
+   27 Voicemeeter Out B2 (VB-Audio Voicemeeter VAIO), Windows DirectSound (8 in, 0 out)
+   28 Voicemeeter Out A3 (VB-Audio Voicemeeter VAIO), Windows DirectSound (8 in, 0 out)
+   29 Voicemeeter Out B1 (VB-Audio Voicemeeter VAIO), Windows DirectSound (8 in, 0 out)
+   30 Voicemeeter Out A1 (VB-Audio Voicemeeter VAIO), Windows DirectSound (8 in, 0 out)
+   31 Voicemeeter Out A2 (VB-Audio Voicemeeter VAIO), Windows DirectSound (8 in, 0 out)
+   32 Voicemeeter Out B3 (VB-Audio Voicemeeter VAIO), Windows DirectSound (8 in, 0 out)
+   33 Voicemeeter Out A5 (VB-Audio Voicemeeter VAIO), Windows DirectSound (8 in, 0 out)
+   34 Primary Sound Driver, Windows DirectSound (0 in, 2 out)
+   35 Realtek HD Audio 2nd output (Realtek(R) Audio), Windows DirectSound (0 in, 2 out)
+   36 Voicemeeter VAIO3 Input (VB-Audio Voicemeeter VAIO), Windows DirectSound (0 in, 8 out)
+   37 Speakers (Realtek(R) Audio), Windows DirectSound (0 in, 8 out)
+   38 SAMSUNG (NVIDIA High Definition Audio), Windows DirectSound (0 in, 2 out)
+   39 Realtek Digital Output (Realtek(R) Audio), Windows DirectSound (0 in, 2 out)
+   40 Voicemeeter AUX Input (VB-Audio Voicemeeter VAIO), Windows DirectSound (0 in, 8 out)
+   41 Voicemeeter In 3 (VB-Audio Voicemeeter VAIO), Windows DirectSound (0 in, 8 out)
+   42 Voicemeeter Input (VB-Audio Voicemeeter VAIO), Windows DirectSound (0 in, 8 out)
+   43 Voicemeeter In 4 (VB-Audio Voicemeeter VAIO), Windows DirectSound (0 in, 8 out)
+   44 Voicemeeter In 5 (VB-Audio Voicemeeter VAIO), Windows DirectSound (0 in, 8 out)
+   45 Voicemeeter In 2 (VB-Audio Voicemeeter VAIO), Windows DirectSound (0 in, 8 out)
+   46 Speakers (MCHOSE K20), Windows DirectSound (0 in, 8 out)
+   47 Voicemeeter In 1 (VB-Audio Voicemeeter VAIO), Windows DirectSound (0 in, 8 out)
+   48 Voicemeeter VAIO3 Input (VB-Audio Voicemeeter VAIO), Windows WASAPI (0 in, 2 out)
+   49 Speakers (Realtek(R) Audio), Windows WASAPI (0 in, 2 out)
+   50 SAMSUNG (NVIDIA High Definition Audio), Windows WASAPI (0 in, 2 out)
+   51 Realtek Digital Output (Realtek(R) Audio), Windows WASAPI (0 in, 2 out)
+   52 Voicemeeter AUX Input (VB-Audio Voicemeeter VAIO), Windows WASAPI (0 in, 2 out)
+   53 Voicemeeter In 3 (VB-Audio Voicemeeter VAIO), Windows WASAPI (0 in, 2 out)
+   54 Voicemeeter Input (VB-Audio Voicemeeter VAIO), Windows WASAPI (0 in, 2 out)
+   55 Voicemeeter In 4 (VB-Audio Voicemeeter VAIO), Windows WASAPI (0 in, 2 out)
+   56 Voicemeeter In 5 (VB-Audio Voicemeeter VAIO), Windows WASAPI (0 in, 2 out)
+   57 Voicemeeter In 2 (VB-Audio Voicemeeter VAIO), Windows WASAPI (0 in, 2 out)
+   58 Speakers (MCHOSE K20), Windows WASAPI (0 in, 8 out)
+   59 Realtek HD Audio 2nd output (Realtek(R) Audio), Windows WASAPI (0 in, 2 out)
+   60 Voicemeeter In 1 (VB-Audio Voicemeeter VAIO), Windows WASAPI (0 in, 2 out)
+   61 Voicemeeter Out A4 (VB-Audio Voicemeeter VAIO), Windows WASAPI (2 in, 0 out)
+   62 Voicemeeter Out B2 (VB-Audio Voicemeeter VAIO), Windows WASAPI (2 in, 0 out)
+   63 Voicemeeter Out A3 (VB-Audio Voicemeeter VAIO), Windows WASAPI (2 in, 0 out)
+   64 Voicemeeter Out B1 (VB-Audio Voicemeeter VAIO), Windows WASAPI (2 in, 0 out)
+   65 Voicemeeter Out A1 (VB-Audio Voicemeeter VAIO), Windows WASAPI (2 in, 0 out)
+   66 Voicemeeter Out A2 (VB-Audio Voicemeeter VAIO), Windows WASAPI (2 in, 0 out)
+   67 Microphone (MCHOSE K20), Windows WASAPI (1 in, 0 out)
+   68 Voicemeeter Out B3 (VB-Audio Voicemeeter VAIO), Windows WASAPI (2 in, 0 out)
+   69 Voicemeeter Out A5 (VB-Audio Voicemeeter VAIO), Windows WASAPI (2 in, 0 out)
+   70 Headphones (Realtek HD Audio 2nd output), Windows WDM-KS (0 in, 2 out)
+   71 Stereo Mix (Realtek HD Audio Stereo input), Windows WDM-KS (2 in, 0 out)
+   72 Line In (Realtek HD Audio Line input), Windows WDM-KS (2 in, 0 out)
+   73 Microphone (Realtek HD Audio Mic input), Windows WDM-KS (2 in, 0 out)
+   74 Speakers (Realtek HD Audio output), Windows WDM-KS (0 in, 8 out)
+   75 SPDIF Out (Realtek HDA SPDIF Out), Windows WDM-KS (0 in, 2 out)
+   76 Output (Voicemeeter Point 3), Windows WDM-KS (0 in, 8 out)
+   77 Input (Voicemeeter Point 3), Windows WDM-KS (8 in, 0 out)
+   78 Output (Voicemeeter Point 6), Windows WDM-KS (0 in, 8 out)
+   79 Input (Voicemeeter Point 6), Windows WDM-KS (8 in, 0 out)
+   80 Voicemeeter Out 1 (Voicemeeter Point 1), Windows WDM-KS (8 in, 0 out)
+   81 Voicemeeter Out 4 (Voicemeeter Point 4), Windows WDM-KS (8 in, 0 out)
+   82 Voicemeeter Out 7 (Voicemeeter Point 7), Windows WDM-KS (8 in, 0 out)
+   83 Output (Voicemeeter Point 1), Windows WDM-KS (0 in, 8 out)
+   84 Input (Voicemeeter Point 1), Windows WDM-KS (8 in, 0 out)
+   85 Output (Voicemeeter Point 4), Windows WDM-KS (0 in, 8 out)
+   86 Input (Voicemeeter Point 4), Windows WDM-KS (8 in, 0 out)
+   87 Output (Voicemeeter Point 7), Windows WDM-KS (0 in, 8 out)
+   88 Input (Voicemeeter Point 7), Windows WDM-KS (8 in, 0 out)
+   89 Voicemeeter Out 2 (Voicemeeter Point 2), Windows WDM-KS (8 in, 0 out)
+   90 Voicemeeter Out 5 (Voicemeeter Point 5), Windows WDM-KS (8 in, 0 out)
+   91 Voicemeeter Out 8 (Voicemeeter Point 8), Windows WDM-KS (8 in, 0 out)
+   92 Output (Voicemeeter Point 2), Windows WDM-KS (0 in, 8 out)
+   93 Input (Voicemeeter Point 2), Windows WDM-KS (8 in, 0 out)
+   94 Output (Voicemeeter Point 5), Windows WDM-KS (0 in, 8 out)
+   95 Input (Voicemeeter Point 5), Windows WDM-KS (8 in, 0 out)
+   96 Output (Voicemeeter Point 8), Windows WDM-KS (0 in, 8 out)
+   97 Input (Voicemeeter Point 8), Windows WDM-KS (8 in, 0 out)
+   98 Voicemeeter Out 3 (Voicemeeter Point 3), Windows WDM-KS (8 in, 0 out)
+   99 Voicemeeter Out 6 (Voicemeeter Point 6), Windows WDM-KS (8 in, 0 out)
+  100 Microphone (MicIn), Windows WDM-KS (1 in, 0 out)
+  101 Speakers (Speaker), Windows WDM-KS (0 in, 8 out)
+  102 Output (NVIDIA High Definition Audio), Windows WDM-KS (0 in, 2 out)
+2026-08-29 00:56:14 [WARNING] Default mic [1] Microphone (MCHOSE K20) is silent or unavailable (probe rms=0.00002); scanning other inputs...
+2026-08-29 00:56:15 [INFO] connection open
+2026-08-29 00:56:15 [INFO] [BRIDGE] UI client connected: ('127.0.0.1', 51738)
+2026-08-29 00:56:24 [WARNING] No active mic found; falling back to default [1].
+2026-08-29 00:56:27 [INFO] Microphone calibration complete (baseline noise=0.00009, threshold=0.02500). Ready for commands!
+2026-08-29 00:56:27 [INFO] Say 'Hey Jarvis, I need your help' for Conversation mode, or clap for Commands.
+2026-08-29 01:00:32 [INFO] 🌟 [INTENT: CONVERSATION] Dedicated phrase detected ('chavis i need your help') -> Materializing Jarvis Orb...
+2026-08-29 01:00:32 [INFO] [JARVIS] Wake detected -> Conversation session acquired. ID: 74c87939
+2026-08-29 01:00:32 [INFO] [JARVIS] Conversation session acquired. ID: 74c87939
+2026-08-29 01:00:32 [INFO] [AUDIO] Ownership transfer: TRIGGER -> CHAT
+2026-08-29 01:00:32 [INFO] [HERMES_RUNTIME] Session started: 74c87939
+2026-08-29 01:00:32 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\d0ecfd35be7f28a737660d7a.wav
+2026-08-29 01:00:32 [INFO] [JARVIS] State changed -> speaking
+2026-08-29 01:00:35 [INFO] [JARVIS] State changed -> listening
+2026-08-29 01:00:37 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-29 01:00:39 [INFO] [APP_REGISTRY] Discovered 88 Windows Start Menu applications.
+2026-08-29 01:00:39 [INFO] [VOICE_MEMORY] Loaded 14 learned phrase mappings from user_voice_memory.json
+2026-08-29 01:00:39 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'japanese notice to the'
+  [NORMALIZED]: 'japanese notice to the'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: Discord (method=metaphone, confidence=0.75)
+2026-08-29 01:00:39 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'japanese notice to the' | Normalized: 'japanese notice to the'
+2026-08-29 01:00:39 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'japanese notice to the' (Raw STT: 'japanese notice to the')
+2026-08-29 01:00:39 [INFO] 🎙️ [STT] raw = 'japanese notice to the'
+2026-08-29 01:00:39 [INFO] ✨ [NORMALIZATION] normalized = 'japanese notice to the'
+2026-08-29 01:00:39 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-29 01:00:39 [INFO] 🏷️ [ENTITY] candidate = 'Discord' (alias='dis cọt', method=metaphone, confidence=0.75)
+2026-08-29 01:00:39 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'japanese notice to the'
+  [NORMALIZED]: 'japanese notice to the'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: Discord (method=metaphone, confidence=0.75)
+2026-08-29 01:00:39 [INFO] [ROUTER] Routing natural-language task 'japanese notice to the' to Hermes Agent
+2026-08-29 01:00:39 [INFO] [ROUTER] Command: 'japanese notice to the' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-29 01:00:39 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 74c87939
+2026-08-29 01:00:39 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-29 01:00:39 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'japanese notice to the'...
+2026-08-29 01:00:39 [INFO] [CHAT -> HERMES] Dispatching instruction: 'japanese notice to the' (Intent: CONVERSATION)
+2026-08-29 01:00:39 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 74c87939: 'japanese notice to the'
+2026-08-29 01:00:39 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request and planning actions...
+2026-08-29 01:00:39 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-29 01:00:40 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'japanese notice to the' -> Silent recovery (no TTS voice spam)
+2026-08-29 01:00:40 [INFO] [HERMES_RUNTIME] Generated plan for 'japanese notice to the': []
+2026-08-29 01:00:40 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-29 01:00:40 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-29 01:00:40 [INFO] [HERMES EVENT] 🎯 Completed! Response: ''
+2026-08-29 01:00:40 [INFO] [HERMES_CLIENT] Received Hermes response: ''
+2026-08-29 01:00:40 [INFO] [HERMES -> CHAT] Final response synthesized: '' (success=True)
+2026-08-29 01:00:40 [INFO] [HERMES] Response is silent (no speech synthesis needed).
+2026-08-29 01:00:40 [INFO] [JARVIS] State changed -> listening
+2026-08-29 01:00:40 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-29 01:00:43 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-29 01:00:45 [INFO] [VOICE_MEMORY] Fuzzy guess match (sim=0.92): 'jarvis who to sleep' -> 'go to sleep' (via 'jarvis go to sleep')
+2026-08-29 01:00:45 [INFO] [VOICE_MEMORY] Saved 15 learned phrase mappings to disk.
+2026-08-29 01:00:45 [INFO] [VOICE_MEMORY] Learned new mapping: 'jarvis who to sleep' -> 'go to sleep'
+2026-08-29 01:00:46 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'jarvis who to sleep'
+  [NORMALIZED]: 'go to sleep'
+  [INTENT]: SLEEP_DISMISS (confidence=0.99, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-29 01:00:46 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'jarvis who to sleep' | Normalized: 'go to sleep'
+2026-08-29 01:00:46 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'go to sleep' (Raw STT: 'jarvis who to sleep')
+2026-08-29 01:00:46 [INFO] 🎙️ [STT] raw = 'jarvis who to sleep'
+2026-08-29 01:00:46 [INFO] ✨ [NORMALIZATION] normalized = 'go to sleep'
+2026-08-29 01:00:46 [INFO] 🎯 [INTENT] type = SLEEP_DISMISS (confidence=0.99, compound=False)
+2026-08-29 01:00:46 [INFO] [VOICE_MEMORY] Exact match in learned memory: 'jarvis who to sleep' -> 'go to sleep'
+2026-08-29 01:00:46 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'jarvis who to sleep'
+  [NORMALIZED]: 'go to sleep'
+  [INTENT]: SLEEP_DISMISS (confidence=0.99, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-29 01:00:46 [INFO] [ROUTER] Detected sleep/close command in 'jarvis who to sleep'
+2026-08-29 01:00:46 [INFO] [ROUTER] Command: 'go to sleep' -> Target: SLEEP_DISMISS (Action: sleep)
+2026-08-29 01:00:46 [INFO] 🛑 [CONVERSATION CLOSE] User requested sleep ('go to sleep') -> Closing session...
+2026-08-29 01:00:46 [INFO] [JARVIS] Sleep/Close command detected -> Orb closing animation initiated.
+2026-08-29 01:00:46 [INFO] [AUDIO] Ownership transfer: CHAT -> TRIGGER
+2026-08-29 01:00:46 [INFO] [HERMES_RUNTIME] Session closed: 74c87939
+2026-08-29 01:00:46 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\133ac38c254194538895ff7e.wav
+2026-08-29 01:00:46 [INFO] [JARVIS] Session ended -> UI hidden. Background wake detector ready.
+2026-08-29 01:13:23 [INFO] connection closed
+2026-08-29 01:13:23 [INFO] [BRIDGE] UI client disconnected: ('127.0.0.1', 49636)

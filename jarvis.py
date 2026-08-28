@@ -504,59 +504,39 @@ def _play_fallback_voice(text: str) -> None:
 
 
 def say_jarvis_phrase(text: str) -> None:
+    """
+    Synthesize and play speech using the configured TTSProvider (Hybrid, ElevenLabs, VieNeu, System SAPI)
+    and SoundDevicePlayback engine with real-time UI orb levels and barge-in interruption.
+    """
     global JARVIS_SPEAKING_UNTIL
     if not text.strip():
         return
-    text = text.strip()
-    vid, model_id, output_format, pcm_rate = elevenlabs_env_config()
+    clean_text = text.strip()
 
-    cache_path = None
-    if vid:
-        cache_path = _jarvis_welcome_cache_path(text, vid, model_id, output_format)
-        if JARVIS_WELCOME_CACHE_ENABLED and cache_path.is_file():
-            log.info("Playing phrase from cache: %s", cache_path)
-            if _play_pcm_wav_file(cache_path):
-                return
-            log.warning("Cache miss after read failure; fetching from ElevenLabs.")
+    try:
+        from audio.playback import SoundDevicePlayback
+        from audio.tts import get_tts_provider
 
-    api_key = (os.environ.get("ELEVENLABS_API_KEY") or "").strip()
-    if vid and api_key:
-        try:
-            from elevenlabs.client import ElevenLabs
-            client = ElevenLabs(api_key=api_key)
-            chunks = client.text_to_speech.convert(
-                voice_id=vid,
-                text=text,
-                model_id=model_id,
-                output_format=output_format,
-            )
-            raw = b"".join(chunks)
-            if raw:
-                if JARVIS_WELCOME_CACHE_ENABLED and cache_path:
-                    try:
-                        _save_pcm_wav_file(cache_path, raw, pcm_rate)
-                        log.info("Saved phrase audio to cache: %s", cache_path)
-                    except OSError as e:
-                        log.warning("Could not save phrase cache: %s", e)
-                pcm_i16 = np.frombuffer(raw, dtype=np.int16)
-                pcm_f = pcm_i16.astype(np.float32) / 32768.0
-                duration = len(pcm_i16) / float(pcm_rate)
-                JARVIS_SPEAKING_UNTIL = time.monotonic() + duration + 0.6
-                AudioManager.get_instance().set_speaking_until(JARVIS_SPEAKING_UNTIL)
-                bridge.set_state("speaking")
-                threading.Thread(target=_stream_pcm_playback_rms, args=(pcm_f, pcm_rate), daemon=True).start()
-                sd.play(pcm_f, pcm_rate)
-                sd.wait()
-                JARVIS_SPEAKING_UNTIL = time.monotonic() + 0.3
-                AudioManager.get_instance().set_speaking_until(JARVIS_SPEAKING_UNTIL)
-                bridge.set_state("listening")
-                return
-        except Exception as e:
-            log.warning("ElevenLabs TTS failed (%s); falling back to system speech.", e)
-            bridge.set_state("listening")
+        tts = get_tts_provider()
+        playback = SoundDevicePlayback.get_instance()
+
+        log.info("[TTS] Synthesizing response: '%s'", clean_text)
+        pcm_bytes, sample_rate = tts.synthesize(clean_text)
+
+        if pcm_bytes:
+            duration = len(pcm_bytes) / float(sample_rate * 2)
+            JARVIS_SPEAKING_UNTIL = time.monotonic() + duration + 0.5
+            AudioManager.get_instance().set_speaking_until(JARVIS_SPEAKING_UNTIL)
+
+            log.info("[PLAYBACK] Playing audio (%d bytes, %.2fs, %d Hz)", len(pcm_bytes), duration, sample_rate)
+            playback.play_pcm(pcm_bytes, sample_rate=sample_rate)
+            return
+
+    except Exception as e:
+        log.warning("[TTS] TTS provider error (%s); falling back to system speech.", e)
 
     # Fallback to Windows built-in voice
-    _play_fallback_voice(text)
+    _play_fallback_voice(clean_text)
 
 
 def _init_wakeword_model() -> OWWModel | None:
@@ -2052,9 +2032,14 @@ class JarvisCoordinator:
         log.info("💬 [CONVERSATION MODE] Processing user command: '%s' (Raw STT: '%s')", text, ctx.raw_transcript)
         bridge.touch_session()
 
+        # Language Detection & Invariant Verification
+        from agent.language import LanguageDetector
+        lang_type, lang_conf, _ = LanguageDetector.get_instance().detect(ctx.raw_transcript)
+
         # Structured diagnostic logs
         log.info("🎙️ [STT] raw = '%s'", ctx.raw_transcript)
-        log.info("✨ [NORMALIZATION] normalized = '%s'", ctx.normalized_transcript)
+        log.info("🌐 [LANGUAGE] detected = '%s' (confidence=%.2f, response_rule='ALWAYS_ENGLISH')", lang_type.value, lang_conf)
+        log.info("✨ [NORMALIZER] normalized = '%s'", ctx.normalized_transcript)
         log.info("🎯 [INTENT] type = %s (confidence=%.2f, compound=%s)", ctx.intent, ctx.confidence, ctx.is_compound)
         if ctx.target_entity:
             log.info("🏷️ [ENTITY] candidate = '%s' (alias='%s', method=%s, confidence=%.2f)",
@@ -2244,6 +2229,10 @@ def main() -> int:
     # Register listeners for TRIGGER and CHAT modes
     audio_mgr.register_listener(AudioOwner.TRIGGER, coordinator.process_trigger_frame)
     audio_mgr.register_listener(AudioOwner.CHAT, coordinator.process_chat_frame)
+
+    # Register Barge-In Interruption Handler (Stops playback when speech begins)
+    from audio.playback import SoundDevicePlayback
+    audio_mgr.register_barge_in_handler(SoundDevicePlayback.get_instance().stop)
 
     # Default to TRIGGER mode ownership on startup
     audio_mgr.acquire(AudioOwner.TRIGGER)

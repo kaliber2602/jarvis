@@ -1,33 +1,25 @@
 """
 Smart STT Engine for Jarvis:
-Combines High-Accuracy Neural Speech Recognition with local offline Vosk fallback.
+Combines High-Accuracy Neural Speech Recognition (Faster-Whisper, Google Web Speech)
+with local offline Vosk fallback, phonetic auto-correction, and normalization.
 Accurately transcribes Vietnamese, English, accented speech, and compound multi-step commands.
 """
 
 from __future__ import annotations
 
-import io
-import json
 import logging
-import wave
 from typing import Any
 
+from .stt.stt_provider import FasterWhisperProvider, GoogleSTTProvider, STTResult, VoskSTTProvider, get_stt_provider
 from .voice_memory import VoiceMemory
 
 log = logging.getLogger("smart_stt")
-
-SPEECH_RECOGNITION_AVAILABLE = False
-try:
-    import speech_recognition as sr
-    SPEECH_RECOGNITION_AVAILABLE = True
-except ImportError:
-    sr = None
 
 
 class SmartSTT:
     """
     Intelligent Multi-Modal Speech Recognition Engine.
-    1. Primary: Google Web Speech Recognition (Zero-Latency, Multi-lingual Vietnamese & English, handles accents flawlessly).
+    1. Primary: Configurable STT Provider (Faster-Whisper / Google Web Speech).
     2. Fallback: Local Vosk Kaldi offline model.
     3. Normalization: VoiceMemory phonetic auto-correction & self-learning.
     """
@@ -41,61 +33,48 @@ class SmartSTT:
         return cls._instance
 
     def __init__(self):
-        self.sr_recognizer = sr.Recognizer() if SPEECH_RECOGNITION_AVAILABLE else None
-        if self.sr_recognizer:
-            self.sr_recognizer.energy_threshold = 300
-            self.sr_recognizer.dynamic_energy_threshold = False
+        self._provider = get_stt_provider()
 
     def transcribe_audio_pcm(
         self,
         pcm_bytes: bytes,
         sample_rate: int = 16000,
-        vosk_recognizer: Any = None
+        vosk_recognizer: Any = None,
     ) -> str:
         """
         Transcribe raw PCM audio (16-bit Mono) using the most accurate available engine.
         """
-        if not pcm_bytes or len(pcm_bytes) < sample_rate * 0.3 * 2:  # Less than 0.3s
+        if not pcm_bytes or len(pcm_bytes) < sample_rate * 0.25 * 2:  # Less than 0.25s
             return ""
 
-        text = ""
+        # 1. Primary: Faster-Whisper / Configured STT Provider
+        result: STTResult = self._provider.transcribe(pcm_bytes, sample_rate=sample_rate)
+        text = result.text.strip()
 
-        # 1. Primary: Google High-Accuracy Speech Recognizer
-        if SPEECH_RECOGNITION_AVAILABLE and self.sr_recognizer is not None:
+        # 2. Fallback: Google Speech Recognition if Faster-Whisper returned empty
+        if not text:
             try:
-                audio_data = sr.AudioData(pcm_bytes, sample_rate, 2)
-                # First try English (since commands are often English or mixed)
-                try:
-                    text = self.sr_recognizer.recognize_google(audio_data, language="en-US").strip()
-                    log.info("🧠 [SMART STT (Google-EN)] Transcribed: '%s'", text)
-                except sr.UnknownValueError:
-                    # Fallback to Vietnamese if English couldn't decode
-                    try:
-                        text = self.sr_recognizer.recognize_google(audio_data, language="vi-VN").strip()
-                        log.info("🧠 [SMART STT (Google-VI)] Transcribed: '%s'", text)
-                    except Exception:
-                        text = ""
-                except Exception as e:
-                    log.debug("[SMART STT] Google EN recognizer error: %s", e)
+                google_res = GoogleSTTProvider().transcribe(pcm_bytes, sample_rate=sample_rate)
+                text = google_res.text.strip()
+                if text:
+                    log.info("[STT] Google STT fallback transcribed: '%s'", text)
             except Exception as e:
-                log.warning("[SMART STT] SpeechRecognition audio processing error: %s", e)
+                log.debug("[STT] Google fallback failed: %s", e)
 
-        # 2. Fallback: Offline Vosk Kaldi Model
+        # 3. Fallback: Offline Vosk Kaldi Model
         if not text and vosk_recognizer is not None:
             try:
-                vosk_recognizer.AcceptWaveform(pcm_bytes)
-                res = json.loads(vosk_recognizer.FinalResult())
-                text = res.get("text", "").strip()
-                vosk_recognizer.Reset()
+                vosk_res = VoskSTTProvider(recognizer=vosk_recognizer, sample_rate=sample_rate).transcribe(pcm_bytes)
+                text = vosk_res.text.strip()
                 if text:
-                    log.info("📝 [SMART STT (Vosk Fallback)] Transcribed: '%s'", text)
+                    log.info("📝 [STT] Vosk fallback transcribed: '%s'", text)
             except Exception as e:
-                log.debug("[SMART STT] Vosk fallback error: %s", e)
+                log.debug("[STT] Vosk fallback error: %s", e)
 
         if not text:
             return ""
 
-        # 3. Intelligent Deduplication & Phonetic Normalization
+        # 4. Intelligent Deduplication & Phonetic Normalization
         return self.normalize_turn_text(text)
 
     @staticmethod
@@ -104,7 +83,6 @@ class SmartSTT:
         Eliminate repeated phrases, echo loops, or double recognition chunks.
         e.g. 'close the window closed the window' -> 'close the window'
         e.g. 'open youtube open youtube' -> 'open youtube'
-        e.g. 'shot lady gaga dirt lady gaga' -> 'search lady gaga'
         """
         t = text.strip()
         if not t:
@@ -157,13 +135,13 @@ class SmartSTT:
         # Check VoiceMemory first for learned overrides
         normalized, was_corrected = VoiceMemory.get_instance().normalize(deduped)
         if was_corrected:
-            log.info("✨ [SMART STT (VoiceMemory)] Normalized: '%s' -> '%s'", text, normalized)
+            log.info("✨ [STT] VoiceMemory Normalized: '%s' -> '%s'", text, normalized)
             return normalized
 
         # Normalization Pipeline
         from .normalizer import VoiceNormalizationPipeline
         ctx = VoiceNormalizationPipeline.get_instance().process_transcript(deduped)
         if ctx.normalized_transcript and ctx.normalized_transcript != deduped:
-            log.info("✨ [SMART STT (Pipeline)] Normalized: '%s' -> '%s'", text, ctx.normalized_transcript)
+            log.info("✨ [STT] Pipeline Normalized: '%s' -> '%s'", text, ctx.normalized_transcript)
             return ctx.normalized_transcript
         return deduped

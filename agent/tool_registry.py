@@ -175,6 +175,26 @@ class ToolRegistry:
         """Find latest file in folder."""
         return SystemTool.find_latest_file(folder, extension)
 
+    def _tool_search_memory(self, query: str, limit: int = 5, category: str | None = None) -> dict[str, Any]:
+        """Search long term memory in Qdrant."""
+        from .memory.memory_service import get_memory_service
+        items = get_memory_service().search(query, limit=limit, category=category)
+        return {
+            "success": True,
+            "count": len(items),
+            "memories": [it.to_dict() for it in items],
+        }
+
+    def _tool_store_memory(self, text: str, category: str = "general") -> dict[str, Any]:
+        """Store fact or preference in Qdrant long term memory."""
+        from .memory.memory_service import get_memory_service
+        item_id = get_memory_service().store(text, category=category)
+        return {
+            "success": True,
+            "id": item_id,
+            "message": "Memory stored successfully.",
+        }
+
     def _register_default_tools(self) -> None:
         """Register all default tools."""
         self.register_tool(ToolDefinition(
@@ -269,4 +289,27 @@ class ToolRegistry:
             ],
             safety_level=ToolSafetyLevel.SAFE,
             handler=self._tool_find_latest_file,
+        ))
+
+        self.register_tool(ToolDefinition(
+            name="search_memory",
+            description="Recall relevant contextual information, user preferences, or facts from Qdrant long-term memory.",
+            parameters=[
+                ToolParameter("query", "string", "Semantic search query"),
+                ToolParameter("limit", "integer", "Maximum items to return", required=False, default=5),
+                ToolParameter("category", "string", "Optional category filter ('preference', 'project', 'fact')", required=False),
+            ],
+            safety_level=ToolSafetyLevel.SAFE,
+            handler=self._tool_search_memory,
+        ))
+
+        self.register_tool(ToolDefinition(
+            name="store_memory",
+            description="Save an important fact, user preference, or project context into Qdrant long-term memory.",
+            parameters=[
+                ToolParameter("text", "string", "The memory content to store"),
+                ToolParameter("category", "string", "Category ('preference', 'project', 'fact')", required=False, default="general"),
+            ],
+            safety_level=ToolSafetyLevel.SAFE,
+            handler=self._tool_store_memory,
         ))

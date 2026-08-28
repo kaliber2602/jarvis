@@ -1,6 +1,7 @@
 """
 Central Audio Manager & Single Microphone Ownership Coordinator.
 Guarantees strictly ONE active microphone consumer at any given moment (NONE, TRIGGER, CHAT).
+Provides real-time speech barge-in and echo suppression coordination.
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ class AudioManager:
       - Only the current owner receives audio callbacks.
       - A secondary owner cannot acquire while another owner holds the microphone.
       - Safe release and context-management for error recovery.
+      - Barge-in coordination to interrupt active TTS when user speech is detected.
     """
 
     _instance: AudioManager | None = None
@@ -58,6 +60,9 @@ class AudioManager:
         # Global speaker echo / loopback guard: mic is muted while Jarvis is talking
         self._speaking_until = 0.0
 
+        # Barge-in interruption handlers
+        self._barge_in_handlers: list[Callable[[], None]] = []
+
         # Background noise baseline tracking
         self.noise_floor = 1e-4
         self.noise_floor_alpha = 0.992
@@ -77,6 +82,33 @@ class AudioManager:
         """Mute microphone processing for echo guard until specified timestamp."""
         with self._lock:
             self._speaking_until = until
+
+    def interrupt_speaking(self) -> None:
+        """Immediately cancel speaking lock and trigger barge-in handlers."""
+        with self._lock:
+            was_speaking = self.is_speaking()
+            self._speaking_until = 0.0
+            handlers = list(self._barge_in_handlers)
+
+        if was_speaking:
+            log.info("[AUDIO] ⚡ Barge-in triggered! Speaking lock cleared.")
+            for handler in handlers:
+                try:
+                    handler()
+                except Exception as e:
+                    log.error("[AUDIO] Error in barge-in handler: %s", e)
+
+    def register_barge_in_handler(self, handler: Callable[[], None]) -> None:
+        """Register a callback to execute on barge-in / speech interruption."""
+        with self._lock:
+            if handler not in self._barge_in_handlers:
+                self._barge_in_handlers.append(handler)
+
+    def unregister_barge_in_handler(self, handler: Callable[[], None]) -> None:
+        """Unregister a barge-in handler."""
+        with self._lock:
+            if handler in self._barge_in_handlers:
+                self._barge_in_handlers.remove(handler)
 
     def acquire(self, owner: AudioOwner, timeout_s: float = 2.0) -> bool:
         """
@@ -137,11 +169,17 @@ class AudioManager:
         Ingest a raw microphone frame from sounddevice and route it
         STRICTLY to the active owner's listeners.
         """
-        # Echo suppression check
-        if self.is_speaking(now):
-            return
-
         level = self.calculate_rms(data)
+
+        # Echo suppression & Barge-in check
+        if self.is_speaking(now):
+            # Barge-in threshold: user speech exceeds elevated threshold during TTS
+            barge_in_thresh = max(self.noise_floor * 4.0, 0.035)
+            if level > barge_in_thresh:
+                log.info("[AUDIO] Barge-in speech energy detected (rms=%.4f > %.4f). Interrupting TTS...", level, barge_in_thresh)
+                self.interrupt_speaking()
+            else:
+                return
 
         # Baseline noise floor tracking
         quiet_gate = self.noise_floor * self.quiet_gate_mult
