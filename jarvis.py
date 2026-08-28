@@ -33,6 +33,7 @@ Tuning (constants below):
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -56,13 +57,26 @@ import sounddevice as sd
 from runtime_bridge import JarvisBridge
 bridge = JarvisBridge.get_instance()
 
+from audio import AudioManager, AudioOwner, AudioVAD
+from agent import (
+    HermesClient,
+    CommandRouter,
+    RouteTarget,
+    AgentEvent,
+    EventType,
+    SmartSTT,
+    ToolRegistry,
+    VoiceNormalizationPipeline,
+    InterpretationContext,
+)
+
 UI_PROCESS: subprocess.Popen | None = None
 
 def _cleanup_ui_process():
     global UI_PROCESS
     if UI_PROCESS is not None:
         try:
-            log.info("Terminating Jarvis UI child process...")
+            log.info("Terminating Jarvis UI child process (PID: %d)...", UI_PROCESS.pid)
             UI_PROCESS.terminate()
             UI_PROCESS.wait(timeout=1.0)
         except Exception:
@@ -71,6 +85,24 @@ def _cleanup_ui_process():
             except Exception:
                 pass
         UI_PROCESS = None
+
+    # Clean up any orphan ui_window.py processes from previous runs
+    if sys.platform == "win32":
+        try:
+            ps_kill = (
+                "Get-CimInstance Win32_Process | "
+                "Where-Object { $_.CommandLine -like '*ui_window.py*' -and $_.ProcessId -ne $PID } | "
+                "ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"
+            )
+            subprocess.run(
+                ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_kill],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+                timeout=2.0,
+            )
+        except Exception:
+            pass
 
 atexit.register(_cleanup_ui_process)
 
@@ -98,76 +130,6 @@ except Exception as e:
     VOSK_AVAILABLE = False
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
-
-
-class AudioVAD:
-    """
-    Real-time Voice Activity Detector (VAD) with rolling pre-buffer,
-    adaptive energy thresholding, and silence tolerance.
-    """
-    def __init__(
-        self,
-        sample_rate: int = 16000,
-        pre_roll_chunks: int = 4,      # ~320ms rolling pre-buffer at 80ms/chunk
-        speech_start_chunks: int = 2,  # ~160ms speech confirmation
-        end_silence_ms: int = 650,     # 650ms continuous silence for end-of-utterance
-        max_utterance_s: float = 10.0,
-    ):
-        self.sample_rate = sample_rate
-        self.pre_roll = deque(maxlen=pre_roll_chunks)
-        self.speech_start_chunks = speech_start_chunks
-        self.end_silence_chunks = max(3, int(end_silence_ms / 80))
-        self.max_utterance_chunks = int(max_utterance_s * 1000 / 80)
-
-        self.state = "SILENCE"  # SILENCE, SPEECH_START, SPEAKING, SPEECH_END
-        self.consecutive_speech = 0
-        self.consecutive_silence = 0
-        self.utterance_chunks: list[bytes] = []
-
-    def feed(self, chunk: np.ndarray, is_speech: bool) -> tuple[str, bytes | None]:
-        pcm_bytes = (np.clip(chunk, -1.0, 1.0) * 32767).astype(np.int16).tobytes()
-
-        if self.state == "SILENCE":
-            self.pre_roll.append(pcm_bytes)
-            if is_speech:
-                self.consecutive_speech += 1
-                if self.consecutive_speech >= self.speech_start_chunks:
-                    self.state = "SPEAKING"
-                    self.consecutive_silence = 0
-                    self.utterance_chunks = list(self.pre_roll)
-                    return "SPEECH_START", None
-            else:
-                self.consecutive_speech = 0
-            return "SILENCE", None
-
-        elif self.state == "SPEAKING":
-            self.utterance_chunks.append(pcm_bytes)
-            if is_speech:
-                self.consecutive_silence = 0
-            else:
-                self.consecutive_silence += 1
-
-            # End of utterance reached?
-            if (
-                self.consecutive_silence >= self.end_silence_chunks
-                or len(self.utterance_chunks) >= self.max_utterance_chunks
-            ):
-                self.state = "SILENCE"
-                self.consecutive_speech = 0
-                self.consecutive_silence = 0
-                full_pcm = b"".join(self.utterance_chunks)
-                self.utterance_chunks = []
-                return "SPEECH_END", full_pcm
-
-            return "SPEAKING", None
-
-        return "SILENCE", None
-
-    def reset(self) -> None:
-        self.state = "SILENCE"
-        self.consecutive_speech = 0
-        self.consecutive_silence = 0
-        self.utterance_chunks = []
 
 # --- tuning knobs -----------------------------------------------------------
 SAMPLE_RATE = int(os.environ.get("JARVIS_SAMPLE_RATE", "16000"))
@@ -257,12 +219,17 @@ JARVIS_AFTER_SONG_DELAY_S = 1.0
 # Save ElevenLabs PCM as WAV under .cache/jarvis_welcome/; replay skips the API when the key matches.
 JARVIS_WELCOME_CACHE_ENABLED = True
 
+LOG_FILE = Path(__file__).resolve().parent / "jarvis.log"
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
+    format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(LOG_FILE, encoding="utf-8"),
+    ]
 )
-log = logging.getLogger("clap_listen")
+log = logging.getLogger("jarvis")
 
 
 
@@ -476,11 +443,13 @@ def _play_pcm_wav_file(path: Path) -> bool:
     pcm_f = pcm_i16.astype(np.float32) / 32768.0
     try:
         JARVIS_SPEAKING_UNTIL = time.monotonic() + duration + 0.6
+        AudioManager.get_instance().set_speaking_until(JARVIS_SPEAKING_UNTIL)
         bridge.set_state("speaking")
         threading.Thread(target=_stream_pcm_playback_rms, args=(pcm_f, rate), daemon=True).start()
         sd.play(pcm_f, rate)
         sd.wait()
         JARVIS_SPEAKING_UNTIL = time.monotonic() + 0.3
+        AudioManager.get_instance().set_speaking_until(JARVIS_SPEAKING_UNTIL)
         if bridge.is_conversation_active():
             bridge.set_state("listening")
     except Exception as e:
@@ -515,6 +484,7 @@ def _play_fallback_voice(text: str) -> None:
             safe_text = text.replace("'", "''").replace('"', '`"')
             ps_cmd = f"Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; $s.Speak('{safe_text}')"
             JARVIS_SPEAKING_UNTIL = time.monotonic() + 2.5
+            AudioManager.get_instance().set_speaking_until(JARVIS_SPEAKING_UNTIL)
             bridge.set_state("speaking")
             subprocess.run(
                 ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
@@ -524,6 +494,7 @@ def _play_fallback_voice(text: str) -> None:
                 timeout=5.0,
             )
             JARVIS_SPEAKING_UNTIL = time.monotonic() + 0.3
+            AudioManager.get_instance().set_speaking_until(JARVIS_SPEAKING_UNTIL)
             if bridge.is_conversation_active():
                 bridge.set_state("listening")
         except Exception as e:
@@ -571,11 +542,13 @@ def say_jarvis_phrase(text: str) -> None:
                 pcm_f = pcm_i16.astype(np.float32) / 32768.0
                 duration = len(pcm_i16) / float(pcm_rate)
                 JARVIS_SPEAKING_UNTIL = time.monotonic() + duration + 0.6
+                AudioManager.get_instance().set_speaking_until(JARVIS_SPEAKING_UNTIL)
                 bridge.set_state("speaking")
                 threading.Thread(target=_stream_pcm_playback_rms, args=(pcm_f, pcm_rate), daemon=True).start()
                 sd.play(pcm_f, pcm_rate)
                 sd.wait()
                 JARVIS_SPEAKING_UNTIL = time.monotonic() + 0.3
+                AudioManager.get_instance().set_speaking_until(JARVIS_SPEAKING_UNTIL)
                 bridge.set_state("listening")
                 return
         except Exception as e:
@@ -1753,16 +1726,26 @@ def open_cursor_window() -> None:
 class JarvisCoordinator:
     """
     Central Jarvis Runtime Coordinator:
-    - Owns single microphone capture pipeline
+    - Owns and coordinates single microphone pipeline via AudioManager
     - Manages VAD & speech boundary detection
-    - Routes intent mutually exclusively to COMMAND MODE or CONVERSATION MODE
-    - Enforces conversation session lock and deterministic cleanup
+    - Handles TRIGGER Mode (deterministic claps & quick commands)
+    - Handles CHAT Mode (conversational voice, intent routing, and Hermes Agent Computer Use)
+    - Enforces strict mutual exclusion and clean resource recovery
     """
 
-    def __init__(self, blocksize: int):
+    def __init__(self, audio_mgr: AudioManager, blocksize: int):
+        self.audio_mgr = audio_mgr
         self.blocksize = blocksize
         self.vad = AudioVAD(sample_rate=SAMPLE_RATE)
-        self.noise_floor = 1e-4
+        self.hermes_client = HermesClient()
+        self.current_chat_session_id: str | None = None
+        self._agent_busy = False
+        self._agent_lock = threading.Lock()
+        self._chat_turn_text: list[str] = []
+        self._chat_turn_pcm: list[bytes] = []
+        self._last_speech_time: float = 0.0
+        self._user_is_speaking: bool = False
+
         self.spike_armed = True
         self.calibrated = False
         self.stream_start_time = 0.0
@@ -1777,9 +1760,6 @@ class JarvisCoordinator:
         self.last_wake_trigger = 0.0
         self.wake_window_expired_logged = True
 
-        # Exclusive conversation session lock
-        self.conversation_session_active = False
-
         self.oww_model: OWWModel | None = None
         if REQUIRE_WAKE_WORD:
             self.oww_model = _init_wakeword_model()
@@ -1791,30 +1771,14 @@ class JarvisCoordinator:
             except Exception as e:
                 log.warning("Could not initialize Vosk recognizer: %s", e)
 
-    def process_frame(self, data: np.ndarray, now: float) -> None:
-        # Echo & self-trigger guard: if Jarvis is speaking, mute mic processing
-        if now < JARVIS_SPEAKING_UNTIL:
-            self.clap_times = []
-            self.spike_armed = False
-            self.vad.reset()
-            return
+    # -------------------------------------------------------------
+    # TRIGGER MODE LISTENER (Microphone Owner: TRIGGER)
+    # -------------------------------------------------------------
+    def process_trigger_frame(self, data: np.ndarray, now: float) -> None:
+        level = AudioManager.calculate_rms(data)
+        threshold = max(self.audio_mgr.noise_floor * SPIKE_RATIO, MIN_RMS)
 
-        level = rms_mono(data)
-
-        # Ambient noise floor tracking
-        quiet_gate = self.noise_floor * QUIET_GATE_MULT
-        if level < quiet_gate:
-            self.noise_floor = NOISE_FLOOR_ALPHA * self.noise_floor + (1.0 - NOISE_FLOOR_ALPHA) * level
-            self.noise_floor = max(self.noise_floor, 1e-7)
-
-        threshold = max(self.noise_floor * SPIKE_RATIO, MIN_RMS)
-
-        # Stream live audio amplitude to UI Orb when in conversation listening mode
-        if self.calibrated and bridge.current_state == "listening":
-            norm_level = (level - self.noise_floor) / max(threshold - self.noise_floor, 1e-4)
-            bridge.emit_audio_level(min(1.0, max(0.0, norm_level)))
-
-        # Startup Warmup
+        # Startup Warmup & Calibration
         if not self.calibrated:
             if (now - self.stream_start_time) < STARTUP_WARMUP_S:
                 self.clap_times = []
@@ -1826,7 +1790,7 @@ class JarvisCoordinator:
                 self.spike_armed = True
                 log.info(
                     "Microphone calibration complete (baseline noise=%.5f, threshold=%.5f). Ready for commands!",
-                    self.noise_floor,
+                    self.audio_mgr.noise_floor,
                     threshold,
                 )
                 if REQUIRE_WAKE_WORD and self.oww_model is not None:
@@ -1838,29 +1802,6 @@ class JarvisCoordinator:
 
         pcm_bytes = (np.clip(data, -1.0, 1.0) * 32767).astype(np.int16).tobytes()
 
-        # -------------------------------------------------------------
-        # BRANCH 1: ACTIVE CONVERSATION SESSION MODE
-        # -------------------------------------------------------------
-        if bridge.is_conversation_active():
-            self.conversation_session_active = True
-            if self.vosk_recognizer is not None:
-                text = ""
-                if self.vosk_recognizer.AcceptWaveform(pcm_bytes):
-                    res = json.loads(self.vosk_recognizer.Result())
-                    text = res.get("text", "").lower().strip()
-                else:
-                    res = json.loads(self.vosk_recognizer.PartialResult())
-                    text = res.get("partial", "").lower().strip()
-
-                if text:
-                    self._handle_conversation_speech(text)
-            return
-        else:
-            self.conversation_session_active = False
-
-        # -------------------------------------------------------------
-        # BRANCH 2: WAITING / WAKE & COMMAND MODE
-        # -------------------------------------------------------------
         # A. Neural OpenWakeWord detection
         if REQUIRE_WAKE_WORD and self.oww_model is not None:
             pcm_i16 = (np.clip(data, -1.0, 1.0) * 32767).astype(np.int16).flatten()
@@ -1886,7 +1827,7 @@ class JarvisCoordinator:
                         daemon=True
                     ).start()
 
-        # B. Vosk Real-Time Continuous Streaming Speech & Intent Routing
+        # B. Vosk Streaming Speech & Intent Routing (Waiting Mode)
         if self.vosk_recognizer is not None:
             text = ""
             if self.vosk_recognizer.AcceptWaveform(pcm_bytes):
@@ -1903,14 +1844,14 @@ class JarvisCoordinator:
         self._handle_claps(level, threshold, now)
 
     def _route_waiting_intent(self, text: str, now: float) -> None:
-        # 1. Ignore Sleep Commands while already in waiting mode
+        # Ignore sleep phrases in waiting mode
         sleep_phrases = ("go to sleep", "to sleep", "sleep", "close", "dismiss", "turn off", "shut down", "goodbye", "bye")
         if any(sp in text for sp in sleep_phrases):
             if self.vosk_recognizer:
                 self.vosk_recognizer.Reset()
             return
 
-        # 2. Dedicated Conversation Activation Phrase: "Jarvis, I need your help" / "Hey Jarvis, I need your help"
+        # Dedicated Conversation Activation Phrase: "Jarvis, I need your help" / "Hey Jarvis, I need your help"
         conv_phrases = (
             "i need your help", "need your help", "need help", "help me",
             "and it your hair", "a nice your hair", "it your hair", "your hair",
@@ -1921,19 +1862,29 @@ class JarvisCoordinator:
             log.info("🌟 [INTENT: CONVERSATION] Dedicated phrase detected ('%s') -> Materializing Jarvis Orb...", text)
             if self.vosk_recognizer:
                 self.vosk_recognizer.Reset()
-            self.conversation_session_active = True
             self.wake_armed_until = 0.0
             self.clap_times = []
+
+            # 1. Acquire Chat session in bridge
             session_id = bridge.emit_wake()
-            log.info("[JARVIS] Acquired conversation session lock ID: %s", session_id)
-            threading.Thread(
-                target=say_jarvis_phrase,
-                args=("Yes sir, I am online and ready to help.",),
-                daemon=True
-            ).start()
+            self.current_chat_session_id = session_id
+            log.info("[JARVIS] Conversation session acquired. ID: %s", session_id)
+
+            # 2. Acquire audio ownership for CHAT mode
+            self.audio_mgr.acquire(AudioOwner.CHAT)
+
+            # 3. Start Hermes session in background
+            def _init_chat():
+                try:
+                    asyncio.run(self.hermes_client.start_session(session_id))
+                except Exception as e:
+                    log.warning("[HERMES] Could not pre-init session: %s", e)
+                say_jarvis_phrase("Yes sir, I am online and ready to help.")
+
+            threading.Thread(target=_init_chat, daemon=True).start()
             return
 
-        # 3. Direct Voice Commands
+        # Direct Voice Commands in Waiting Mode
         if "open spotify" in text or "play music" in text or "play song" in text:
             log.info("🎵 [INTENT: COMMAND] 'Open Spotify' -> Executing command (UI remains hidden)...")
             if self.vosk_recognizer:
@@ -1960,49 +1911,6 @@ class JarvisCoordinator:
             open_chrome_browser()
             threading.Thread(target=say_jarvis_phrase, args=("Opening Chrome.",), daemon=True).start()
             return
-
-    def _handle_conversation_speech(self, text: str) -> None:
-        log.info("💬 [CONVERSATION MODE] User: '%s'", text)
-        bridge.touch_session()
-
-        # Check sleep / close commands
-        sleep_phrases = (
-            "go to sleep", "to sleep", "sleep", "close", "stop", "dismiss",
-            "goodbye", "turn off", "shut down ui", "shut down", "bye"
-        )
-        if any(sp in text for sp in sleep_phrases):
-            log.info("🛑 [CONVERSATION CLOSE] User requested sleep ('%s') -> Closing session...", text)
-            if self.vosk_recognizer:
-                self.vosk_recognizer.Reset()
-            self.conversation_session_active = False
-            bridge.emit_closing()
-            if JARVIS_GOODBYE_ENABLED:
-                threading.Thread(
-                    target=say_jarvis_phrase,
-                    args=("Going to sleep, sir.",),
-                    daemon=True
-                ).start()
-            return
-
-        # Execute conversation commands or respond
-        if "spotify" in text or "music" in text:
-            if self.vosk_recognizer:
-                self.vosk_recognizer.Reset()
-            bridge.set_state("processing")
-            play_song(SONG_URI)
-            threading.Thread(target=say_jarvis_phrase, args=("Spotify playback started, sir.",), daemon=True).start()
-        elif "vs code" in text or "code" in text or "vscode" in text:
-            if self.vosk_recognizer:
-                self.vosk_recognizer.Reset()
-            bridge.set_state("processing")
-            open_vscode_window()
-            threading.Thread(target=say_jarvis_phrase, args=("Visual Studio Code is ready.",), daemon=True).start()
-        elif "chrome" in text or "browser" in text:
-            if self.vosk_recognizer:
-                self.vosk_recognizer.Reset()
-            bridge.set_state("processing")
-            open_chrome_browser()
-            threading.Thread(target=say_jarvis_phrase, args=("Google Chrome launched.",), daemon=True).start()
 
     def _handle_claps(self, level: float, threshold: float, now: float) -> None:
         # Check wake-word window timeout
@@ -2071,6 +1979,237 @@ class JarvisCoordinator:
                     self.clap_times = [now]
                     log.info("👏 Clap hit [1] (new sequence, rms=%.4f)!", level)
 
+    # -------------------------------------------------------------
+    # CHAT MODE LISTENER (Microphone Owner: CHAT)
+    # -------------------------------------------------------------
+    def process_chat_frame(self, data: np.ndarray, now: float) -> None:
+        # Check if conversation session was ended or expired
+        if not bridge.is_conversation_active():
+            log.info("[CHAT] Conversation session inactive -> Releasing audio to TRIGGER mode.")
+            self.audio_mgr.acquire(AudioOwner.TRIGGER)
+            return
+
+        # If agent is currently executing or Jarvis is speaking, ignore incoming mic frames
+        if getattr(self, "_agent_busy", False) or self.audio_mgr.is_speaking(now):
+            return
+
+        level = AudioManager.calculate_rms(data)
+        threshold = max(self.audio_mgr.noise_floor * SPIKE_RATIO, MIN_RMS)
+
+        # Stream live audio amplitude to UI Orb when in listening state
+        if bridge.current_state == "listening":
+            norm_level = (level - self.audio_mgr.noise_floor) / max(threshold - self.audio_mgr.noise_floor, 1e-4)
+            bridge.emit_audio_level(min(1.0, max(0.0, norm_level)))
+
+        pcm_bytes = (np.clip(data, -1.0, 1.0) * 32767).astype(np.int16).tobytes()
+
+        # VAD & Speech Activity Detection
+        is_speech = level >= threshold
+        vad_evt, full_pcm = self.vad.feed(data, is_speech)
+
+        if is_speech or vad_evt == "SPEECH_START":
+            if not self._user_is_speaking:
+                self._user_is_speaking = True
+                log.info("🎙️ [VAD] User started speaking turn...")
+            self._last_speech_time = now
+
+        # Collect raw audio during user speech turn
+        if is_speech or self._user_is_speaking:
+            self._chat_turn_pcm.append(pcm_bytes)
+
+        if self.vosk_recognizer is not None:
+            # 1. Accumulate speech chunks into turn buffer
+            if self.vosk_recognizer.AcceptWaveform(pcm_bytes):
+                res = json.loads(self.vosk_recognizer.Result())
+                chunk = res.get("text", "").strip()
+                if chunk:
+                    self._chat_turn_text.append(chunk)
+
+            # 2. Check if user's speaking turn is fully complete (1.0s silence after speech)
+            if self._user_is_speaking and (now - self._last_speech_time >= 1.0 or vad_evt == "SPEECH_END"):
+                self._user_is_speaking = False
+
+                # Finalize live Vosk stream without double-processing audio
+                res = json.loads(self.vosk_recognizer.FinalResult())
+                final_chunk = res.get("text", "").strip()
+                if final_chunk:
+                    self._chat_turn_text.append(final_chunk)
+
+                self.vosk_recognizer.Reset()
+
+                raw_turn = " ".join(self._chat_turn_text).strip()
+                self._chat_turn_text.clear()
+                self._chat_turn_pcm.clear()
+
+                if raw_turn:
+                    # Run Voice Normalization & Semantic Interpretation Pipeline
+                    ctx = VoiceNormalizationPipeline.get_instance().process_transcript(raw_turn)
+                    log.info("🎙️ [SMART TURN COMPLETED] Raw: '%s' | Normalized: '%s'", ctx.raw_transcript, ctx.normalized_transcript)
+                    self._handle_chat_utterance(ctx.normalized_transcript or raw_turn, interpretation=ctx)
+
+    def _handle_chat_utterance(self, text: str, interpretation: InterpretationContext | None = None) -> None:
+        ctx = interpretation or VoiceNormalizationPipeline.get_instance().process_transcript(text)
+        log.info("💬 [CONVERSATION MODE] Processing user command: '%s' (Raw STT: '%s')", text, ctx.raw_transcript)
+        bridge.touch_session()
+
+        # Structured diagnostic logs
+        log.info("🎙️ [STT] raw = '%s'", ctx.raw_transcript)
+        log.info("✨ [NORMALIZATION] normalized = '%s'", ctx.normalized_transcript)
+        log.info("🎯 [INTENT] type = %s (confidence=%.2f, compound=%s)", ctx.intent, ctx.confidence, ctx.is_compound)
+        if ctx.target_entity:
+            log.info("🏷️ [ENTITY] candidate = '%s' (alias='%s', method=%s, confidence=%.2f)",
+                     ctx.target_entity.name, ctx.target_entity.matched_alias,
+                     ctx.target_entity.match_method, ctx.target_entity.confidence)
+
+        target, action, meta = CommandRouter.route(ctx.raw_transcript)
+        log.info("[ROUTER] Command: '%s' -> Target: %s (Action: %s)", text, target.value, action)
+
+        # 0. Ignore ambient noise / filler fragments
+        if target == RouteTarget.IGNORE:
+            log.info("[CHAT] Ignored noise/filler phrase: '%s'", text)
+            if self.vosk_recognizer:
+                self.vosk_recognizer.Reset()
+            return
+
+        # 1. Sleep & Close Session
+        if target == RouteTarget.SLEEP_DISMISS:
+            log.info("🛑 [CONVERSATION CLOSE] User requested sleep ('%s') -> Closing session...", text)
+            if self.vosk_recognizer:
+                self.vosk_recognizer.Reset()
+            bridge.emit_closing()
+            self.audio_mgr.acquire(AudioOwner.TRIGGER)
+
+            if self.current_chat_session_id:
+                try:
+                    asyncio.run(self.hermes_client.close_session(self.current_chat_session_id))
+                except Exception as e:
+                    log.debug("Session close error: %s", e)
+                self.current_chat_session_id = None
+
+            if JARVIS_GOODBYE_ENABLED:
+                threading.Thread(
+                    target=say_jarvis_phrase,
+                    args=("Going to sleep, sir.",),
+                    daemon=True
+                ).start()
+            return
+
+        # 2. Deterministic Action (Fast Path)
+        elif target == RouteTarget.DETERMINISTIC_ACTION:
+            if self.vosk_recognizer:
+                self.vosk_recognizer.Reset()
+            bridge.set_state("processing")
+            log.info("[ACTION] Fast-path executing deterministic action: %s", action)
+
+            if action.startswith("open_app:"):
+                app_name = ctx.target_entity.name if ctx.target_entity else action.split(":", 1)[1]
+                log.info("[TOOL] open_application('%s')", app_name)
+                res = ToolRegistry.get_instance().execute("open_application", app_name=app_name)
+                log.info("[RESULT] %s", "success" if res.get("success") else f"failed: {res.get('error')}")
+                threading.Thread(target=say_jarvis_phrase, args=(f"Opening {app_name}, sir.",), daemon=True).start()
+            elif action == "open_spotify":
+                log.info("[TOOL] open_application('Spotify')")
+                play_song(SONG_URI)
+                log.info("[RESULT] success")
+                threading.Thread(target=say_jarvis_phrase, args=("Spotify playback started, sir.",), daemon=True).start()
+            elif action == "open_vscode":
+                log.info("[TOOL] open_application('Visual Studio Code')")
+                open_vscode_window()
+                log.info("[RESULT] success")
+                threading.Thread(target=say_jarvis_phrase, args=("Visual Studio Code is ready.",), daemon=True).start()
+            elif action == "open_chrome":
+                log.info("[TOOL] open_application('Google Chrome')")
+                open_chrome_browser()
+                log.info("[RESULT] success")
+                threading.Thread(target=say_jarvis_phrase, args=("Google Chrome launched.",), daemon=True).start()
+            elif action == "open_antigravity":
+                log.info("[TOOL] open_application('Antigravity')")
+                open_antigravity_window()
+                log.info("[RESULT] success")
+                threading.Thread(target=say_jarvis_phrase, args=("Antigravity is active.",), daemon=True).start()
+            elif action == "open_cursor":
+                log.info("[TOOL] open_application('Cursor')")
+                open_cursor_window()
+                log.info("[RESULT] success")
+                threading.Thread(target=say_jarvis_phrase, args=("Cursor editor opened.",), daemon=True).start()
+            return
+
+        # 3. Hermes Agent Complex & Natural Language Task
+        elif target == RouteTarget.HERMES_AGENT:
+            if self.vosk_recognizer:
+                self.vosk_recognizer.Reset()
+
+            session_id = self.current_chat_session_id or "default_session"
+            log.info("🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: %s", session_id)
+            threading.Thread(
+                target=self._run_hermes_agent_thread,
+                args=(session_id, text, ctx),
+                daemon=True,
+            ).start()
+
+    def _run_hermes_agent_thread(
+        self,
+        session_id: str,
+        instruction: str,
+        interpretation_context: InterpretationContext | None = None,
+    ) -> None:
+        """Execute Hermes Agent planning and computer use in a background worker thread."""
+        with self._agent_lock:
+            if getattr(self, "_agent_busy", False):
+                log.warning("[HERMES] Another agent task is already active. Skipping duplicate instruction.")
+                return
+            self._agent_busy = True
+
+        bridge.set_state("agent_thinking")
+        log.info("[HERMES] Step 1: Agent thinking & reasoning about instruction '%s'...", instruction)
+
+        def _on_agent_event(evt: AgentEvent):
+            bridge.emit_agent_event(evt.event_type.value, evt.payload)
+            if evt.event_type == EventType.AGENT_THINKING:
+                log.info("[HERMES EVENT] 💭 Thinking: %s", evt.payload.get("status", ""))
+                bridge.set_state("agent_thinking")
+            elif evt.event_type in (EventType.AGENT_TOOL_STARTED, EventType.AGENT_TOOL_PROGRESS):
+                log.info("[HERMES EVENT] ⚙️ Executing tool: '%s' (params: %s)", evt.payload.get("tool"), evt.payload.get("params"))
+                bridge.set_state("agent_acting")
+            elif evt.event_type == EventType.AGENT_TOOL_FINISHED:
+                log.info("[HERMES EVENT] ✅ Tool finished: '%s' (result: %s)", evt.payload.get("tool"), evt.payload.get("result"))
+            elif evt.event_type == EventType.AGENT_VERIFYING:
+                log.info("[HERMES EVENT] 🔍 Verifying results: %s", evt.payload.get("status", ""))
+                bridge.set_state("agent_verifying")
+            elif evt.event_type == EventType.AGENT_COMPLETED:
+                log.info("[HERMES EVENT] 🎯 Completed! Response: '%s'", evt.payload.get("response"))
+
+        try:
+            log.info("[CHAT -> HERMES] Dispatching instruction: '%s' (Intent: %s)",
+                     instruction, interpretation_context.intent if interpretation_context else "None")
+            response = asyncio.run(
+                self.hermes_client.send_message(
+                    session_id=session_id,
+                    message=instruction,
+                    event_callback=_on_agent_event,
+                    interpretation_context=interpretation_context,
+                )
+            )
+
+            log.info("[HERMES -> CHAT] Final response synthesized: '%s' (success=%s)", response.text, response.success)
+            if response.text and response.text.strip():
+                say_jarvis_phrase(response.text.strip())
+            else:
+                log.info("[HERMES] Response is silent (no speech synthesis needed).")
+
+        except Exception as e:
+            log.error("[HERMES ERROR] Failed executing instruction '%s': %s", instruction, e, exc_info=True)
+            say_jarvis_phrase("I encountered an issue while carrying out that task, sir.")
+        finally:
+            with self._agent_lock:
+                self._agent_busy = False
+            if bridge.is_conversation_active():
+                bridge.set_state("listening")
+                log.info("[CHAT] Returned to listening state. Ready for next voice command.")
+            else:
+                self.audio_mgr.acquire(AudioOwner.TRIGGER)
+                log.info("[CHAT] Session closed. Audio ownership returned to TRIGGER mode.")
+
 
 def main() -> int:
     global UI_PROCESS
@@ -2098,15 +2237,25 @@ def main() -> int:
         except Exception as e:
             log.warning("Could not launch desktop UI overlay: %s", e)
 
-    coordinator = JarvisCoordinator(blocksize)
+    # Initialize Central AudioManager (Single Microphone Pipeline)
+    audio_mgr = AudioManager.get_instance(sample_rate=SAMPLE_RATE, block_ms=BLOCK_MS)
+    coordinator = JarvisCoordinator(audio_mgr, blocksize)
+
+    # Register listeners for TRIGGER and CHAT modes
+    audio_mgr.register_listener(AudioOwner.TRIGGER, coordinator.process_trigger_frame)
+    audio_mgr.register_listener(AudioOwner.CHAT, coordinator.process_chat_frame)
+
+    # Default to TRIGGER mode ownership on startup
+    audio_mgr.acquire(AudioOwner.TRIGGER)
 
     log.info("===============================================================")
-    log.info(" JARVIS RUNTIME COORDINATOR — INTENT ROUTER & VAD ENGINE")
+    log.info(" JARVIS RUNTIME COORDINATOR — HERMES AGENT & SINGLE AUDIO OWNER")
     log.info("===============================================================")
-    log.info(" Mode: UNIFIED RUNTIME (Command Mode & Conversation Mode)")
-    log.info(" Activation 1: 'Hey Jarvis, I need your help' -> Conversation UI")
-    log.info(" Activation 2: 'Hey Jarvis, open Spotify' / Claps -> Direct Command")
-    log.info(" Deactivation: 'Jarvis, go to sleep' -> Close conversation UI")
+    log.info(" Microphone Invariant: Central AudioManager (Single Stream)")
+    log.info(" Mode 1: TRIGGER MODE (Claps & Deterministic Shortcuts)")
+    log.info(" Mode 2: CHAT MODE (VAD + STT + Hermes Agent + Computer Use)")
+    log.info(" Activation: 'Hey Jarvis, I need your help' -> Chat Mode & Hermes")
+    log.info(" Deactivation: 'Jarvis, go to sleep' -> Return to Trigger Mode")
     log.info(" Audio capture: Rate=%d Hz, Block=%d ms", SAMPLE_RATE, BLOCK_MS)
     log.info("===============================================================")
 
@@ -2127,18 +2276,23 @@ def main() -> int:
                     log.warning("Input overflow; try a larger BLOCK_MS")
 
                 now = time.monotonic()
-                coordinator.process_frame(data, now)
+                audio_mgr.process_incoming_frame(data, now)
 
     except KeyboardInterrupt:
         log.info("Stopped by user.")
+        audio_mgr.release()
         return 0
     except sd.PortAudioError as e:
         log.error("Audio error: %s", e)
+        audio_mgr.release()
         return 1
+    finally:
+        audio_mgr.release()
 
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
+
 

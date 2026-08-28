@@ -1,0 +1,16 @@
+{
+  "jarvis go to sleep": "go to sleep",
+  "mo trinh duyet": "open chrome",
+  "all web browser": "open chrome",
+  "albany browser": "open chrome",
+  "minimise window": "minimize_window",
+  "test spoken phrase": "test canonical command",
+  "open viets code": "open vs code",
+  "open viết code": "open vs code",
+  "mở vs code": "open vs code",
+  "open viet code": "open vs code",
+  "shout": "search",
+  "shut": "search",
+  "chavez go to sleep": "go to sleep",
+  "with window": "switch_window"
+}

@@ -279,13 +279,16 @@
       let interval = 0.65;
       if (state === 'listening') interval = 0.35 / (1.0 + amplitude * 1.5);
       else if (state === 'processing') interval = 0.20;
+      else if (state === 'agent_thinking') interval = 0.28;
+      else if (state === 'agent_acting') interval = 0.16;
+      else if (state === 'agent_verifying') interval = 0.30;
       else if (state === 'speaking') interval = 0.25 / (1.0 + amplitude * 2.0);
       else if (state === 'wake') interval = 0.15;
 
       if (this.spawnTimer > this.nextSpawnInterval) {
         this.spawnTimer = 0;
         this.nextSpawnInterval = interval * (0.6 + Math.random() * 0.8);
-        this.spawn(state === 'speaking' ? 1.4 : 1.0);
+        this.spawn(state === 'speaking' ? 1.4 : (state === 'agent_acting' ? 1.3 : 1.0));
       }
 
       for (const w of this.waves) {
@@ -345,6 +348,15 @@
         } else if (state === 'processing') {
           const time = now * 0.008;
           this.targetAmplitude = 0.28 + 0.14 * Math.sin(time * 6.5) * Math.cos(time * 3.2);
+        } else if (state === 'agent_thinking') {
+          const time = now * 0.006;
+          this.targetAmplitude = 0.20 + 0.08 * Math.sin(time * 4.2);
+        } else if (state === 'agent_acting') {
+          const time = now * 0.010;
+          this.targetAmplitude = 0.35 + 0.18 * Math.sin(time * 8.0) * Math.cos(time * 4.0);
+        } else if (state === 'agent_verifying') {
+          const time = now * 0.005;
+          this.targetAmplitude = 0.16 + 0.06 * Math.sin(time * 3.5);
         } else if (state === 'speaking') {
           this.speechTimer += dt;
           if (this.speechTimer > 0.11) {
@@ -436,7 +448,17 @@
   class JarvisOrbApp {
     constructor() {
       this.state = 'hidden';
-      this.stateEnum = { hidden: 0, listening: 1, processing: 2, speaking: 3, wake: 4, closing: 5 };
+      this.stateEnum = {
+        hidden: 0,
+        listening: 1,
+        processing: 2,
+        speaking: 3,
+        wake: 4,
+        closing: 5,
+        agent_thinking: 6,
+        agent_acting: 7,
+        agent_verifying: 8
+      };
       this.displayScale = 0.0;
       this.targetScale = 0.0;
       this.wakePhase = 0;
@@ -773,6 +795,12 @@
               audioDisplace = sin(uTime * 10.0 + aPhase) * 0.22;
             } else if (uState == 5.0) {
               audioDisplace = -0.15 * (1.0 - aLayer * 0.3);
+            } else if (uState == 6.0) {
+              audioDisplace = sin(length(pos) * 6.0 - uTime * 4.5) * 0.08 + snoise(norm * 2.5 + vec3(uTime * 0.8, 0.0, 0.0)) * 0.06;
+            } else if (uState == 7.0) {
+              audioDisplace = sin(pos.y * 7.0 + uTime * 8.0) * 0.12 + snoise(norm * 4.0 + vec3(0.0, uTime * 3.0, 0.0)) * 0.10;
+            } else if (uState == 8.0) {
+              audioDisplace = cos(length(pos) * 8.0 + uTime * 5.0) * 0.07;
             }
 
             // Surface Waves
@@ -833,6 +861,12 @@
 
             if (uState == 4.0) {
               baseCol = mix(baseCol, vec3(0.525, 0.871, 0.949), 0.5);
+            } else if (uState == 6.0) {
+              baseCol = mix(baseCol, vec3(0.35, 0.65, 0.95), 0.45);
+            } else if (uState == 7.0) {
+              baseCol = mix(baseCol, vec3(0.25, 0.90, 0.95), 0.60);
+            } else if (uState == 8.0) {
+              baseCol = mix(baseCol, vec3(0.50, 0.85, 0.95), 0.50);
             }
 
             vColor = baseCol;
@@ -1503,6 +1537,15 @@
         } else if (e.key === '6') {
           this.triggerClosingSequence();
           this.sendWs({ type: 'dev_set_state', state: 'closing' });
+        } else if (e.key === 't' || e.key === 'T') {
+          this.setState('agent_thinking');
+          this.sendWs({ type: 'dev_set_state', state: 'agent_thinking' });
+        } else if (e.key === 'a' || e.key === 'A') {
+          this.setState('agent_acting');
+          this.sendWs({ type: 'dev_set_state', state: 'agent_acting' });
+        } else if (e.key === 'v' || e.key === 'V') {
+          this.setState('agent_verifying');
+          this.sendWs({ type: 'dev_set_state', state: 'agent_verifying' });
         } else if (e.key === ' ' || e.code === 'Space') {
           e.preventDefault();
           this.waveManager.spawn(1.8, 1.5);
@@ -1637,7 +1680,9 @@
         this.orbGroup.rotation.y += this.rotationVelocity.y;
         this.orbGroup.rotation.x += this.rotationVelocity.x;
 
-        const baseOrbitSpeed = (this.state === 'processing') ? 0.0075 : (this.state === 'speaking' ? 0.0040 : 0.0022);
+        const baseOrbitSpeed = (this.state === 'processing' || this.state === 'agent_acting')
+          ? 0.0075
+          : (this.state === 'agent_thinking' ? 0.0055 : (this.state === 'agent_verifying' ? 0.0045 : (this.state === 'speaking' ? 0.0040 : 0.0022)));
         this.rotationVelocity.y += (baseOrbitSpeed - this.rotationVelocity.y) * 0.04;
         this.rotationVelocity.x += (0.0 - this.rotationVelocity.x) * 0.04;
       }

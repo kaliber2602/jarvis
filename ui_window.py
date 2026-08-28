@@ -111,25 +111,24 @@ class JarvisWindowManager:
 
     def show(self):
         with self._lock:
-            if not self.is_visible:
-                self.is_visible = True
-                log.info("[UI WINDOW] Showing Jarvis Orb overlay window...")
-                try:
-                    if self.window:
-                        self.window.show()
-                        self.window.restore()
-                    hwnd = self.get_hwnd()
-                    if hwnd and user32 is not None:
-                        SW_SHOW = 5
-                        HWND_TOPMOST = -1
-                        SWP_NOSIZE = 0x0001
-                        SWP_NOMOVE = 0x0002
-                        SWP_SHOWWINDOW = 0x0040
-                        user32.ShowWindow(hwnd, SW_SHOW)
-                        user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW)
-                        user32.SetForegroundWindow(hwnd)
-                except Exception as e:
-                    log.warning("Could not show window: %s", e)
+            self.is_visible = True
+            log.info("[UI WINDOW] Showing Jarvis Orb overlay window...")
+            try:
+                if self.window:
+                    self.window.show()
+                    self.window.restore()
+                hwnd = self.get_hwnd()
+                if hwnd and user32 is not None:
+                    SW_SHOW = 5
+                    HWND_TOPMOST = -1
+                    SWP_NOSIZE = 0x0001
+                    SWP_NOMOVE = 0x0002
+                    SWP_SHOWWINDOW = 0x0040
+                    user32.ShowWindow(hwnd, SW_SHOW)
+                    user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW)
+                    user32.SetForegroundWindow(hwnd)
+            except Exception as e:
+                log.warning("Could not show window: %s", e)
 
     def hide(self):
         with self._lock:
@@ -188,6 +187,8 @@ def start_ws_listener(mgr: JarvisWindowManager):
                             elif mtype in ("state_changed", "state_sync"):
                                 if state in ("hidden", "closing"):
                                     mgr.hide()
+                                elif state in ("listening", "processing", "speaking", "agent_thinking", "agent_acting", "agent_verifying", "wake"):
+                                    mgr.show()
                         except Exception as ex:
                             log.debug("Error processing message: %s", ex)
             except Exception:

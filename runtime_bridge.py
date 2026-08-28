@@ -141,7 +141,11 @@ class JarvisBridge:
             await websocket.send(json.dumps(reply))
         elif msg_type == "dev_set_state":
             target_state = data.get("state")
-            if target_state in ("hidden", "wake", "listening", "processing", "speaking", "closing"):
+            valid_dev_states = (
+                "hidden", "wake", "listening", "processing", "speaking",
+                "agent_thinking", "agent_acting", "agent_verifying", "closing"
+            )
+            if target_state in valid_dev_states:
                 if target_state == "wake":
                     self.emit_wake()
                 elif target_state == "closing":
@@ -197,8 +201,11 @@ class JarvisBridge:
         return active_id
 
     def set_state(self, state: str) -> None:
-        """Explicitly change the runtime state (hidden, wake, listening, processing, speaking, closing)."""
-        valid_states = ("hidden", "wake", "listening", "processing", "speaking", "closing")
+        """Explicitly change the runtime state (hidden, wake, listening, processing, speaking, agent_thinking, agent_acting, agent_verifying, closing)."""
+        valid_states = (
+            "hidden", "wake", "listening", "processing", "speaking",
+            "agent_thinking", "agent_acting", "agent_verifying", "closing"
+        )
         if state not in valid_states:
             log.warning("[JARVIS] Invalid state requested: %s", state)
             return
@@ -220,6 +227,20 @@ class JarvisBridge:
             "type": "state_changed",
             "state": state,
             "timestamp": time.time()
+        })
+
+    def emit_agent_event(self, event_type: str, payload: dict | None = None) -> None:
+        """Broadcast intermediate agent event (thinking, tool execution, verification) to UI clients."""
+        with self._lock:
+            if self.current_session:
+                self.current_session.touch()
+
+        self._broadcast_json({
+            "type": "agent_event",
+            "event_type": event_type,
+            "payload": payload or {},
+            "session_id": self.current_session.session_id if self.current_session else None,
+            "timestamp": time.time(),
         })
 
     def emit_audio_level(self, level: float) -> None:
