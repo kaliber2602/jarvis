@@ -1,0 +1,197 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #000000 !important;
+  background: #000000 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #2898E4;
+}
+
+/* Native Frameless Border Drag Resize Handles */
+.resize-handle {
+  position: fixed;
+  z-index: 50;
+  background: transparent;
+}
+
+.resize-handle.top {
+  top: 0;
+  left: 10px;
+  right: 10px;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.resize-handle.bottom {
+  bottom: 0;
+  left: 10px;
+  right: 10px;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.resize-handle.left {
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.resize-handle.right {
+  top: 10px;
+  bottom: 10px;
+  right: 0;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.resize-handle.top-left {
+  top: 0;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  cursor: nwse-resize;
+}
+
+.resize-handle.top-right {
+  top: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  cursor: nesw-resize;
+}
+
+.resize-handle.bottom-left {
+  bottom: 0;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  cursor: nesw-resize;
+}
+
+.resize-handle.bottom-right {
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  cursor: nwse-resize;
+}
+
+#canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  cursor: grab;
+  touch-action: none;
+  z-index: 1;
+}
+
+#canvas-container:active {
+  cursor: grabbing;
+}
+
+/* Discreet development helper (strictly hidden in production, press 'H' in dev) */
+.dev-hud {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(6, 62, 149, 0.55);
+  border: 1px solid rgba(40, 152, 228, 0.35);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 9999px;
+  padding: 5px 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: auto;
+}
+
+.dev-hud.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(20px);
+  display: none !important;
+}
+
+.dev-state-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #49D9F1;
+  padding: 3px 8px;
+  background: rgba(11, 99, 222, 0.3);
+  border-radius: 9999px;
+  border: 1px solid rgba(73, 217, 241, 0.3);
+}
+
+.dev-buttons {
+  display: flex;
+  gap: 5px;
+}
+
+.dev-btn {
+  background: rgba(6, 62, 149, 0.5);
+  border: 1px solid rgba(40, 152, 228, 0.2);
+  color: #2898E4;
+  font-size: 10px;
+  font-family: inherit;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dev-btn:hover {
+  background: rgba(40, 152, 228, 0.3);
+  border-color: #49D9F1;
+  color: #49D9F1;
+}
+
+.dev-btn.active {
+  background: rgba(11, 99, 222, 0.5);
+  border-color: #49D9F1;
+  color: #ffffff;
+}
+
+.dev-hint {
+  font-size: 9px;
+  color: rgba(73, 217, 241, 0.6);
+  margin-left: 4px;
+}
+
+/* Subtle ripple flash effect on wake */
+.flash-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(73, 217, 241, 0.16) 0%, rgba(11, 99, 222, 0.05) 45%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+  z-index: 2;
+}
+
+.flash-overlay.active {
+  opacity: 1;
+  transition: opacity 0.06s ease-in;
+}

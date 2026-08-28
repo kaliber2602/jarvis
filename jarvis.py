@@ -1,0 +1,2144 @@
+#!/usr/bin/env python3
+"""
+Desktop clap listener: reads the default microphone and logs when two loud transients
+(a double clap) are detected within a short time window.
+
+Run:
+  python -m pip install -r requirements.txt
+  python clap_listen.py
+
+Tuning (constants below):
+  SAMPLE_RATE   — usually 44100 or 48000; match your device if needed.
+  BLOCK_MS      — analysis window size; smaller = snappier, noisier.
+  SPIKE_RATIO   — how many times louder than the noise floor counts as a clap;
+                    raise if false triggers; lower if claps are missed.
+  COOLDOWN_S    — minimum seconds between double-clap logs (debounce).
+  MIN_DOUBLE_GAP_S / MAX_DOUBLE_GAP_S — allowed time between the two claps.
+  RETRIGGER_RATIO — audio must fall below threshold * this before another hit counts.
+  NOISE_FLOOR_ALPHA — closer to 1 = slower baseline adaptation to room noise.
+  MIN_RMS       — ignore spikes below this absolute level (float audio ~ [-1, 1]).
+  SONG_URI      — Spotify or YouTube URL/URI to open on each double clap (empty = log only).
+  OPEN_VSCODE_ON_DOUBLE_CLAP — open or focus VS Code on double clap.
+  OPEN_ANTIGRAVITY_ON_DOUBLE_CLAP — open Antigravity on double clap.
+  OPEN_CHROME_ON_DOUBLE_CLAP — open Google Chrome on double clap.
+  OPEN_GITHUB_IN_CHROME — open GitHub in Chrome on double clap.
+  JARVIS_WELCOME_* — TTS after the song (ElevenLabs). Configure via environment or a `.env`
+    file next to this script (ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID, etc.).
+    With JARVIS_WELCOME_CACHE_ENABLED, audio is saved under `.cache/jarvis_welcome/` (WAV) and
+    replayed when phrase + voice + model + format match—no repeat API call. Delete that folder
+    or set JARVIS_WELCOME_CACHE_ENABLED=False to force a fresh fetch.
+  The welcome sequence runs only once per process. The assistant speaks in the background so
+    applications open without waiting for playback to finish (restart the script to run again).
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import wave
+import webbrowser
+from pathlib import Path
+
+import atexit
+from collections import deque
+from dotenv import load_dotenv
+import numpy as np
+import sounddevice as sd
+
+from runtime_bridge import JarvisBridge
+bridge = JarvisBridge.get_instance()
+
+UI_PROCESS: subprocess.Popen | None = None
+
+def _cleanup_ui_process():
+    global UI_PROCESS
+    if UI_PROCESS is not None:
+        try:
+            log.info("Terminating Jarvis UI child process...")
+            UI_PROCESS.terminate()
+            UI_PROCESS.wait(timeout=1.0)
+        except Exception:
+            try:
+                UI_PROCESS.kill()
+            except Exception:
+                pass
+        UI_PROCESS = None
+
+atexit.register(_cleanup_ui_process)
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+try:
+    import openwakeword
+    from openwakeword.model import Model as OWWModel
+    OWW_AVAILABLE = True
+except ImportError:
+    OWW_AVAILABLE = False
+
+try:
+    import vosk
+    vosk.SetLogLevel(-1)
+    vosk_model = vosk.Model(lang="en-us")
+    VOSK_AVAILABLE = True
+except Exception as e:
+    vosk_model = None
+    VOSK_AVAILABLE = False
+
+load_dotenv(Path(__file__).resolve().parent / ".env")
+
+
+class AudioVAD:
+    """
+    Real-time Voice Activity Detector (VAD) with rolling pre-buffer,
+    adaptive energy thresholding, and silence tolerance.
+    """
+    def __init__(
+        self,
+        sample_rate: int = 16000,
+        pre_roll_chunks: int = 4,      # ~320ms rolling pre-buffer at 80ms/chunk
+        speech_start_chunks: int = 2,  # ~160ms speech confirmation
+        end_silence_ms: int = 650,     # 650ms continuous silence for end-of-utterance
+        max_utterance_s: float = 10.0,
+    ):
+        self.sample_rate = sample_rate
+        self.pre_roll = deque(maxlen=pre_roll_chunks)
+        self.speech_start_chunks = speech_start_chunks
+        self.end_silence_chunks = max(3, int(end_silence_ms / 80))
+        self.max_utterance_chunks = int(max_utterance_s * 1000 / 80)
+
+        self.state = "SILENCE"  # SILENCE, SPEECH_START, SPEAKING, SPEECH_END
+        self.consecutive_speech = 0
+        self.consecutive_silence = 0
+        self.utterance_chunks: list[bytes] = []
+
+    def feed(self, chunk: np.ndarray, is_speech: bool) -> tuple[str, bytes | None]:
+        pcm_bytes = (np.clip(chunk, -1.0, 1.0) * 32767).astype(np.int16).tobytes()
+
+        if self.state == "SILENCE":
+            self.pre_roll.append(pcm_bytes)
+            if is_speech:
+                self.consecutive_speech += 1
+                if self.consecutive_speech >= self.speech_start_chunks:
+                    self.state = "SPEAKING"
+                    self.consecutive_silence = 0
+                    self.utterance_chunks = list(self.pre_roll)
+                    return "SPEECH_START", None
+            else:
+                self.consecutive_speech = 0
+            return "SILENCE", None
+
+        elif self.state == "SPEAKING":
+            self.utterance_chunks.append(pcm_bytes)
+            if is_speech:
+                self.consecutive_silence = 0
+            else:
+                self.consecutive_silence += 1
+
+            # End of utterance reached?
+            if (
+                self.consecutive_silence >= self.end_silence_chunks
+                or len(self.utterance_chunks) >= self.max_utterance_chunks
+            ):
+                self.state = "SILENCE"
+                self.consecutive_speech = 0
+                self.consecutive_silence = 0
+                full_pcm = b"".join(self.utterance_chunks)
+                self.utterance_chunks = []
+                return "SPEECH_END", full_pcm
+
+            return "SPEAKING", None
+
+        return "SILENCE", None
+
+    def reset(self) -> None:
+        self.state = "SILENCE"
+        self.consecutive_speech = 0
+        self.consecutive_silence = 0
+        self.utterance_chunks = []
+
+# --- tuning knobs -----------------------------------------------------------
+SAMPLE_RATE = int(os.environ.get("JARVIS_SAMPLE_RATE", "16000"))
+BLOCK_MS = 80  # 80ms (1280 samples at 16kHz) optimal for OpenWakeWord & clap analysis
+CHANNELS = 1
+
+# Wake-Word Dual-Factor Combo Trigger (OpenWakeWord AI)
+REQUIRE_WAKE_WORD = os.environ.get("REQUIRE_WAKE_WORD", "True").strip().lower() in ("true", "1", "yes")
+WAKE_WORD_THRESHOLD = float(os.environ.get("WAKE_WORD_THRESHOLD", "0.55"))  # Confidence score 0.0 - 1.0
+WAKE_WINDOW_S = float(os.environ.get("WAKE_WINDOW_S", "8.0").strip())
+WAKE_FEEDBACK_ENABLED = os.environ.get("WAKE_FEEDBACK_ENABLED", "True").strip().lower() in ("true", "1", "yes")
+WAKE_FEEDBACK_PHRASE = (os.environ.get("WAKE_FEEDBACK_PHRASE") or "Yes sir?").strip()
+
+# Global speaker echo / loopback guard: mic is muted while Jarvis is talking
+JARVIS_SPEAKING_UNTIL = 0.0
+
+
+SPIKE_RATIO = float(os.environ.get("JARVIS_SPIKE_RATIO", "8.5"))
+COOLDOWN_S = 0.45
+MIN_CLAP_GAP_S = 0.09
+MAX_CLAP_GAP_S = 0.42
+RETRIGGER_RATIO = 0.55
+NOISE_FLOOR_ALPHA = 0.992
+MIN_RMS = 0.025
+QUIET_GATE_MULT = 2.2  # update noise floor only when below floor * this
+# Anti-typing filter: if more than MAX_BURST_HITS occur within BURST_WINDOW_S, it's typing, not clapping
+BURST_WINDOW_S = 1.2
+MAX_BURST_HITS = 3
+
+# Startup mic probe & calibration:
+STARTUP_WARMUP_S = 2.5  # Seconds to calibrate ambient noise on startup before enabling claps
+INPUT_PROBE_S = 0.5
+INPUT_SILENT_RMS = 0.001
+
+# Spotify: "spotify:track:TRACK_ID" or https://open.spotify.com/track/...
+# YouTube: https://www.youtube.com/watch?v=...
+SONG_URI = os.environ.get(
+    "SONG_URI",
+    "https://open.spotify.com/track/39shmbIHICJ2Wxnk1fPSdz?si=2900c75c2e2d4b82"
+)
+
+# Cursor: focus existing instance (no -n). Set OPEN_NEW_CURSOR_ON_DOUBLE_CLAP for a new window as well.
+FOCUS_EXISTING_CURSOR_ON_DOUBLE_CLAP = False
+OPEN_NEW_CURSOR_ON_DOUBLE_CLAP = False
+CURSOR_OPEN_FULLSCREEN = False
+
+# VS Code & Antigravity
+OPEN_VSCODE_ON_DOUBLE_CLAP = True
+FOCUS_EXISTING_VSCODE_ON_DOUBLE_CLAP = True
+OPEN_ANTIGRAVITY_ON_DOUBLE_CLAP = True
+
+# Google Chrome & GitHub
+OPEN_CHROME_ON_DOUBLE_CLAP = True
+OPEN_GITHUB_IN_CHROME = True
+GITHUB_URL = "https://github.com"
+
+# Single Monitor Window Tiling / Splitting Layout
+# Options: "4_split" (Lưới 4 góc 2x2 - Mặc định), "2_split", "3_split", "3_columns", "auto", "none"
+LAYOUT_MODE = os.environ.get("JARVIS_LAYOUT_MODE", "4_split")
+LAYOUT_DELAY_S = 1.5  # Seconds to wait for windows to appear before tiling
+
+# Triple Clap — Close all apps and shutdown PC
+TRIPLE_CLAP_ENABLED = True
+SHUTDOWN_COUNTDOWN_S = 6  # Seconds countdown dialog with Cancel button
+SHUTDOWN_DELAY_S = 0  # Shutdown immediately when countdown expires
+CLOSE_PROCESS_NAMES = [
+    "Code.exe",
+    "Antigravity.exe",
+    "chrome.exe",
+    "Spotify.exe",
+    "Cursor.exe",
+]
+JARVIS_GOODBYE_ENABLED = True
+JARVIS_GOODBYE_PHRASE = os.environ.get("JARVIS_GOODBYE_PHRASE", "Goodbye sir. System is shutting down.")
+
+# Google Chrome (fallback: default browser). URLs overridable in .env.
+OPEN_CHROME_FULLSCREEN = False
+CHROME_SEPARATE_SITE_PROFILES = False
+
+JARVIS_WELCOME_ENABLED = True
+JARVIS_WELCOME_PHRASE = os.environ.get(
+    "JARVIS_WELCOME_PHRASE",
+    "Welcome home sir. "
+)
+# Seconds after launching SONG_URI before speaking (gives Spotify/browser time to start).
+JARVIS_AFTER_SONG_DELAY_S = 1.0
+# Save ElevenLabs PCM as WAV under .cache/jarvis_welcome/; replay skips the API when the key matches.
+JARVIS_WELCOME_CACHE_ENABLED = True
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+log = logging.getLogger("clap_listen")
+
+
+
+def block_samples() -> int:
+    n = int(SAMPLE_RATE * BLOCK_MS / 1000)
+    return max(n, 1)
+
+
+def rms_mono(block: np.ndarray) -> float:
+    if block.ndim > 1:
+        block = np.mean(block.astype(np.float64), axis=1)
+    else:
+        block = block.astype(np.float64)
+    if block.size == 0:
+        return 0.0
+    return float(np.sqrt(np.mean(block**2)))
+
+
+def _input_devices() -> list[tuple[int, dict]]:
+    return [
+        (i, dev)
+        for i, dev in enumerate(sd.query_devices())
+        if dev["max_input_channels"] >= 1
+    ]
+
+
+def _resolve_input_device_index(spec: str) -> int:
+    spec = spec.strip()
+    if spec.isdigit():
+        idx = int(spec)
+        sd.query_devices(idx)
+        return idx
+    needle = spec.lower()
+    for idx, dev in _input_devices():
+        if needle in dev["name"].lower():
+            return idx
+    raise ValueError(f"No input device matches {spec!r}")
+
+
+def _probe_input_max_rms(device: int, blocksize: int) -> float | None:
+    try:
+        with sd.InputStream(
+            device=device,
+            samplerate=SAMPLE_RATE,
+            channels=CHANNELS,
+            dtype="float32",
+            blocksize=blocksize,
+        ) as stream:
+            peak = 0.0
+            deadline = time.monotonic() + INPUT_PROBE_S
+            while time.monotonic() < deadline:
+                data, _ = stream.read(blocksize)
+                peak = max(peak, rms_mono(data))
+            return peak
+    except sd.PortAudioError:
+        return None
+
+
+def _choose_input_device(blocksize: int) -> int:
+    log.info("Audio devices:\n%s", sd.query_devices())
+
+    override = (os.environ.get("JARVIS_INPUT_DEVICE") or "").strip()
+    if override:
+        try:
+            idx = _resolve_input_device_index(override)
+        except ValueError as e:
+            log.error("%s", e)
+            log.error("Set JARVIS_INPUT_DEVICE to a device index or name substring.")
+            raise SystemExit(1) from e
+        name = sd.query_devices(idx)["name"]
+        peak = _probe_input_max_rms(idx, blocksize)
+        log.info("Using JARVIS_INPUT_DEVICE [%d]: %s", idx, name)
+        if peak is None:
+            log.warning("Could not open configured mic; trying anyway.")
+        elif peak < INPUT_SILENT_RMS:
+            log.warning(
+                "Configured mic looks silent (probe rms=%.5f). "
+                "Check Windows input level or try another JARVIS_INPUT_DEVICE.",
+                peak,
+            )
+        else:
+            log.info("Mic probe OK (rms=%.5f).", peak)
+        return idx
+
+    default = sd.default.device[0]
+    if default is not None and default >= 0:
+        default_name = sd.query_devices(default)["name"]
+        peak = _probe_input_max_rms(default, blocksize)
+        if peak is not None and peak >= INPUT_SILENT_RMS:
+            log.info(
+                "Using default microphone [%d]: %s (probe rms=%.5f)",
+                default,
+                default_name,
+                peak,
+            )
+            return default
+        log.warning(
+            "Default mic [%d] %s is silent or unavailable (probe rms=%s); "
+            "scanning other inputs...",
+            default,
+            default_name,
+            f"{peak:.5f}" if peak is not None else "unopenable",
+        )
+
+    best_idx: int | None = None
+    best_peak = -1.0
+    for idx, dev in _input_devices():
+        if default is not None and idx == default:
+            continue
+        peak = _probe_input_max_rms(idx, blocksize)
+        if peak is not None and peak > best_peak:
+            best_peak = peak
+            best_idx = idx
+
+    if best_idx is not None and best_peak >= INPUT_SILENT_RMS:
+        log.info(
+            "Auto-selected microphone [%d]: %s (probe rms=%.5f)",
+            best_idx,
+            sd.query_devices(best_idx)["name"],
+            best_peak,
+        )
+        return best_idx
+
+    if default is not None and default >= 0:
+        log.warning("No active mic found; falling back to default [%d].", default)
+        return default
+    inputs = _input_devices()
+    if not inputs:
+        log.error("No input devices found.")
+        raise SystemExit(1)
+    idx, dev = inputs[0]
+    log.warning("No active mic found; falling back to [%d] %s.", idx, dev["name"])
+    return idx
+
+
+def _elevenlabs_pcm_sample_rate(output_format: str) -> int:
+    override = (os.environ.get("ELEVENLABS_PCM_SAMPLE_RATE") or "").strip()
+    if override.isdigit():
+        return int(override)
+    if output_format.startswith("pcm_"):
+        try:
+            return int(output_format.split("_", maxsplit=1)[1])
+        except (ValueError, IndexError):
+            pass
+    return 24000
+
+
+def elevenlabs_env_config() -> tuple[str, str, str, int]:
+    """voice_id, model_id, output_format, pcm_sample_rate."""
+    voice = (os.environ.get("ELEVENLABS_VOICE_ID") or "").strip()
+    model = (os.environ.get("ELEVENLABS_MODEL_ID") or "eleven_multilingual_v2").strip()
+    fmt = (os.environ.get("ELEVENLABS_OUTPUT_FORMAT") or "pcm_24000").strip()
+    rate = _elevenlabs_pcm_sample_rate(fmt)
+    return voice, model, fmt, rate
+
+
+def _jarvis_welcome_cache_dir() -> Path:
+    base = Path(__file__).resolve().parent
+    override = (os.environ.get("JARVIS_WELCOME_CACHE_DIR") or "").strip()
+    if override:
+        return Path(override).expanduser().resolve()
+    return base / ".cache" / "jarvis_welcome"
+
+
+def _jarvis_welcome_cache_path(
+    text: str, voice_id: str, model_id: str, output_format: str
+) -> Path:
+    key = f"{text}|{voice_id}|{model_id}|{output_format}".encode()
+    digest = hashlib.sha256(key).hexdigest()[:24]
+    return _jarvis_welcome_cache_dir() / f"{digest}.wav"
+
+
+def _stream_pcm_playback_rms(pcm_f: np.ndarray, rate: int, chunk_ms: int = 40) -> None:
+    """Stream real-time audio amplitude to the UI bridge during speech playback."""
+    chunk_size = int(rate * chunk_ms / 1000)
+    total_samples = len(pcm_f)
+    idx = 0
+    start_t = time.monotonic()
+    while idx < total_samples and time.monotonic() < JARVIS_SPEAKING_UNTIL:
+        chunk = pcm_f[idx : idx + chunk_size]
+        if chunk.size > 0:
+            rms = float(np.sqrt(np.mean(chunk.astype(np.float64) ** 2)))
+            # Boost RMS slightly for visually vibrant speaking orb reaction
+            bridge.emit_tts_level(min(1.0, rms * 3.8))
+        idx += chunk_size
+        elapsed = time.monotonic() - start_t
+        expected = idx / float(rate)
+        if expected > elapsed:
+            time.sleep(expected - elapsed)
+
+
+def _play_pcm_wav_file(path: Path) -> bool:
+    global JARVIS_SPEAKING_UNTIL
+    try:
+        with wave.open(str(path), "rb") as wf:
+            ch = wf.getnchannels()
+            sw = wf.getsampwidth()
+            rate = wf.getframerate()
+            nframes = wf.getnframes()
+            if ch != 1 or sw != 2:
+                log.warning("Unsupported cached WAV (channels=%s, width=%s).", ch, sw)
+                return False
+            raw = wf.readframes(nframes)
+            duration = nframes / float(rate)
+    except (OSError, wave.Error) as e:
+        log.warning("Could not read cached welcome audio: %s", e)
+        return False
+    if not raw:
+        return False
+    pcm_i16 = np.frombuffer(raw, dtype=np.int16)
+    pcm_f = pcm_i16.astype(np.float32) / 32768.0
+    try:
+        JARVIS_SPEAKING_UNTIL = time.monotonic() + duration + 0.6
+        bridge.set_state("speaking")
+        threading.Thread(target=_stream_pcm_playback_rms, args=(pcm_f, rate), daemon=True).start()
+        sd.play(pcm_f, rate)
+        sd.wait()
+        JARVIS_SPEAKING_UNTIL = time.monotonic() + 0.3
+        if bridge.is_conversation_active():
+            bridge.set_state("listening")
+    except Exception as e:
+        log.warning("Could not play cached welcome audio: %s", e)
+        if bridge.is_conversation_active():
+            bridge.set_state("listening")
+        return False
+    return True
+
+
+def _save_pcm_wav_file(path: Path, pcm_bytes: bytes, sample_rate: int) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    try:
+        with wave.open(str(tmp), "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(sample_rate)
+            wf.writeframes(pcm_bytes)
+        tmp.replace(path)
+    except OSError:
+        if tmp.is_file():
+            tmp.unlink(missing_ok=True)
+        raise
+
+
+def _play_fallback_voice(text: str) -> None:
+    """Fallback TTS using Windows PowerShell / SAPI SpeechSynthesizer."""
+    global JARVIS_SPEAKING_UNTIL
+    if sys.platform == "win32":
+        try:
+            safe_text = text.replace("'", "''").replace('"', '`"')
+            ps_cmd = f"Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; $s.Speak('{safe_text}')"
+            JARVIS_SPEAKING_UNTIL = time.monotonic() + 2.5
+            bridge.set_state("speaking")
+            subprocess.run(
+                ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+                timeout=5.0,
+            )
+            JARVIS_SPEAKING_UNTIL = time.monotonic() + 0.3
+            if bridge.is_conversation_active():
+                bridge.set_state("listening")
+        except Exception as e:
+            log.warning("Fallback TTS failed: %s", e)
+            if bridge.is_conversation_active():
+                bridge.set_state("listening")
+
+
+def say_jarvis_phrase(text: str) -> None:
+    global JARVIS_SPEAKING_UNTIL
+    if not text.strip():
+        return
+    text = text.strip()
+    vid, model_id, output_format, pcm_rate = elevenlabs_env_config()
+
+    cache_path = None
+    if vid:
+        cache_path = _jarvis_welcome_cache_path(text, vid, model_id, output_format)
+        if JARVIS_WELCOME_CACHE_ENABLED and cache_path.is_file():
+            log.info("Playing phrase from cache: %s", cache_path)
+            if _play_pcm_wav_file(cache_path):
+                return
+            log.warning("Cache miss after read failure; fetching from ElevenLabs.")
+
+    api_key = (os.environ.get("ELEVENLABS_API_KEY") or "").strip()
+    if vid and api_key:
+        try:
+            from elevenlabs.client import ElevenLabs
+            client = ElevenLabs(api_key=api_key)
+            chunks = client.text_to_speech.convert(
+                voice_id=vid,
+                text=text,
+                model_id=model_id,
+                output_format=output_format,
+            )
+            raw = b"".join(chunks)
+            if raw:
+                if JARVIS_WELCOME_CACHE_ENABLED and cache_path:
+                    try:
+                        _save_pcm_wav_file(cache_path, raw, pcm_rate)
+                        log.info("Saved phrase audio to cache: %s", cache_path)
+                    except OSError as e:
+                        log.warning("Could not save phrase cache: %s", e)
+                pcm_i16 = np.frombuffer(raw, dtype=np.int16)
+                pcm_f = pcm_i16.astype(np.float32) / 32768.0
+                duration = len(pcm_i16) / float(pcm_rate)
+                JARVIS_SPEAKING_UNTIL = time.monotonic() + duration + 0.6
+                bridge.set_state("speaking")
+                threading.Thread(target=_stream_pcm_playback_rms, args=(pcm_f, pcm_rate), daemon=True).start()
+                sd.play(pcm_f, pcm_rate)
+                sd.wait()
+                JARVIS_SPEAKING_UNTIL = time.monotonic() + 0.3
+                bridge.set_state("listening")
+                return
+        except Exception as e:
+            log.warning("ElevenLabs TTS failed (%s); falling back to system speech.", e)
+            bridge.set_state("listening")
+
+    # Fallback to Windows built-in voice
+    _play_fallback_voice(text)
+
+
+def _init_wakeword_model() -> OWWModel | None:
+    """Initialize OpenWakeWord neural model for accurate 'Hey Jarvis' keyword spotting."""
+    if not OWW_AVAILABLE:
+        log.warning("openwakeword is not available; wake-word recognition disabled.")
+        return None
+    try:
+        log.info("Initializing OpenWakeWord neural model ('hey_jarvis')...")
+        openwakeword.utils.download_models()
+        model = OWWModel(wakeword_models=["hey_jarvis"], inference_framework="onnx")
+        log.info("OpenWakeWord model ready (keyword: 'hey_jarvis', confidence threshold=%.2f).", WAKE_WORD_THRESHOLD)
+        return model
+    except Exception as e:
+        log.error("Failed to initialize OpenWakeWord model: %s", e)
+        return None
+
+
+
+
+def say_jarvis_welcome() -> None:
+    if not JARVIS_WELCOME_ENABLED or not JARVIS_WELCOME_PHRASE.strip():
+        return
+    say_jarvis_phrase(JARVIS_WELCOME_PHRASE)
+
+
+def say_jarvis_goodbye() -> None:
+    if not JARVIS_GOODBYE_ENABLED or not JARVIS_GOODBYE_PHRASE.strip():
+        return
+    say_jarvis_phrase(JARVIS_GOODBYE_PHRASE)
+
+
+def play_song(uri: str) -> None:
+    u = uri.strip()
+    if not u:
+        return
+    try:
+        if sys.platform == "win32":
+            os.startfile(u)
+        else:
+            webbrowser.open(u)
+    except OSError as e:
+        log.warning("Could not open SONG_URI: %s", e)
+
+
+def _chrome_executable() -> str | None:
+    if sys.platform == "win32":
+        for base in (
+            os.environ.get("ProgramFiles", r"C:\Program Files"),
+            os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"),
+            os.environ.get("LOCALAPPDATA", ""),
+        ):
+            if not base:
+                continue
+            p = os.path.join(base, "Google", "Chrome", "Application", "chrome.exe")
+            if os.path.isfile(p):
+                return p
+    return shutil.which("google-chrome") or shutil.which("chrome")
+
+
+def _win32_sorted_monitor_rects() -> list[tuple[int, int, int, int]]:
+    """Each monitor as (left, top, right, bottom), sorted left-to-right then top-to-bottom."""
+    if sys.platform != "win32":
+        return []
+    import ctypes
+    from ctypes import wintypes
+
+    class RECT(ctypes.Structure):
+        _fields_ = [
+            ("left", wintypes.LONG),
+            ("top", wintypes.LONG),
+            ("right", wintypes.LONG),
+            ("bottom", wintypes.LONG),
+        ]
+
+    collected: list[tuple[int, int, int, int]] = []
+
+    @ctypes.WINFUNCTYPE(
+        wintypes.BOOL,
+        wintypes.HMONITOR,
+        wintypes.HDC,
+        ctypes.POINTER(RECT),
+        wintypes.LPARAM,
+    )
+    def _cb(_hm, _hdc, lprc, _lp):
+        r = lprc.contents
+        collected.append((int(r.left), int(r.top), int(r.right), int(r.bottom)))
+        return True
+
+    ctypes.windll.user32.EnumDisplayMonitors(None, None, _cb, 0)
+    collected.sort(key=lambda t: (t[0], t[1]))
+    return collected
+
+
+def _chrome_monitor_top_left(one_based_index: int) -> tuple[int, int]:
+    """Top-left corner on virtual desktop for monitor N (1-based)."""
+    l, t, _, _ = _chrome_monitor_bounds(one_based_index)
+    return (l, t)
+
+
+def _chrome_monitor_bounds(one_based_index: int) -> tuple[int, int, int, int]:
+    """Monitor N as (left, top, right, bottom), 1-based index (sorted like other Chrome helpers)."""
+    rects = _win32_sorted_monitor_rects()
+    if not rects:
+        return (0, 0, 1920, 1080)
+    idx = one_based_index - 1
+    if idx < 0:
+        idx = 0
+    if idx >= len(rects):
+        log.warning(
+            "Monitor %d requested but only %d found; using last monitor.",
+            one_based_index,
+            len(rects),
+        )
+        idx = len(rects) - 1
+    return rects[idx]
+
+
+def _chrome_monitor_pixel_size(one_based_index: int) -> tuple[int, int]:
+    l, t, r, b = _chrome_monitor_bounds(one_based_index)
+    return (max(320, r - l), max(240, b - t))
+
+
+def _chrome_window_size() -> tuple[int, int]:
+    w = (os.environ.get("CHROME_WINDOW_WIDTH") or "1400").strip()
+    h = (os.environ.get("CHROME_WINDOW_HEIGHT") or "900").strip()
+    try:
+        return (max(400, int(w)), max(300, int(h)))
+    except ValueError:
+        return (1400, 900)
+
+
+def _chrome_site_user_data_dir(site_key: str) -> str:
+    p = Path(tempfile.gettempdir()) / "clap-trigger-chrome" / site_key
+    p.mkdir(parents=True, exist_ok=True)
+    return str(p)
+
+
+def _chrome_new_window_wait_timeout_s() -> float:
+    try:
+        return max(3.0, float((os.environ.get("CHROME_NEW_WINDOW_WAIT_S") or "25").strip()))
+    except ValueError:
+        return 25.0
+
+
+def _chrome_top_level_browser_hwnds_win32() -> set[int]:
+    """HWND ints for visible-or-minimized top-level Chrome browser windows."""
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+    GW_OWNER = 4
+    GWL_EXSTYLE = -20
+    WS_EX_TOOLWINDOW = 0x00000080
+    found: set[int] = set()
+
+    @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    def _enum(hwnd: wintypes.HWND, _lp: wintypes.LPARAM) -> bool:
+        if user32.GetWindow(hwnd, GW_OWNER):
+            return True
+        if user32.GetWindowLongW(hwnd, GWL_EXSTYLE) & WS_EX_TOOLWINDOW:
+            return True
+        if not user32.IsWindowVisible(hwnd) and not user32.IsIconic(hwnd):
+            return True
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value == 0:
+            return True
+        hproc = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid.value)
+        if not hproc:
+            return True
+        try:
+            buf = ctypes.create_unicode_buffer(4096)
+            sz = wintypes.DWORD(len(buf))
+            if not kernel32.QueryFullProcessImageNameW(hproc, 0, buf, ctypes.byref(sz)):
+                return True
+            exe_path = buf.value
+        finally:
+            kernel32.CloseHandle(hproc)
+        if os.path.basename(exe_path).lower() != "chrome.exe":
+            return True
+        r = wintypes.RECT()
+        if not user32.GetWindowRect(hwnd, ctypes.byref(r)):
+            return True
+        w, h = r.right - r.left, r.bottom - r.top
+        if w < 80 or h < 80:
+            return True
+        found.add(int(hwnd))
+        return True
+
+    user32.EnumWindows(_enum, 0)
+    return found
+
+
+def _wait_new_chrome_hwnd_win32(before: set[int], timeout: float) -> int | None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        time.sleep(0.12)
+        now = _chrome_top_level_browser_hwnds_win32()
+        new = now - before
+        if not new:
+            continue
+        import ctypes
+        from ctypes import wintypes
+
+        user32 = ctypes.windll.user32
+        best: int | None = None
+        best_area = 0
+        for h in new:
+            r = wintypes.RECT()
+            if user32.GetWindowRect(h, ctypes.byref(r)):
+                a = max(0, r.right - r.left) * max(0, r.bottom - r.top)
+                if a > best_area:
+                    best_area = a
+                    best = h
+        if best is not None:
+            return best
+    return None
+
+
+def _chrome_snap_window_to_monitor_win32(
+    hwnd: int,
+    one_based_monitor: int,
+    *,
+    fullscreen: bool,
+    windowed_size: tuple[int, int] | None,
+) -> None:
+    import ctypes
+    from ctypes import wintypes
+
+    ml, mt, mr, mb = _chrome_monitor_bounds(one_based_monitor)
+    user32 = ctypes.windll.user32
+    SW_RESTORE = 9
+    SW_SHOWMAXIMIZED = 3
+    HWND_TOP = 0
+    SWP_SHOWWINDOW = 0x0040
+    SWP_FRAMECHANGED = 0x0020
+    flags = SWP_SHOWWINDOW | SWP_FRAMECHANGED
+
+    user32.ShowWindow(hwnd, SW_RESTORE)
+    if fullscreen:
+        w, h = mr - ml, mb - mt
+        x, y = ml, mt
+    else:
+        ww, wh = windowed_size or _chrome_window_size()
+        w, h = ww, wh
+        x = ml + max(0, (mr - ml - w) // 2)
+        y = mt + max(0, (mb - mt - h) // 2)
+    user32.SetWindowPos(hwnd, HWND_TOP, x, y, w, h, flags)
+
+    if fullscreen:
+        user32.ShowWindow(hwnd, SW_SHOWMAXIMIZED)
+        KEYEVENTF_KEYUP = 0x0002
+        VK_F11 = 0x7A
+        fg = user32.GetForegroundWindow()
+        tid_tgt = user32.GetWindowThreadProcessId(hwnd, None)
+        tid_fg = user32.GetWindowThreadProcessId(fg, None) if fg else 0
+        if tid_fg and tid_tgt:
+            user32.AttachThreadInput(tid_fg, tid_tgt, True)
+        user32.SetForegroundWindow(hwnd)
+        if tid_fg and tid_tgt:
+            user32.AttachThreadInput(tid_fg, tid_tgt, False)
+        user32.keybd_event(VK_F11, 0, 0, 0)
+        user32.keybd_event(VK_F11, 0, KEYEVENTF_KEYUP, 0)
+
+
+def _open_url_in_chrome(
+    url: str,
+    *,
+    new_window: bool = True,
+    label: str = "URL",
+    window_position: tuple[int, int] | None = None,
+    window_size: tuple[int, int] | None = None,
+    fullscreen: bool = False,
+    win32_post_fullscreen_monitor: int | None = None,
+    user_data_dir: str | None = None,
+) -> None:
+    u = url.strip()
+    if not u:
+        return
+    chrome = _chrome_executable()
+    try:
+        if chrome:
+            args = [chrome]
+            if user_data_dir:
+                args.append(f"--user-data-dir={user_data_dir}")
+                args.append("--no-first-run")
+            if new_window:
+                args.append("--new-window")
+            if window_position is not None:
+                x, y = window_position
+                args.append(f"--window-position={x},{y}")
+            if window_size:
+                args.append(f"--window-size={window_size[0]},{window_size[1]}")
+            if fullscreen and not (
+                sys.platform == "win32" and win32_post_fullscreen_monitor is not None
+            ):
+                args.append("--start-fullscreen")
+            args.append(u)
+            popen_kw: dict = {
+                "args": args,
+                "stdin": subprocess.DEVNULL,
+                "stdout": subprocess.DEVNULL,
+                "stderr": subprocess.DEVNULL,
+            }
+            if sys.platform == "win32":
+                popen_kw["creationflags"] = subprocess.CREATE_NO_WINDOW
+            before: set[int] | None = None
+            if sys.platform == "win32" and win32_post_fullscreen_monitor is not None:
+                before = _chrome_top_level_browser_hwnds_win32()
+            subprocess.Popen(**popen_kw)
+            if sys.platform == "win32" and win32_post_fullscreen_monitor is not None:
+                mon = win32_post_fullscreen_monitor
+                hwnd = _wait_new_chrome_hwnd_win32(before, _chrome_new_window_wait_timeout_s())
+                if hwnd is not None:
+                    _chrome_snap_window_to_monitor_win32(
+                        hwnd,
+                        mon,
+                        fullscreen=fullscreen,
+                        windowed_size=window_size if not fullscreen else None,
+                    )
+                else:
+                    log.warning(
+                        "Chrome: timed out waiting for new window (%s); check "
+                        "CHROME_NEW_WINDOW_WAIT_S or close extra Chrome instances.",
+                        label,
+                    )
+        else:
+            log.warning("Chrome not found; opening %s in default browser.", label)
+            webbrowser.open(u)
+    except OSError as e:
+        log.warning("Could not open %s in Chrome: %s", label, e)
+
+
+# --- Commented out per user request: Claude & Binance openers ---
+# def open_claude_in_chrome() -> None:
+#     if not OPEN_CLAUDE_CODE_IN_CHROME:
+#         return
+#     url = (os.environ.get("CLAUDE_CODE_URL") or "https://claude.ai/new").strip()
+#     pos: tuple[int, int] | None = None
+#     size: tuple[int, int] | None = None
+#     fs = OPEN_CHROME_FULLSCREEN
+#     post_mon: int | None = None
+#     user_data: str | None = None
+#     if sys.platform == "win32":
+#         post_mon = CLAUDE_CHROME_MONITOR
+#         pos = _chrome_monitor_top_left(CLAUDE_CHROME_MONITOR)
+#         if fs:
+#             size = _chrome_monitor_pixel_size(CLAUDE_CHROME_MONITOR)
+#         else:
+#             size = _chrome_window_size()
+#         if CHROME_SEPARATE_SITE_PROFILES:
+#             user_data = _chrome_site_user_data_dir("claude")
+#     elif not fs:
+#         size = _chrome_window_size()
+#     else:
+#         size = None
+#     _open_url_in_chrome(
+#         url,
+#         new_window=True,
+#         label="Claude",
+#         window_position=pos,
+#         window_size=size,
+#         fullscreen=fs,
+#         win32_post_fullscreen_monitor=post_mon,
+#         user_data_dir=user_data,
+#     )
+# 
+# 
+# def open_binance_btc_in_chrome() -> None:
+#     if not OPEN_BINANCE_BTC_IN_CHROME:
+#         return
+#     url = (
+#         os.environ.get("BINANCE_BTC_URL")
+#         or "https://www.binance.com/en/trade/BTC_USDT"
+#     ).strip()
+#     pos: tuple[int, int] | None = None
+#     size: tuple[int, int] | None = None
+#     fs = OPEN_CHROME_FULLSCREEN
+#     post_mon: int | None = None
+#     user_data: str | None = None
+#     if sys.platform == "win32":
+#         post_mon = BINANCE_CHROME_MONITOR
+#         pos = _chrome_monitor_top_left(BINANCE_CHROME_MONITOR)
+#         if fs:
+#             size = _chrome_monitor_pixel_size(BINANCE_CHROME_MONITOR)
+#         else:
+#             size = _chrome_window_size()
+#         if CHROME_SEPARATE_SITE_PROFILES:
+#             user_data = _chrome_site_user_data_dir("binance")
+#     elif not fs:
+#         size = _chrome_window_size()
+#     else:
+#         size = None
+#     _open_url_in_chrome(
+#         url,
+#         new_window=True,
+#         label="Binance BTC",
+#         window_position=pos,
+#         window_size=size,
+#         fullscreen=fs,
+#         win32_post_fullscreen_monitor=post_mon,
+#         user_data_dir=user_data,
+#     )
+
+
+def open_chrome_browser() -> None:
+    """Open a new Google Chrome window."""
+    if not OPEN_CHROME_ON_DOUBLE_CLAP:
+        return
+    chrome = _chrome_executable()
+    if chrome:
+        popen_kw: dict = {
+            "args": [chrome, "--new-window"],
+            "stdin": subprocess.DEVNULL,
+            "stdout": subprocess.DEVNULL,
+            "stderr": subprocess.DEVNULL,
+        }
+        if sys.platform == "win32":
+            popen_kw["creationflags"] = subprocess.CREATE_NO_WINDOW
+        try:
+            subprocess.Popen(**popen_kw)
+            log.info("Opened Google Chrome.")
+        except OSError as e:
+            log.warning("Could not open Chrome: %s", e)
+    else:
+        log.warning("Chrome not found; opening default browser.")
+        webbrowser.open("https://google.com")
+
+
+def open_github_in_chrome() -> None:
+    """Open GitHub in Chrome or default browser."""
+    if not OPEN_GITHUB_IN_CHROME:
+        return
+    url = (os.environ.get("GITHUB_URL") or GITHUB_URL).strip()
+    _open_url_in_chrome(url, new_window=True, label="GitHub")
+    log.info("Opened GitHub: %s", url)
+
+
+def _vscode_executable() -> str | None:
+    if sys.platform == "win32":
+        local = os.environ.get("LOCALAPPDATA", "")
+        for sub in (
+            "Programs\\Microsoft VS Code\\Code.exe",
+            "Programs\\Microsoft VS Code\\bin\\code.cmd",
+        ):
+            if local:
+                p = os.path.join(local, *sub.split("\\"))
+                if os.path.isfile(p):
+                    return p
+        for pf in (
+            os.environ.get("ProgramFiles", r"C:\Program Files"),
+            os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"),
+        ):
+            if pf:
+                p = os.path.join(pf, "Microsoft VS Code", "Code.exe")
+                if os.path.isfile(p):
+                    return p
+    return shutil.which("code")
+
+
+def _vscode_largest_main_hwnd_win32() -> int | None:
+    """Largest top-level Code.exe window (visible or minimized)."""
+    if sys.platform != "win32":
+        return None
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+    GW_OWNER = 4
+    GWL_EXSTYLE = -20
+    WS_EX_TOOLWINDOW = 0x00000080
+    candidates: list[tuple[int, wintypes.HWND]] = []
+
+    @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    def _enum(hwnd: wintypes.HWND, _lp: wintypes.LPARAM) -> bool:
+        if user32.GetWindow(hwnd, GW_OWNER):
+            return True
+        if user32.GetWindowLongW(hwnd, GWL_EXSTYLE) & WS_EX_TOOLWINDOW:
+            return True
+        if not user32.IsWindowVisible(hwnd) and not user32.IsIconic(hwnd):
+            return True
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value == 0:
+            return True
+        hproc = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid.value)
+        if not hproc:
+            return True
+        try:
+            buf = ctypes.create_unicode_buffer(4096)
+            sz = wintypes.DWORD(len(buf))
+            if not kernel32.QueryFullProcessImageNameW(hproc, 0, buf, ctypes.byref(sz)):
+                return True
+            exe_path = buf.value
+        finally:
+            kernel32.CloseHandle(hproc)
+        if os.path.basename(exe_path).lower() != "code.exe":
+            return True
+        r = wintypes.RECT()
+        if not user32.GetWindowRect(hwnd, ctypes.byref(r)):
+            return True
+        w, h = r.right - r.left, r.bottom - r.top
+        if w < 200 or h < 200:
+            return True
+        candidates.append((w * h, hwnd))
+        return True
+
+    user32.EnumWindows(_enum, 0)
+    if not candidates:
+        return None
+    return int(max(candidates, key=lambda t: t[0])[1])
+
+
+def _focus_existing_vscode_window_win32() -> bool:
+    """Bring an existing Code.exe main window to the foreground (no new process)."""
+    if sys.platform != "win32":
+        return False
+    hwnd = _vscode_largest_main_hwnd_win32()
+    if hwnd is None:
+        return False
+    _cursor_foreground_hwnd_win32(hwnd)
+    return True
+
+
+def open_vscode_window() -> None:
+    """Open or focus Visual Studio Code."""
+    if not OPEN_VSCODE_ON_DOUBLE_CLAP:
+        return
+    exe = _vscode_executable()
+    if not exe:
+        log.warning(
+            "Could not find VS Code (install app or add `code` to PATH)."
+        )
+        return
+    popen_kw: dict = {
+        "stdin": subprocess.DEVNULL,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+    }
+    if sys.platform == "win32":
+        popen_kw["creationflags"] = subprocess.CREATE_NO_WINDOW
+    try:
+        if FOCUS_EXISTING_VSCODE_ON_DOUBLE_CLAP:
+            focused = (
+                sys.platform == "win32" and _focus_existing_vscode_window_win32()
+            )
+            if not focused:
+                subprocess.Popen([exe], **popen_kw)
+        else:
+            subprocess.Popen([exe], **popen_kw)
+        log.info("Opened/focused VS Code.")
+    except OSError as e:
+        log.warning("Could not start or focus VS Code: %s", e)
+
+
+def _antigravity_executable() -> str | None:
+    if sys.platform == "win32":
+        local = os.environ.get("LOCALAPPDATA", "")
+        for sub in (
+            "Programs\\antigravity\\Antigravity.exe",
+            "Programs\\Antigravity\\Antigravity.exe",
+        ):
+            if local:
+                p = os.path.join(local, *sub.split("\\"))
+                if os.path.isfile(p):
+                    return p
+        for pf in (
+            os.environ.get("ProgramFiles", r"C:\Program Files"),
+            os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"),
+        ):
+            if pf:
+                for sub in ("antigravity\\Antigravity.exe", "Antigravity\\Antigravity.exe"):
+                    p = os.path.join(pf, *sub.split("\\"))
+                    if os.path.isfile(p):
+                        return p
+    return shutil.which("antigravity") or shutil.which("gravity")
+
+
+def open_antigravity_window() -> None:
+    """Open Antigravity."""
+    if not OPEN_ANTIGRAVITY_ON_DOUBLE_CLAP:
+        return
+    exe = _antigravity_executable()
+    if not exe:
+        log.warning(
+            "Could not find Antigravity (install app or verify path)."
+        )
+        return
+    popen_kw: dict = {
+        "stdin": subprocess.DEVNULL,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+    }
+    if sys.platform == "win32":
+        popen_kw["creationflags"] = subprocess.CREATE_NO_WINDOW
+    try:
+        subprocess.Popen([exe], **popen_kw)
+        log.info("Opened Antigravity.")
+    except OSError as e:
+        log.warning("Could not start Antigravity: %s", e)
+
+
+def _get_screen_work_area() -> tuple[int, int, int, int]:
+    """Return (left, top, right, bottom) of primary monitor work area (excluding taskbar)."""
+    if sys.platform != "win32":
+        return (0, 0, 1920, 1080)
+    import ctypes
+    from ctypes import wintypes
+
+    rect = wintypes.RECT()
+    SPI_GETWORKAREA = 0x0030
+    if ctypes.windll.user32.SystemParametersInfoW(SPI_GETWORKAREA, 0, ctypes.byref(rect), 0):
+        return (int(rect.left), int(rect.top), int(rect.right), int(rect.bottom))
+    return (0, 0, 1920, 1080)
+
+
+def _calculate_layout_slots(mode: str, count: int) -> list[tuple[int, int, int, int]]:
+    """Return list of (x, y, width, height) bounding boxes for each slot on the screen."""
+    l, t, r, b = _get_screen_work_area()
+    w = max(400, r - l)
+    h = max(300, b - t)
+
+    m = (os.environ.get("JARVIS_LAYOUT_MODE") or mode or "auto").strip().lower()
+
+    if m == "auto":
+        if count <= 1:
+            m = "1_full"
+        elif count == 2:
+            m = "2_split"
+        elif count == 3:
+            m = "3_split"
+        else:
+            m = "4_split"
+
+    if m in ("2_split", "split_2", "half"):
+        half_w = w // 2
+        return [
+            (l, t, half_w, h),                    # Left 50%
+            (l + half_w, t, w - half_w, h),       # Right 50%
+        ]
+    elif m in ("3_split", "split_3", "1_left_2_right"):
+        half_w = w // 2
+        half_h = h // 2
+        return [
+            (l, t, half_w, h),                    # Left 50% (Full height)
+            (l + half_w, t, w - half_w, half_h),  # Top-Right (50% x 50%)
+            (l + half_w, t + half_h, w - half_w, h - half_h), # Bottom-Right (50% x 50%)
+        ]
+    elif m in ("3_columns", "columns_3"):
+        col_w = w // 3
+        return [
+            (l, t, col_w, h),
+            (l + col_w, t, col_w, h),
+            (l + 2 * col_w, t, w - 2 * col_w, h),
+        ]
+    elif m in ("4_split", "split_4", "grid_2x2", "quad"):
+        half_w = w // 2
+        half_h = h // 2
+        return [
+            (l, t, half_w, half_h),                    # Top-Left
+            (l + half_w, t, w - half_w, half_h),       # Top-Right
+            (l, t + half_h, half_w, h - half_h),       # Bottom-Left
+            (l + half_w, t + half_h, w - half_w, h - half_h), # Bottom-Right
+        ]
+    return [(l, t, w, h)]
+
+
+def _snap_window(hwnd: int, x: int, y: int, w: int, h: int) -> None:
+    """Move and resize window to given rect."""
+    if sys.platform != "win32":
+        return
+    import ctypes
+    user32 = ctypes.windll.user32
+    SW_RESTORE = 9
+    HWND_TOP = 0
+    SWP_SHOWWINDOW = 0x0040
+    SWP_FRAMECHANGED = 0x0020
+    user32.ShowWindow(hwnd, SW_RESTORE)
+    user32.SetWindowPos(hwnd, HWND_TOP, x, y, w, h, SWP_SHOWWINDOW | SWP_FRAMECHANGED)
+
+
+def _antigravity_largest_main_hwnd_win32() -> int | None:
+    """Largest top-level Antigravity.exe window."""
+    if sys.platform != "win32":
+        return None
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+    GW_OWNER = 4
+    GWL_EXSTYLE = -20
+    WS_EX_TOOLWINDOW = 0x00000080
+    candidates: list[tuple[int, wintypes.HWND]] = []
+
+    @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    def _enum(hwnd: wintypes.HWND, _lp: wintypes.LPARAM) -> bool:
+        if user32.GetWindow(hwnd, GW_OWNER):
+            return True
+        if user32.GetWindowLongW(hwnd, GWL_EXSTYLE) & WS_EX_TOOLWINDOW:
+            return True
+        if not user32.IsWindowVisible(hwnd) and not user32.IsIconic(hwnd):
+            return True
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value == 0:
+            return True
+        hproc = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid.value)
+        if not hproc:
+            return True
+        try:
+            buf = ctypes.create_unicode_buffer(4096)
+            sz = wintypes.DWORD(len(buf))
+            if not kernel32.QueryFullProcessImageNameW(hproc, 0, buf, ctypes.byref(sz)):
+                return True
+            exe_path = buf.value
+        finally:
+            kernel32.CloseHandle(hproc)
+        if os.path.basename(exe_path).lower() != "antigravity.exe":
+            return True
+        r = wintypes.RECT()
+        if not user32.GetWindowRect(hwnd, ctypes.byref(r)):
+            return True
+        w, h = r.right - r.left, r.bottom - r.top
+        if w < 200 or h < 200:
+            return True
+        candidates.append((w * h, hwnd))
+        return True
+
+    user32.EnumWindows(_enum, 0)
+    if not candidates:
+        return None
+    return int(max(candidates, key=lambda t: t[0])[1])
+
+
+def arrange_opened_windows(mode: str | None = None) -> None:
+    """Collect HWNDs of opened apps and tile them according to layout mode."""
+    if sys.platform != "win32":
+        return
+    layout = mode or LAYOUT_MODE
+    if layout == "none":
+        return
+
+    # Calculate expected number of windows
+    expected = 0
+    if OPEN_VSCODE_ON_DOUBLE_CLAP:
+        expected += 1
+    if OPEN_ANTIGRAVITY_ON_DOUBLE_CLAP:
+        expected += 1
+    if OPEN_CHROME_ON_DOUBLE_CLAP:
+        expected += 1
+    if OPEN_GITHUB_IN_CHROME:
+        expected += 1
+    if expected < 2:
+        expected = 2
+
+    # Give windows a moment to initialize
+    try:
+        delay = float((os.environ.get("JARVIS_LAYOUT_DELAY_S") or str(LAYOUT_DELAY_S)).strip())
+    except ValueError:
+        delay = 1.5
+
+    # Initial delay for apps to start creating windows
+    time.sleep(delay)
+
+    # Poll for windows to appear
+    deadline = time.monotonic() + 4.0
+    app_hwnds: list[tuple[str, int]] = []
+
+    while time.monotonic() < deadline:
+        app_hwnds = []
+
+        if OPEN_VSCODE_ON_DOUBLE_CLAP:
+            vs_hwnd = _vscode_largest_main_hwnd_win32()
+            if vs_hwnd:
+                app_hwnds.append(("VS Code", vs_hwnd))
+
+        if OPEN_ANTIGRAVITY_ON_DOUBLE_CLAP:
+            anti_hwnd = _antigravity_largest_main_hwnd_win32()
+            if anti_hwnd:
+                app_hwnds.append(("Antigravity", anti_hwnd))
+
+        if OPEN_CHROME_ON_DOUBLE_CLAP or OPEN_GITHUB_IN_CHROME:
+            chrome_hwnds = sorted(list(_chrome_top_level_browser_hwnds_win32()))
+            for idx, ch_hwnd in enumerate(chrome_hwnds):
+                label = "GitHub" if idx == 1 else "Chrome"
+                app_hwnds.append((label, ch_hwnd))
+
+        # Check if we have collected all expected windows
+        if len(app_hwnds) >= expected:
+            break
+        time.sleep(0.4)
+
+    if not app_hwnds:
+        return
+
+    slots = _calculate_layout_slots(layout, len(app_hwnds))
+    if not slots:
+        return
+
+    log.info("Arranging %d windows with layout '%s' into %d slots...", len(app_hwnds), layout, len(slots))
+    for i, (name, hwnd) in enumerate(app_hwnds):
+        if i < len(slots):
+            x, y, w, h = slots[i]
+            _snap_window(hwnd, x, y, w, h)
+            log.info("Snapped %s into slot %d: (x=%d, y=%d, w=%d, h=%d)", name, i+1, x, y, w, h)
+
+
+def _cursor_executable() -> str | None:
+    if sys.platform == "win32":
+        local = os.environ.get("LOCALAPPDATA", "")
+        for sub in ("Programs\\cursor\\Cursor.exe", "Programs\\Cursor\\Cursor.exe"):
+            if local:
+                p = os.path.join(local, *sub.split("\\"))
+                if os.path.isfile(p):
+                    return p
+    return shutil.which("cursor")
+
+
+def _cursor_largest_main_hwnd_win32() -> int | None:
+    """Largest top-level Cursor.exe window (visible or minimized)."""
+    if sys.platform != "win32":
+        return None
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+    GW_OWNER = 4
+    GWL_EXSTYLE = -20
+    WS_EX_TOOLWINDOW = 0x00000080
+    candidates: list[tuple[int, wintypes.HWND]] = []
+
+    @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    def _enum(hwnd: wintypes.HWND, _lp: wintypes.LPARAM) -> bool:
+        if user32.GetWindow(hwnd, GW_OWNER):
+            return True
+        if user32.GetWindowLongW(hwnd, GWL_EXSTYLE) & WS_EX_TOOLWINDOW:
+            return True
+        if not user32.IsWindowVisible(hwnd) and not user32.IsIconic(hwnd):
+            return True
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value == 0:
+            return True
+        hproc = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid.value)
+        if not hproc:
+            return True
+        try:
+            buf = ctypes.create_unicode_buffer(4096)
+            sz = wintypes.DWORD(len(buf))
+            if not kernel32.QueryFullProcessImageNameW(hproc, 0, buf, ctypes.byref(sz)):
+                return True
+            exe_path = buf.value
+        finally:
+            kernel32.CloseHandle(hproc)
+        if os.path.basename(exe_path).lower() != "cursor.exe":
+            return True
+        r = wintypes.RECT()
+        if not user32.GetWindowRect(hwnd, ctypes.byref(r)):
+            return True
+        w, h = r.right - r.left, r.bottom - r.top
+        if w < 200 or h < 200:
+            return True
+        candidates.append((w * h, hwnd))
+        return True
+
+    user32.EnumWindows(_enum, 0)
+    if not candidates:
+        return None
+    return int(max(candidates, key=lambda t: t[0])[1])
+
+
+def _cursor_foreground_hwnd_win32(hwnd: int) -> None:
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    SW_RESTORE = 9
+    user32.ShowWindow(hwnd, SW_RESTORE)
+    fg = user32.GetForegroundWindow()
+    tid_tgt = user32.GetWindowThreadProcessId(hwnd, None)
+    tid_fg = user32.GetWindowThreadProcessId(fg, None) if fg else 0
+    if tid_fg and tid_tgt:
+        user32.AttachThreadInput(tid_fg, tid_tgt, True)
+    user32.SetForegroundWindow(hwnd)
+    if tid_fg and tid_tgt:
+        user32.AttachThreadInput(tid_fg, tid_tgt, False)
+
+
+def _cursor_send_f11_fullscreen_win32(hwnd: int) -> None:
+    """F11 toggles Zen/fullscreen in Cursor (Electron)."""
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    KEYEVENTF_KEYUP = 0x0002
+    VK_F11 = 0x7A
+    _cursor_foreground_hwnd_win32(hwnd)
+    user32.keybd_event(VK_F11, 0, 0, 0)
+    user32.keybd_event(VK_F11, 0, KEYEVENTF_KEYUP, 0)
+
+
+def _focus_existing_cursor_window_win32() -> bool:
+    """Bring an existing Cursor.exe main window to the foreground (no new process)."""
+    if sys.platform != "win32":
+        return False
+    hwnd = _cursor_largest_main_hwnd_win32()
+    if hwnd is None:
+        return False
+    _cursor_foreground_hwnd_win32(hwnd)
+    return True
+
+
+def run_double_clap_actions() -> None:
+    """Run outside the mic loop so sleeps do not stall capture."""
+    bridge.set_state("processing")
+
+    # Claude & Binance openers (commented out per user request)
+    # open_claude_in_chrome()
+    # open_binance_btc_in_chrome()
+
+    # Open requested applications: VS Code, Antigravity, Chrome, GitHub
+    open_vscode_window()
+    time.sleep(0.2)
+    open_antigravity_window()
+    time.sleep(0.2)
+    open_chrome_browser()
+    time.sleep(0.3)
+    open_github_in_chrome()
+    play_song(SONG_URI)
+
+    # Automatically split/arrange windows on screen (4 slots)
+    if LAYOUT_MODE != "none":
+        threading.Thread(target=arrange_opened_windows, daemon=True).start()
+
+    if JARVIS_WELCOME_ENABLED and JARVIS_WELCOME_PHRASE.strip():
+        delay = max(0.0, JARVIS_AFTER_SONG_DELAY_S)
+        if delay:
+            time.sleep(delay)
+        threading.Thread(target=say_jarvis_welcome, daemon=True).start()
+    else:
+        bridge.set_state("listening")
+    open_cursor_window()
+
+
+def close_all_target_processes() -> None:
+    """Close/kill running target applications."""
+    if sys.platform == "win32":
+        for proc in CLOSE_PROCESS_NAMES:
+            try:
+                subprocess.run(
+                    ["taskkill", "/F", "/IM", proc],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=subprocess.CREATE_NO_WINDOW,
+                )
+                log.info("Closed process: %s", proc)
+            except Exception as e:
+                log.warning("Could not close %s: %s", proc, e)
+    else:
+        for proc in ("code", "antigravity", "chrome", "spotify", "cursor"):
+            subprocess.run(["pkill", "-f", proc], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def shutdown_computer(delay_s: int = 3) -> None:
+    """Initiate Windows / system shutdown."""
+    log.info("Executing system shutdown in %d seconds...", delay_s)
+    try:
+        if sys.platform == "win32":
+            subprocess.Popen(
+                ["shutdown", "/s", "/f", "/t", str(max(0, delay_s))],
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+        else:
+            subprocess.Popen(["shutdown", "-h", "now"])
+    except Exception as e:
+        log.error("Failed to trigger shutdown: %s", e)
+
+
+def show_shutdown_countdown_dialog(timeout_s: int = 6) -> bool:
+    """Show an always-on-top modal countdown window with a Cancel button.
+
+    Returns True if countdown expired (proceed to shutdown), or False if user canceled.
+    """
+    import tkinter as tk
+
+    canceled = False
+    confirmed = False
+    remaining = max(1, timeout_s)
+
+    try:
+        root = tk.Tk()
+        root.title("Jarvis - Xác nhận Tắt Máy")
+        root.geometry("450x250")
+        root.configure(bg="#1e1e2e")
+        root.attributes("-topmost", True)
+        root.resizable(False, False)
+
+        # Center dialog on screen
+        root.update_idletasks()
+        sw = root.winfo_screenwidth()
+        sh = root.winfo_screenheight()
+        x = max(0, (sw - 450) // 2)
+        y = max(0, (sh - 250) // 2)
+        root.geometry(f"450x250+{x}+{y}")
+
+        title_lbl = tk.Label(
+            root,
+            text=" Jarvis: Nhận diện 3 tiếng vỗ tay",
+            font=("Segoe UI", 13, "bold"),
+            fg="#f38ba8",
+            bg="#1e1e2e",
+        )
+        title_lbl.pack(pady=(16, 4))
+
+        sub_lbl = tk.Label(
+            root,
+            text="Hệ thống sẽ đóng các ứng dụng và tắt máy sau:",
+            font=("Segoe UI", 10),
+            fg="#cdd6f4",
+            bg="#1e1e2e",
+        )
+        sub_lbl.pack(pady=(0, 6))
+
+        time_lbl = tk.Label(
+            root,
+            text=f"{remaining} giây",
+            font=("Segoe UI", 26, "bold"),
+            fg="#fab387",
+            bg="#1e1e2e",
+        )
+        time_lbl.pack(pady=(0, 10))
+
+        def on_cancel():
+            nonlocal canceled
+            canceled = True
+            root.destroy()
+
+        btn_cancel = tk.Button(
+            root,
+            text="CANCEL",
+            font=("Segoe UI", 11, "bold"),
+            bg="#24d8f0",
+            fg="#11111b",
+            activebackground="#94e2d5",
+            activeforeground="#11111b",
+            padx=24,
+            pady=8,
+            relief="flat",
+            cursor="hand2",
+            command=on_cancel,
+        )
+        btn_cancel.pack()
+
+        # Keyboard shortcuts to cancel
+        root.bind("<Escape>", lambda e: on_cancel())
+        root.bind("<space>", lambda e: on_cancel())
+        root.protocol("WM_DELETE_WINDOW", on_cancel)
+
+        def tick():
+            nonlocal remaining, confirmed
+            if canceled:
+                return
+            remaining -= 1
+            if remaining <= 0:
+                confirmed = True
+                root.destroy()
+            else:
+                time_lbl.config(text=f"{remaining} giây")
+                root.after(1000, tick)
+
+        root.after(1000, tick)
+        root.mainloop()
+    except Exception as e:
+        log.warning("Could not show countdown GUI: %s. Falling back to console countdown.", e)
+        time.sleep(timeout_s)
+        return True
+
+    return confirmed and not canceled
+
+
+def run_triple_clap_actions() -> None:
+    """Run on triple clap: show 6s countdown, and if not canceled, close apps and shut down PC."""
+    bridge.set_state("processing")
+    log.info(
+        "TRIPLE CLAP ACTION: 3 claps detected! Showing %ds cancelable countdown...",
+        SHUTDOWN_COUNTDOWN_S,
+    )
+
+    # Optional: play warning audio in background
+    if JARVIS_GOODBYE_ENABLED and JARVIS_GOODBYE_PHRASE.strip():
+        threading.Thread(
+            target=say_jarvis_phrase,
+            args=("Shutting down system in 6 seconds. Press cancel to abort.",),
+            daemon=True,
+        ).start()
+
+    # Show 6-second countdown dialog with Cancel button
+    proceed = show_shutdown_countdown_dialog(timeout_s=SHUTDOWN_COUNTDOWN_S)
+
+    if not proceed:
+        log.info("SHUTDOWN CANCELED by user. No applications were closed.")
+        bridge.set_state("listening")
+        return
+
+    log.info("Shutdown confirmed. Closing applications and shutting down PC now...")
+
+    # 1. Close all target processes
+    close_all_target_processes()
+
+    # 2. Say goodbye phrase
+    if JARVIS_GOODBYE_ENABLED and JARVIS_GOODBYE_PHRASE.strip():
+        try:
+            say_jarvis_goodbye()
+        except Exception as e:
+            log.warning("Could not play goodbye: %s", e)
+
+    # 3. Shutdown Windows immediately
+    shutdown_computer(delay_s=SHUTDOWN_DELAY_S)
+
+
+def open_cursor_window() -> None:
+    if not FOCUS_EXISTING_CURSOR_ON_DOUBLE_CLAP and not OPEN_NEW_CURSOR_ON_DOUBLE_CLAP:
+        return
+    exe = _cursor_executable()
+    if not exe:
+        log.warning(
+            "Could not find Cursor (install app or add the `cursor` command to PATH)."
+        )
+        return
+    popen_kw: dict = {
+        "stdin": subprocess.DEVNULL,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+    }
+    if sys.platform == "win32":
+        popen_kw["creationflags"] = subprocess.CREATE_NO_WINDOW
+    try:
+        if FOCUS_EXISTING_CURSOR_ON_DOUBLE_CLAP:
+            focused = (
+                sys.platform == "win32" and _focus_existing_cursor_window_win32()
+            )
+            if not focused:
+                subprocess.Popen([exe], **popen_kw)
+        if OPEN_NEW_CURSOR_ON_DOUBLE_CLAP:
+            subprocess.Popen([exe, "-n"], **popen_kw)
+    except OSError as e:
+        log.warning("Could not start or focus Cursor: %s", e)
+        return
+    if sys.platform == "win32" and CURSOR_OPEN_FULLSCREEN:
+        time.sleep(0.5)
+        hwnd = _cursor_largest_main_hwnd_win32()
+        if hwnd is not None:
+            _cursor_send_f11_fullscreen_win32(hwnd)
+        else:
+            log.warning("Cursor fullscreen: no Cursor window found to send F11.")
+
+
+class JarvisCoordinator:
+    """
+    Central Jarvis Runtime Coordinator:
+    - Owns single microphone capture pipeline
+    - Manages VAD & speech boundary detection
+    - Routes intent mutually exclusively to COMMAND MODE or CONVERSATION MODE
+    - Enforces conversation session lock and deterministic cleanup
+    """
+
+    def __init__(self, blocksize: int):
+        self.blocksize = blocksize
+        self.vad = AudioVAD(sample_rate=SAMPLE_RATE)
+        self.noise_floor = 1e-4
+        self.spike_armed = True
+        self.calibrated = False
+        self.stream_start_time = 0.0
+
+        self.last_action_time = 0.0
+        self.clap_times: list[float] = []
+        self.recent_burst_hits: list[float] = []
+        self.typing_suppress_until = 0.0
+        self.welcome_sequence_done = False
+
+        self.wake_armed_until = 0.0
+        self.last_wake_trigger = 0.0
+        self.wake_window_expired_logged = True
+
+        # Exclusive conversation session lock
+        self.conversation_session_active = False
+
+        self.oww_model: OWWModel | None = None
+        if REQUIRE_WAKE_WORD:
+            self.oww_model = _init_wakeword_model()
+
+        self.vosk_recognizer = None
+        if VOSK_AVAILABLE and vosk_model is not None:
+            try:
+                self.vosk_recognizer = vosk.KaldiRecognizer(vosk_model, SAMPLE_RATE)
+            except Exception as e:
+                log.warning("Could not initialize Vosk recognizer: %s", e)
+
+    def process_frame(self, data: np.ndarray, now: float) -> None:
+        # Echo & self-trigger guard: if Jarvis is speaking, mute mic processing
+        if now < JARVIS_SPEAKING_UNTIL:
+            self.clap_times = []
+            self.spike_armed = False
+            self.vad.reset()
+            return
+
+        level = rms_mono(data)
+
+        # Ambient noise floor tracking
+        quiet_gate = self.noise_floor * QUIET_GATE_MULT
+        if level < quiet_gate:
+            self.noise_floor = NOISE_FLOOR_ALPHA * self.noise_floor + (1.0 - NOISE_FLOOR_ALPHA) * level
+            self.noise_floor = max(self.noise_floor, 1e-7)
+
+        threshold = max(self.noise_floor * SPIKE_RATIO, MIN_RMS)
+
+        # Stream live audio amplitude to UI Orb when in conversation listening mode
+        if self.calibrated and bridge.current_state == "listening":
+            norm_level = (level - self.noise_floor) / max(threshold - self.noise_floor, 1e-4)
+            bridge.emit_audio_level(min(1.0, max(0.0, norm_level)))
+
+        # Startup Warmup
+        if not self.calibrated:
+            if (now - self.stream_start_time) < STARTUP_WARMUP_S:
+                self.clap_times = []
+                self.recent_burst_hits = []
+                self.spike_armed = False
+                return
+            else:
+                self.calibrated = True
+                self.spike_armed = True
+                log.info(
+                    "Microphone calibration complete (baseline noise=%.5f, threshold=%.5f). Ready for commands!",
+                    self.noise_floor,
+                    threshold,
+                )
+                if REQUIRE_WAKE_WORD and self.oww_model is not None:
+                    log.info("Say 'Hey Jarvis, I need your help' for Conversation mode, or clap for Commands.")
+
+        # Re-trigger level for claps
+        if level < threshold * RETRIGGER_RATIO:
+            self.spike_armed = True
+
+        pcm_bytes = (np.clip(data, -1.0, 1.0) * 32767).astype(np.int16).tobytes()
+
+        # -------------------------------------------------------------
+        # BRANCH 1: ACTIVE CONVERSATION SESSION MODE
+        # -------------------------------------------------------------
+        if bridge.is_conversation_active():
+            self.conversation_session_active = True
+            if self.vosk_recognizer is not None:
+                text = ""
+                if self.vosk_recognizer.AcceptWaveform(pcm_bytes):
+                    res = json.loads(self.vosk_recognizer.Result())
+                    text = res.get("text", "").lower().strip()
+                else:
+                    res = json.loads(self.vosk_recognizer.PartialResult())
+                    text = res.get("partial", "").lower().strip()
+
+                if text:
+                    self._handle_conversation_speech(text)
+            return
+        else:
+            self.conversation_session_active = False
+
+        # -------------------------------------------------------------
+        # BRANCH 2: WAITING / WAKE & COMMAND MODE
+        # -------------------------------------------------------------
+        # A. Neural OpenWakeWord detection
+        if REQUIRE_WAKE_WORD and self.oww_model is not None:
+            pcm_i16 = (np.clip(data, -1.0, 1.0) * 32767).astype(np.int16).flatten()
+            prediction = self.oww_model.predict(pcm_i16)
+            score = prediction.get("hey_jarvis", 0.0)
+
+            if score >= WAKE_WORD_THRESHOLD and (now - self.last_wake_trigger) > 2.5:
+                self.last_wake_trigger = now
+                self.wake_armed_until = now + WAKE_WINDOW_S
+                self.wake_window_expired_logged = False
+                self.clap_times = []
+                if self.vosk_recognizer:
+                    self.vosk_recognizer.Reset()
+                log.info(
+                    "🎙️ [WAKE DETECTED]: 'Hey Jarvis'! (confidence=%.2f >= %.2f) — Listening for commands / claps...",
+                    score,
+                    WAKE_WORD_THRESHOLD,
+                )
+                if WAKE_FEEDBACK_ENABLED and WAKE_FEEDBACK_PHRASE:
+                    threading.Thread(
+                        target=say_jarvis_phrase,
+                        args=(WAKE_FEEDBACK_PHRASE,),
+                        daemon=True
+                    ).start()
+
+        # B. Vosk Real-Time Continuous Streaming Speech & Intent Routing
+        if self.vosk_recognizer is not None:
+            text = ""
+            if self.vosk_recognizer.AcceptWaveform(pcm_bytes):
+                res = json.loads(self.vosk_recognizer.Result())
+                text = res.get("text", "").lower().strip()
+            else:
+                res = json.loads(self.vosk_recognizer.PartialResult())
+                text = res.get("partial", "").lower().strip()
+
+            if text:
+                self._route_waiting_intent(text, now)
+
+        # C. Clap Sequence Detection (Command Mode)
+        self._handle_claps(level, threshold, now)
+
+    def _route_waiting_intent(self, text: str, now: float) -> None:
+        # 1. Ignore Sleep Commands while already in waiting mode
+        sleep_phrases = ("go to sleep", "to sleep", "sleep", "close", "dismiss", "turn off", "shut down", "goodbye", "bye")
+        if any(sp in text for sp in sleep_phrases):
+            if self.vosk_recognizer:
+                self.vosk_recognizer.Reset()
+            return
+
+        # 2. Dedicated Conversation Activation Phrase: "Jarvis, I need your help" / "Hey Jarvis, I need your help"
+        conv_phrases = (
+            "i need your help", "need your help", "need help", "help me",
+            "and it your hair", "a nice your hair", "it your hair", "your hair",
+            "start conversation", "open jarvis", "wake up", "i need help"
+        )
+        has_conv_phrase = any(cp in text for cp in conv_phrases) or (self.wake_armed_until > now and "help" in text)
+        if has_conv_phrase:
+            log.info("🌟 [INTENT: CONVERSATION] Dedicated phrase detected ('%s') -> Materializing Jarvis Orb...", text)
+            if self.vosk_recognizer:
+                self.vosk_recognizer.Reset()
+            self.conversation_session_active = True
+            self.wake_armed_until = 0.0
+            self.clap_times = []
+            session_id = bridge.emit_wake()
+            log.info("[JARVIS] Acquired conversation session lock ID: %s", session_id)
+            threading.Thread(
+                target=say_jarvis_phrase,
+                args=("Yes sir, I am online and ready to help.",),
+                daemon=True
+            ).start()
+            return
+
+        # 3. Direct Voice Commands
+        if "open spotify" in text or "play music" in text or "play song" in text:
+            log.info("🎵 [INTENT: COMMAND] 'Open Spotify' -> Executing command (UI remains hidden)...")
+            if self.vosk_recognizer:
+                self.vosk_recognizer.Reset()
+            self.wake_armed_until = 0.0
+            play_song(SONG_URI)
+            threading.Thread(target=say_jarvis_phrase, args=("Opening Spotify.",), daemon=True).start()
+            return
+
+        if "open vs code" in text or "open vscode" in text or "open code" in text:
+            log.info("💻 [INTENT: COMMAND] 'Open VS Code' -> Executing command (UI remains hidden)...")
+            if self.vosk_recognizer:
+                self.vosk_recognizer.Reset()
+            self.wake_armed_until = 0.0
+            open_vscode_window()
+            threading.Thread(target=say_jarvis_phrase, args=("Opening Visual Studio Code.",), daemon=True).start()
+            return
+
+        if "open chrome" in text or "open browser" in text:
+            log.info("🌐 [INTENT: COMMAND] 'Open Chrome' -> Executing command (UI remains hidden)...")
+            if self.vosk_recognizer:
+                self.vosk_recognizer.Reset()
+            self.wake_armed_until = 0.0
+            open_chrome_browser()
+            threading.Thread(target=say_jarvis_phrase, args=("Opening Chrome.",), daemon=True).start()
+            return
+
+    def _handle_conversation_speech(self, text: str) -> None:
+        log.info("💬 [CONVERSATION MODE] User: '%s'", text)
+        bridge.touch_session()
+
+        # Check sleep / close commands
+        sleep_phrases = (
+            "go to sleep", "to sleep", "sleep", "close", "stop", "dismiss",
+            "goodbye", "turn off", "shut down ui", "shut down", "bye"
+        )
+        if any(sp in text for sp in sleep_phrases):
+            log.info("🛑 [CONVERSATION CLOSE] User requested sleep ('%s') -> Closing session...", text)
+            if self.vosk_recognizer:
+                self.vosk_recognizer.Reset()
+            self.conversation_session_active = False
+            bridge.emit_closing()
+            if JARVIS_GOODBYE_ENABLED:
+                threading.Thread(
+                    target=say_jarvis_phrase,
+                    args=("Going to sleep, sir.",),
+                    daemon=True
+                ).start()
+            return
+
+        # Execute conversation commands or respond
+        if "spotify" in text or "music" in text:
+            if self.vosk_recognizer:
+                self.vosk_recognizer.Reset()
+            bridge.set_state("processing")
+            play_song(SONG_URI)
+            threading.Thread(target=say_jarvis_phrase, args=("Spotify playback started, sir.",), daemon=True).start()
+        elif "vs code" in text or "code" in text or "vscode" in text:
+            if self.vosk_recognizer:
+                self.vosk_recognizer.Reset()
+            bridge.set_state("processing")
+            open_vscode_window()
+            threading.Thread(target=say_jarvis_phrase, args=("Visual Studio Code is ready.",), daemon=True).start()
+        elif "chrome" in text or "browser" in text:
+            if self.vosk_recognizer:
+                self.vosk_recognizer.Reset()
+            bridge.set_state("processing")
+            open_chrome_browser()
+            threading.Thread(target=say_jarvis_phrase, args=("Google Chrome launched.",), daemon=True).start()
+
+    def _handle_claps(self, level: float, threshold: float, now: float) -> None:
+        # Check wake-word window timeout
+        if REQUIRE_WAKE_WORD and self.oww_model is not None:
+            if self.wake_armed_until > 0.0 and now > self.wake_armed_until:
+                self.wake_armed_until = 0.0
+                self.clap_times = []
+                if not self.wake_window_expired_logged:
+                    self.wake_window_expired_logged = True
+                    log.info("⏳ Wake window expired (%.1fs). Returning to waiting mode...", WAKE_WINDOW_S)
+
+        # Clean burst hits
+        self.recent_burst_hits = [t for t in self.recent_burst_hits if (now - t) <= BURST_WINDOW_S]
+        if len(self.recent_burst_hits) > MAX_BURST_HITS:
+            self.clap_times = []
+            self.typing_suppress_until = now + 0.6
+
+        # Check 2-clap timeout
+        if len(self.clap_times) == 2 and (now - self.clap_times[-1]) > MAX_CLAP_GAP_S:
+            gap = self.clap_times[1] - self.clap_times[0]
+            self.clap_times = []
+            self.last_action_time = now
+            self.wake_armed_until = 0.0
+            if not self.welcome_sequence_done:
+                self.welcome_sequence_done = True
+                log.info("✅ 2 CLAPS DETECTED (gap=%.3fs) -> Running workspace setup actions...", gap)
+                threading.Thread(target=run_double_clap_actions, daemon=True).start()
+        elif len(self.clap_times) == 1 and (now - self.clap_times[0]) > MAX_CLAP_GAP_S:
+            self.clap_times = []
+
+        # Detect spike
+        if (
+            self.spike_armed
+            and level >= threshold
+            and (now - self.last_action_time) >= COOLDOWN_S
+        ):
+            self.spike_armed = False
+            self.recent_burst_hits.append(now)
+            if now < self.typing_suppress_until or len(self.recent_burst_hits) > MAX_BURST_HITS:
+                self.clap_times = []
+                return
+
+            if REQUIRE_WAKE_WORD and self.oww_model is not None:
+                if now > self.wake_armed_until:
+                    return
+
+            if not self.clap_times:
+                self.clap_times = [now]
+                log.info("👏 Clap hit [1] (rms=%.4f). Waiting for next clap...", level)
+            else:
+                gap = now - self.clap_times[-1]
+                if gap < MIN_CLAP_GAP_S:
+                    pass
+                elif gap <= MAX_CLAP_GAP_S:
+                    self.clap_times.append(now)
+                    if len(self.clap_times) == 2:
+                        log.info("👏 Clap hit [2]! Waiting %.2fs to distinguish 2 vs 3 claps...", MAX_CLAP_GAP_S)
+                    elif len(self.clap_times) == 3:
+                        log.info("🛑 3 CLAPS DETECTED! Initiating shutdown countdown...")
+                        self.clap_times = []
+                        self.last_action_time = now
+                        self.wake_armed_until = 0.0
+                        if TRIPLE_CLAP_ENABLED:
+                            threading.Thread(target=run_triple_clap_actions, daemon=True).start()
+                else:
+                    self.clap_times = [now]
+                    log.info("👏 Clap hit [1] (new sequence, rms=%.4f)!", level)
+
+
+def main() -> int:
+    global UI_PROCESS
+    blocksize = block_samples()
+
+    # Start JarvisBridge WebSocket Server
+    bridge.start()
+
+    # Launch desktop UI overlay process once in background if enabled
+    LAUNCH_DESKTOP_UI = os.environ.get("JARVIS_LAUNCH_DESKTOP_UI", "True").strip().lower() in ("true", "1", "yes")
+    if LAUNCH_DESKTOP_UI and sys.platform == "win32":
+        try:
+            ui_script = Path(__file__).resolve().parent / "ui_window.py"
+            if ui_script.is_file():
+                _cleanup_ui_process()
+                popen_kw: dict = {
+                    "args": [sys.executable, str(ui_script)],
+                    "stdin": subprocess.DEVNULL,
+                    "stdout": subprocess.DEVNULL,
+                    "stderr": subprocess.DEVNULL,
+                }
+                popen_kw["creationflags"] = subprocess.CREATE_NO_WINDOW
+                UI_PROCESS = subprocess.Popen(**popen_kw)
+                log.info("Launched Jarvis desktop UI overlay process (hidden by default, PID: %d).", UI_PROCESS.pid)
+        except Exception as e:
+            log.warning("Could not launch desktop UI overlay: %s", e)
+
+    coordinator = JarvisCoordinator(blocksize)
+
+    log.info("===============================================================")
+    log.info(" JARVIS RUNTIME COORDINATOR — INTENT ROUTER & VAD ENGINE")
+    log.info("===============================================================")
+    log.info(" Mode: UNIFIED RUNTIME (Command Mode & Conversation Mode)")
+    log.info(" Activation 1: 'Hey Jarvis, I need your help' -> Conversation UI")
+    log.info(" Activation 2: 'Hey Jarvis, open Spotify' / Claps -> Direct Command")
+    log.info(" Deactivation: 'Jarvis, go to sleep' -> Close conversation UI")
+    log.info(" Audio capture: Rate=%d Hz, Block=%d ms", SAMPLE_RATE, BLOCK_MS)
+    log.info("===============================================================")
+
+    input_idx = _choose_input_device(blocksize)
+    coordinator.stream_start_time = time.monotonic()
+
+    try:
+        with sd.InputStream(
+            device=input_idx,
+            samplerate=SAMPLE_RATE,
+            channels=CHANNELS,
+            dtype="float32",
+            blocksize=blocksize,
+        ) as stream:
+            while True:
+                data, overflowed = stream.read(blocksize)
+                if overflowed:
+                    log.warning("Input overflow; try a larger BLOCK_MS")
+
+                now = time.monotonic()
+                coordinator.process_frame(data, now)
+
+    except KeyboardInterrupt:
+        log.info("Stopped by user.")
+        return 0
+    except sd.PortAudioError as e:
+        log.error("Audio error: %s", e)
+        return 1
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+

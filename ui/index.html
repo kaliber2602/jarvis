@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Jarvis Reactive Particle Orb</title>
+  <link rel="stylesheet" href="style.css?v=55">
+</head>
+<body>
+  <!-- Native Frameless Border Drag Resize Handles -->
+  <div class="resize-handle top" onmousedown="window.pywebview && window.pywebview.api && window.pywebview.api.start_resize(3)"></div>
+  <div class="resize-handle bottom" onmousedown="window.pywebview && window.pywebview.api && window.pywebview.api.start_resize(6)"></div>
+  <div class="resize-handle left" onmousedown="window.pywebview && window.pywebview.api && window.pywebview.api.start_resize(1)"></div>
+  <div class="resize-handle right" onmousedown="window.pywebview && window.pywebview.api && window.pywebview.api.start_resize(2)"></div>
+  <div class="resize-handle top-left" onmousedown="window.pywebview && window.pywebview.api && window.pywebview.api.start_resize(4)"></div>
+  <div class="resize-handle top-right" onmousedown="window.pywebview && window.pywebview.api && window.pywebview.api.start_resize(5)"></div>
+  <div class="resize-handle bottom-left" onmousedown="window.pywebview && window.pywebview.api && window.pywebview.api.start_resize(7)"></div>
+  <div class="resize-handle bottom-right" onmousedown="window.pywebview && window.pywebview.api && window.pywebview.api.start_resize(8)"></div>
+
+  <!-- Fullscreen WebGL Canvas Mount -->
+  <div id="canvas-container"></div>
+
+  <!-- Wake-word flash animation overlay -->
+  <div id="flash-overlay" class="flash-overlay"></div>
+
+  <!-- Discreet Development Helper (Hidden by default in production, press 'H' to toggle) -->
+  <div id="dev-hud" class="dev-hud hidden">
+    <div class="dev-state-badge" id="dev-state-badge">HIDDEN</div>
+    <div class="dev-buttons">
+      <button class="dev-btn" data-state="hidden">1: Hidden</button>
+      <button class="dev-btn" data-state="wake">2: Wake</button>
+      <button class="dev-btn" data-state="listening">3: Listening</button>
+      <button class="dev-btn" data-state="processing">4: Processing</button>
+      <button class="dev-btn" data-state="speaking">5: Speaking</button>
+      <button class="dev-btn" data-state="closing">6: Close</button>
+    </div>
+    <span class="dev-hint">[1:Hide | 2:Wake | 3:Listen | 4:Proc | 5:Speak | 6:Close | H:HUD]</span>
+  </div>
+
+  <!-- Three.js Library -->
+  <script src="lib/three.min.js"></script>
+  <script>
+    if (typeof THREE === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');
+    }
+  </script>
+
+  <!-- Official GIS Natural Earth GeoJSON Dataset for Zero-Distortion Coastlines -->
+  <script src="lib/world_geo.js"></script>
+
+  <!-- Core Jarvis Orb Engine (cache-busted v55) -->
+  <script src="orb.js?v=55"></script>
+</body>
+</html>
