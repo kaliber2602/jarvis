@@ -117,8 +117,8 @@ class CommandRouter:
                 log.info("[ROUTER] Fast-path routing to 'open_app:%s' for '%s'", canonical_id, text)
                 return RouteTarget.DETERMINISTIC_ACTION, f"open_app:{canonical_id}", ctx.to_dict()
 
-        # 6. Fast-Path Deterministic Media Control
-        if ctx.intent == "MEDIA_CONTROL" and not ctx.is_compound:
+        # 6. Fast-Path Deterministic Media Control (Spotify / Music)
+        if ctx.intent == "MEDIA_CONTROL" and not ctx.is_compound and any(sk in cleaned for sk in ("spotify", "nhạc", "bài hát", "song", "music", "play spotify")):
             log.info("[ROUTER] Fast-path routing to 'open_spotify' for media command '%s'", text)
             return RouteTarget.DETERMINISTIC_ACTION, "open_spotify", ctx.to_dict()
 

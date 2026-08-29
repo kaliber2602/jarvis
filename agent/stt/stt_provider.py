@@ -12,6 +12,7 @@ import io
 import json
 import logging
 import os
+import re
 import tempfile
 import wave
 from typing import Any, List, Optional
@@ -126,19 +127,75 @@ class FasterWhisperProvider(STTProvider):
             pcm_i16 = np.frombuffer(pcm_bytes, dtype=np.int16)
             audio_f32 = pcm_i16.astype(np.float32) / 32768.0
 
+            # Automatic Gain Control (AGC): Peak normalize quiet mic captures safely
+            peak = float(np.max(np.abs(audio_f32))) if len(audio_f32) > 0 else 0.0
+            if peak > 0.003:
+                gain = min(0.85 / peak, 10.0)
+                audio_f32 = np.clip(audio_f32 * gain, -1.0, 1.0)
+            elif peak <= 0.001:
+                return STTResult(text="", raw_text="", language="vi", confidence=0.0, provider="faster-whisper")
+
             lang = None if self.default_language in ("auto", "none", "") else self.default_language
+            bilingual_prompt = "Mở YouTube, mở trình duyệt, mở Google Chrome, mở VS Code, đóng cửa sổ, chuyển tab."
             segments_gen, info = self._model.transcribe(
                 audio_f32,
                 language=lang,
                 beam_size=5,
-                vad_filter=True,
-                vad_parameters=dict(min_silence_duration_ms=500),
+                vad_filter=False,  # Audio is already segmented by central Silero VAD
+                initial_prompt=bilingual_prompt,
+                condition_on_previous_text=False,
+                repetition_penalty=1.2,
+                no_repeat_ngram_size=3,
+                compression_ratio_threshold=2.4,
+                log_prob_threshold=-1.0,
+                no_speech_threshold=0.6,
+                temperature=[0.0, 0.2, 0.4],
             )
 
             segments = list(segments_gen)
             full_text = " ".join(s.text.strip() for s in segments if s.text.strip()).strip()
             detected_lang = info.language if info else "en"
             lang_prob = float(info.language_probability) if info else 1.0
+
+            # Guard: If language detector guessed an irrelevant language or returned empty on short audio
+            if (detected_lang not in ("vi", "en") or not full_text or lang_prob < 0.60) and lang is None:
+                log.info(
+                    "[STT] Language '%s' (prob=%.2f) uncertain/empty -> Re-transcribing with 'vi' prior...",
+                    detected_lang,
+                    lang_prob,
+                )
+                retry_gen, retry_info = self._model.transcribe(
+                    audio_f32,
+                    language="vi",
+                    beam_size=5,
+                    vad_filter=False,
+                    initial_prompt=bilingual_prompt,
+                    condition_on_previous_text=False,
+                    repetition_penalty=1.2,
+                    no_repeat_ngram_size=3,
+                    compression_ratio_threshold=2.4,
+                    log_prob_threshold=-1.0,
+                    no_speech_threshold=0.6,
+                    temperature=[0.0, 0.2, 0.4],
+                )
+                retry_segments = list(retry_gen)
+                retry_text = " ".join(s.text.strip() for s in retry_segments if s.text.strip()).strip()
+                if retry_text:
+                    full_text = retry_text
+                    segments = retry_segments
+                    detected_lang = "vi"
+                    lang_prob = 0.90
+
+            # Collapse any consecutive duplicate words (anti-stutter de-duplication)
+            if full_text:
+                full_text = re.sub(r'(?i)\b(\w+)(?:[\s,;.!?]+\1\b)+', r'\1', full_text).strip()
+
+            log.info(
+                "[STT] Faster-Whisper: transcribed='%s' | lang='%s' (prob=%.2f)",
+                full_text,
+                detected_lang,
+                lang_prob,
+            )
 
             segment_dicts = [
                 {
@@ -150,13 +207,6 @@ class FasterWhisperProvider(STTProvider):
                 }
                 for s in segments
             ]
-
-            log.info(
-                "[STT] Faster-Whisper: transcribed='%s' | lang='%s' (prob=%.2f)",
-                full_text,
-                detected_lang,
-                lang_prob,
-            )
 
             return STTResult(
                 text=full_text,

@@ -104,7 +104,8 @@ class AppRegistry:
                 executable="chrome.exe",
                 aliases=[
                     "chrome", "google chrome", "chôm", "crôm", "cờ rôm", "trình duyệt",
-                    "browser", "web browser", "graham", "google"
+                    "browser", "web browser", "graham", "google",
+                    "chình duyệt", "chinh duyet", "trinh duyet", "xanh chình duyệt", "sang chình duyệt"
                 ],
                 source="curated",
                 description="Web browser by Google",

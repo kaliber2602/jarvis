@@ -94,12 +94,21 @@ class JarvisBridge:
         log.info("JarvisBridge WebSocket server started on ws://%s:%d", self.host, self.port)
 
     async def _serve(self):
-        try:
-            async with websockets.serve(self._handle_client, self.host, self.port):
-                while self.running:
-                    await asyncio.sleep(0.5)
-        except Exception as e:
-            log.error("WebSocket server error: %s", e)
+        for attempt in range(5):
+            try:
+                async with websockets.serve(self._handle_client, self.host, self.port):
+                    while self.running:
+                        await asyncio.sleep(0.5)
+                break
+            except OSError as e:
+                if attempt < 4:
+                    log.warning("[BRIDGE] Port %d busy (%s). Retrying in 1s (attempt %d/5)...", self.port, e, attempt + 1)
+                    await asyncio.sleep(1.0)
+                else:
+                    log.error("WebSocket server error: %s", e)
+            except Exception as e:
+                log.error("WebSocket server error: %s", e)
+                break
 
     async def _handle_client(self, websocket):
         self.clients.add(websocket)

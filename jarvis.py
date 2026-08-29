@@ -162,7 +162,7 @@ MAX_BURST_HITS = 3
 # Startup mic probe & calibration:
 STARTUP_WARMUP_S = 2.5  # Seconds to calibrate ambient noise on startup before enabling claps
 INPUT_PROBE_S = 0.5
-INPUT_SILENT_RMS = 0.001
+INPUT_SILENT_RMS = 0.00005
 
 # Spotify: "spotify:track:TRACK_ID" or https://open.spotify.com/track/...
 # YouTube: https://www.youtube.com/watch?v=...
@@ -505,13 +505,21 @@ def _play_fallback_voice(text: str) -> None:
 
 def say_jarvis_phrase(text: str) -> None:
     """
-    Synthesize and play speech using the configured TTSProvider (Hybrid, ElevenLabs, VieNeu, System SAPI)
-    and SoundDevicePlayback engine with real-time UI orb levels and barge-in interruption.
+    Synthesize and play speech using cached ElevenLabs WAV files under .cache/jarvis_welcome/
+    or the configured TTSProvider (Hybrid, ElevenLabs, VieNeu, System SAPI) with real-time UI orb levels.
     """
     global JARVIS_SPEAKING_UNTIL
     if not text.strip():
         return
     clean_text = text.strip()
+
+    # 1. First Priority: Replay cached ElevenLabs audio from .cache/jarvis_welcome/ if available
+    v_id, m_id, fmt, r = elevenlabs_env_config()
+    cached_path = _jarvis_welcome_cache_path(clean_text, v_id, m_id, fmt)
+    if cached_path.is_file():
+        log.info("Playing phrase from cache: %s", cached_path)
+        if _play_pcm_wav_file(cached_path):
+            return
 
     try:
         from audio.playback import SoundDevicePlayback
@@ -527,6 +535,12 @@ def say_jarvis_phrase(text: str) -> None:
             duration = len(pcm_bytes) / float(sample_rate * 2)
             JARVIS_SPEAKING_UNTIL = time.monotonic() + duration + 0.5
             AudioManager.get_instance().set_speaking_until(JARVIS_SPEAKING_UNTIL)
+
+            # Cache the newly generated audio for fast zero-latency replay
+            try:
+                _save_pcm_wav_file(cached_path, pcm_bytes, sample_rate)
+            except Exception:
+                pass
 
             log.info("[PLAYBACK] Playing audio (%d bytes, %.2fs, %d Hz)", len(pcm_bytes), duration, sample_rate)
             playback.play_pcm(pcm_bytes, sample_rate=sample_rate)
@@ -1780,6 +1794,10 @@ class JarvisCoordinator:
         if level < threshold * RETRIGGER_RATIO:
             self.spike_armed = True
 
+        # Ignore incoming audio if Jarvis is currently speaking / playing audio
+        if self.audio_mgr.is_speaking(now) or (now < JARVIS_SPEAKING_UNTIL):
+            return
+
         pcm_bytes = (np.clip(data, -1.0, 1.0) * 32767).astype(np.int16).tobytes()
 
         # A. Neural OpenWakeWord detection
@@ -1788,7 +1806,7 @@ class JarvisCoordinator:
             prediction = self.oww_model.predict(pcm_i16)
             score = prediction.get("hey_jarvis", 0.0)
 
-            if score >= WAKE_WORD_THRESHOLD and (now - self.last_wake_trigger) > 2.5:
+            if score >= WAKE_WORD_THRESHOLD and (now - self.last_wake_trigger) > 4.0:
                 self.last_wake_trigger = now
                 self.wake_armed_until = now + WAKE_WINDOW_S
                 self.wake_window_expired_logged = False
@@ -1800,10 +1818,10 @@ class JarvisCoordinator:
                     score,
                     WAKE_WORD_THRESHOLD,
                 )
-                if WAKE_FEEDBACK_ENABLED and WAKE_FEEDBACK_PHRASE:
+                if WAKE_FEEDBACK_ENABLED:
                     threading.Thread(
                         target=say_jarvis_phrase,
-                        args=(WAKE_FEEDBACK_PHRASE,),
+                        args=("Yes sir?",),
                         daemon=True
                     ).start()
 
@@ -1831,14 +1849,17 @@ class JarvisCoordinator:
                 self.vosk_recognizer.Reset()
             return
 
-        # Dedicated Conversation Activation Phrase: "Jarvis, I need your help" / "Hey Jarvis, I need your help"
+        # Dedicated Conversation Activation Phrase: "Jarvis, I need your help" / "Jarvis ơi"
         conv_phrases = (
             "i need your help", "need your help", "need help", "help me",
-            "and it your hair", "a nice your hair", "it your hair", "your hair",
+            "jarvis oi", "jarvis ơi", "goi jarvis", "gọi jarvis", "tro chuyen", "trò chuyện",
+            "giup toi", "giúp tôi", "and it your hair", "a nice your hair", "it your hair",
             "start conversation", "open jarvis", "wake up", "i need help"
         )
-        has_conv_phrase = any(cp in text for cp in conv_phrases) or (self.wake_armed_until > now and "help" in text)
-        if has_conv_phrase:
+        is_conv_transition = any(cp in text for cp in conv_phrases) or (
+            self.wake_armed_until > now and any(k in text for k in ("help", "need", "tro chuyen", "trò chuyện", "jarvis", "chavis", "ơi", "oi"))
+        )
+        if is_conv_transition:
             log.info("🌟 [INTENT: CONVERSATION] Dedicated phrase detected ('%s') -> Materializing Jarvis Orb...", text)
             if self.vosk_recognizer:
                 self.vosk_recognizer.Reset()
@@ -1998,34 +2019,33 @@ class JarvisCoordinator:
             self._chat_turn_pcm.append(pcm_bytes)
 
         if self.vosk_recognizer is not None:
-            # 1. Accumulate speech chunks into turn buffer
-            if self.vosk_recognizer.AcceptWaveform(pcm_bytes):
-                res = json.loads(self.vosk_recognizer.Result())
-                chunk = res.get("text", "").strip()
-                if chunk:
-                    self._chat_turn_text.append(chunk)
+            self.vosk_recognizer.AcceptWaveform(pcm_bytes)
 
-            # 2. Check if user's speaking turn is fully complete (1.0s silence after speech)
-            if self._user_is_speaking and (now - self._last_speech_time >= 1.0 or vad_evt == "SPEECH_END"):
-                self._user_is_speaking = False
+        # Check if user's speaking turn is fully complete (0.85s silence after speech or VAD SPEECH_END)
+        if self._user_is_speaking and (now - self._last_speech_time >= 0.85 or vad_evt == "SPEECH_END"):
+            self._user_is_speaking = False
 
-                # Finalize live Vosk stream without double-processing audio
-                res = json.loads(self.vosk_recognizer.FinalResult())
-                final_chunk = res.get("text", "").strip()
-                if final_chunk:
-                    self._chat_turn_text.append(final_chunk)
+            # Assemble full turn audio
+            turn_pcm = full_pcm if full_pcm else b"".join(self._chat_turn_pcm)
+            self._chat_turn_pcm.clear()
+            self._chat_turn_text.clear()
 
+            # Transcribe with SmartSTT (Faster-Whisper multilingual -> Google -> Vosk fallback)
+            from agent.smart_stt import SmartSTT
+            raw_turn = SmartSTT.get_instance().transcribe_audio_pcm(
+                turn_pcm,
+                sample_rate=SAMPLE_RATE,
+                vosk_recognizer=self.vosk_recognizer,
+            ).strip()
+
+            if self.vosk_recognizer is not None:
                 self.vosk_recognizer.Reset()
 
-                raw_turn = " ".join(self._chat_turn_text).strip()
-                self._chat_turn_text.clear()
-                self._chat_turn_pcm.clear()
-
-                if raw_turn:
-                    # Run Voice Normalization & Semantic Interpretation Pipeline
-                    ctx = VoiceNormalizationPipeline.get_instance().process_transcript(raw_turn)
-                    log.info("🎙️ [SMART TURN COMPLETED] Raw: '%s' | Normalized: '%s'", ctx.raw_transcript, ctx.normalized_transcript)
-                    self._handle_chat_utterance(ctx.normalized_transcript or raw_turn, interpretation=ctx)
+            if raw_turn:
+                # Run Voice Normalization & Semantic Interpretation Pipeline
+                ctx = VoiceNormalizationPipeline.get_instance().process_transcript(raw_turn)
+                log.info("🎙️ [SMART TURN COMPLETED] Raw: '%s' | Normalized: '%s'", ctx.raw_transcript, ctx.normalized_transcript)
+                self._handle_chat_utterance(ctx.normalized_transcript or raw_turn, interpretation=ctx)
 
     def _handle_chat_utterance(self, text: str, interpretation: InterpretationContext | None = None) -> None:
         ctx = interpretation or VoiceNormalizationPipeline.get_instance().process_transcript(text)
@@ -2196,9 +2216,32 @@ class JarvisCoordinator:
                 log.info("[CHAT] Session closed. Audio ownership returned to TRIGGER mode.")
 
 
+def _reclaim_port(port: int = 8765) -> None:
+    """Terminates any stale background process listening on the WebSocket port on Windows."""
+    if sys.platform != "win32":
+        return
+    try:
+        cmd = f"netstat -ano | findstr :{port}"
+        res = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        current_pid = os.getpid()
+        for line in res.stdout.strip().splitlines():
+            if "LISTENING" in line:
+                parts = line.strip().split()
+                if len(parts) >= 5:
+                    pid = int(parts[-1])
+                    if pid > 0 and pid != current_pid:
+                        log.info("[BRIDGE] Reclaiming port %d from stale process PID %d...", port, pid)
+                        subprocess.run(f"taskkill /F /PID {pid}", shell=True, capture_output=True)
+    except Exception as e:
+        log.debug("Port reclaim error: %s", e)
+
+
 def main() -> int:
     global UI_PROCESS
     blocksize = block_samples()
+
+    # Reclaim port 8765 from any orphan background processes
+    _reclaim_port(getattr(bridge, "port", 8765))
 
     # Start JarvisBridge WebSocket Server
     bridge.start()

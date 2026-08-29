@@ -13,5 +13,8 @@
   "shut": "search",
   "chavez go to sleep": "go to sleep",
   "with window": "switch_window",
-  "jarvis who to sleep": "go to sleep"
+  "jarvis who to sleep": "go to sleep",
+  "chavest go to sleep": "go to sleep",
+  "close_window.": "close_window",
+  "close this window.": "close_window"
 }

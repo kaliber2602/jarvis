@@ -113,6 +113,16 @@ class EntityResolver:
         if not p or len(p) < 2:
             return None
 
+        # Ignore generic window/tab keywords so they are never resolved as application names (e.g. Cursor, Steam)
+        window_keywords = (
+            "cửa sổ", "cua so", "cửa sổ này", "cua so nay", "cửa sổ hiện tại",
+            "tab này", "cửa sổ đang mở", "cửa sổ khác", "window", "tab",
+            "sổ", "so", "mở sổ", "mo so", "đóng sổ", "dong so", "đổi sổ", "doi so",
+            "mở cửa sổ", "mo cua so", "đóng cửa sổ", "dong cua so", "chuyển sổ", "chuyen so"
+        )
+        if p in window_keywords:
+            return None
+
         # 1. Exact alias lookup in AppRegistry
         exact_app = self.registry.find_by_exact_alias(p)
         if exact_app:
@@ -225,7 +235,10 @@ class IntentResolver:
 
     INTENT_FOCUS_VERBS = (
         "switch to", "focus", "bring to front", "switch window", "chuyển sang",
-        "đổi sang", "chuyển qua", "qua", "chuyển tab", "đổi cửa sổ", "alt tab"
+        "đổi sang", "chuyển qua", "chuyển", "đổi", "chuyển cửa sổ", "đổi cửa sổ",
+        "chuyển window", "đổi window", "cửa sổ khác", "cửa sổ hiện tại", "chuyển tab",
+        "đổi tab", "alt tab", "chuyen sang", "chuyen qua", "chuyen cua so", "doi cua so",
+        "chuyen window", "doi window", "qua cửa sổ", "qua window", "sang cửa sổ", "sang window"
     )
 
     INTENT_SEARCH_VERBS = (
@@ -250,7 +263,7 @@ class IntentResolver:
         "next tab", "previous tab", "new tab", "close tab", "reopen tab",
         "new_tab", "previous_tab", "next_tab", "close_tab", "reopen_tab", "open tab",
         "tab 1", "tab 2", "tab 3", "tab 4", "tab tiếp theo", "tab trước", "mở tab mới",
-        "khôi phục tab", "mở lại tab", "đóng tab", "tắt tab"
+        "khôi phục tab", "mở lại tab", "đóng tab", "tắt tab", "tab mới", "chọn tab"
     )
 
     INTENT_SYSTEM_VERBS = (
@@ -259,8 +272,8 @@ class IntentResolver:
     )
 
     INTENT_SLEEP_VERBS = (
-        "go to sleep", "sleep", "jarvis sleep", "dismiss", "goodbye",
-        "bye", "đi ngủ đi", "tắt đi", "sleep now"
+        "go to sleep", "jarvis go to sleep", "jarvis, go to sleep",
+        "đi ngủ đi", "đi ngủ", "ngủ đi", "sleep now"
     )
 
     COMPOUND_CONJUNCTIONS = (
@@ -296,30 +309,31 @@ class IntentResolver:
         if any(tv in cleaned for tv in self.INTENT_TAB_VERBS):
             return ("TAB_MANAGEMENT", None, 0.95, is_compound, False, None)
 
-        # 4. Media Playback (Spotify / YouTube)
+        # 4. Media Playback (Spotify / Music)
         if any(mv in cleaned for mv in self.INTENT_MEDIA_VERBS) and not any(ov in cleaned for ov in ("open", "mở")):
-            return ("MEDIA_CONTROL", None, 0.92, is_compound, False, None)
+            if not any(vk in cleaned for vk in ("video", "youtube", "clip", "thứ 1", "thứ 2", "thứ 3", "first", "second", "third", "tap")):
+                return ("MEDIA_CONTROL", None, 0.92, is_compound, False, None)
 
-        # 5. Application Launching (OPEN_APPLICATION)
+        # 5. Application Launching / Focusing / Closing
         has_open_verb = any(ov in f" {cleaned} " or cleaned.startswith(f"{ov} ") for ov in self.INTENT_OPEN_VERBS)
         has_close_verb = any(cv in f" {cleaned} " or cleaned.startswith(f"{cv} ") for cv in self.INTENT_CLOSE_VERBS)
-        has_focus_verb = any(fv in f" {cleaned} " or cleaned.startswith(f"{fv} ") for fv in self.INTENT_FOCUS_VERBS)
+        has_focus_verb = any(fv in cleaned for fv in self.INTENT_FOCUS_VERBS)
         has_search_verb = any(sv in f" {cleaned} " or cleaned.startswith(f"{sv} ") for sv in self.INTENT_SEARCH_VERBS)
 
         # Find primary application entity (highest confidence)
         app_entities = [e for e in entities if e.entity_type == "application"]
         primary_app = max(app_entities, key=lambda e: e.confidence) if app_entities else None
 
-        # 5. Web Search (evaluated before pure single-verb open when search keywords exist)
-        if has_search_verb:
-            return ("SEARCH_WEB", primary_app, 0.95, is_compound, False, None)
-
-        # 6. Application Launching (OPEN_APPLICATION)
+        # 5. Application Launching (OPEN_APPLICATION) - prioritized when open verb and primary app exist
         if has_open_verb and primary_app:
             conf = min(0.98, primary_app.confidence + 0.05)
             if primary_app.confidence < 0.60:
                 return ("OPEN_APPLICATION", primary_app, conf, is_compound, True, f"Did you mean {primary_app.name}?")
             return ("OPEN_APPLICATION", primary_app, conf, is_compound, False, None)
+
+        # 6. Web Search (evaluated after open app when open verb and primary app exist)
+        if has_search_verb:
+            return ("SEARCH_WEB", primary_app, 0.95, is_compound, False, None)
 
         if has_close_verb:
             conf = 0.94 if primary_app else 0.88

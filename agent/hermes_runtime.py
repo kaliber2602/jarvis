@@ -301,12 +301,21 @@ class HermesRuntime:
             return {"actions": actions, "speech_response": "Centered window on screen."}
 
         # 4. Window Switching / Focus
-        if ctx.intent == "FOCUS_APPLICATION" or "switch_window" in cleaned or "switch window" in cleaned or "next window" in cleaned or "doi cua so" in cleaned or "chuyen cua so" in cleaned or "alt tab" in cleaned or "switch to" in cleaned or "chuyen sang" in cleaned:
+        switch_patterns = (
+            "switch_window", "switch window", "switch to", "next window", "other window",
+            "doi cua so", "chuyen cua so", "chuyen window", "doi window",
+            "đổi cửa sổ", "chuyển cửa sổ", "chuyển window", "đổi window",
+            "chuyển qua", "chuyển sang", "chuyen qua", "chuyen sang", "alt tab",
+            "cửa sổ khác", "cua so khac", "cửa sổ hiện tại", "cua so hien tai",
+            "chuyển", "chuyen", "đổi", "doi"
+        )
+        has_window_kw = any(w in cleaned for w in ("cửa sổ", "cua so", "window", "trình duyệt", "browser", "chrome", "vscode", "code", "spotify", "youtube"))
+        if ctx.intent == "FOCUS_APPLICATION" or (any(sp in cleaned for sp in switch_patterns) and has_window_kw):
             target_app = ctx.target_entity.name if ctx.target_entity else None
             if not target_app:
-                for app_name in ("chrome", "vscode", "code", "antigravity", "cursor", "spotify", "discord", "notepad"):
+                for app_name in ("chrome", "browser", "trình duyệt", "trinh duyet", "vscode", "code", "antigravity", "cursor", "spotify", "discord", "notepad", "youtube"):
                     if app_name in cleaned:
-                        target_app = app_name
+                        target_app = "chrome" if app_name in ("browser", "trình duyệt", "trinh duyet") else app_name
                         break
 
             actions.append({
@@ -411,24 +420,39 @@ class HermesRuntime:
             actions.append({"tool": "maximize_window", "params": {}})
             return {"actions": actions, "speech_response": "Window maximized."}
 
-        # 8. YouTube Video Selection / Click
-        if "click second video" in cleaned or "second video" in cleaned or "thu 2" in cleaned or "thu hai" in cleaned or "2nd video" in cleaned:
-            actions.append({"tool": "select_youtube_video", "params": {"index": 2}})
-            return {"actions": actions, "speech_response": "Selecting the second video."}
-
-        if "click first video" in cleaned or "first video" in cleaned or "thu 1" in cleaned or "thu nhat" in cleaned or "dau tien" in cleaned or "top one" in cleaned or "top 1" in cleaned or "top video" in cleaned:
-            actions.append({"tool": "select_youtube_video", "params": {"index": 1}})
-            return {"actions": actions, "speech_response": "Selecting the first video."}
-
-        if "click third video" in cleaned or "third video" in cleaned or "thu 3" in cleaned or "thu ba" in cleaned:
-            actions.append({"tool": "select_youtube_video", "params": {"index": 3}})
-            return {"actions": actions, "speech_response": "Selecting the third video."}
-
+        # 8. Open YouTube + Video Selection (Compound Intent)
         if "youtube" in cleaned and any(k in cleaned for k in ("video", "thu 1", "thu 2", "first", "second", "chọn", "select", "play")):
-            video_idx = 2 if any(k in cleaned for k in ("thu 2", "thu hai", "2", "second", "2nd")) else 1
+            video_idx = 2 if any(k in cleaned for k in ("thu 2", "thu hai", "thứ hai", "2", "second", "2nd")) else 1
+            if any(k in cleaned for k in ("thu 3", "thu ba", "thứ ba", "3", "third", "3rd")):
+                video_idx = 3
             actions.append({"tool": "open_url", "params": {"url": "https://www.youtube.com"}})
             actions.append({"tool": "select_youtube_video", "params": {"index": video_idx}})
             return {"actions": actions, "speech_response": f"Opening YouTube and selecting video {video_idx}."}
+
+        # 8b. Active Window YouTube Video Selection / Click
+        video_select_match = re.search(
+            r"(?:chọn|click|play|bật|mở|select|xem|phát)?\s*(?:video|clip)\s*(?:thứ\s*|number\s*|so\s*|số\s*)?(\d+|1|2|3|4|dau\s*tien|đầu\s*tiên|first|1st|thu\s*hai|thứ\s*hai|second|2nd|thu\s*ba|thứ\s*ba|third|3rd)",
+            cleaned
+        )
+        if video_select_match or any(k in cleaned for k in ("second video", "first video", "third video", "video 1", "video 2", "video 3", "video 4")):
+            idx = 1
+            if video_select_match:
+                raw_idx = video_select_match.group(1).strip()
+                if raw_idx in ("2", "thu hai", "thứ hai", "second", "2nd"):
+                    idx = 2
+                elif raw_idx in ("3", "thu ba", "thứ ba", "third", "3rd"):
+                    idx = 3
+                elif raw_idx in ("4", "thu bon", "thứ bốn", "fourth", "4th"):
+                    idx = 4
+                elif raw_idx.isdigit():
+                    idx = int(raw_idx)
+            elif "second" in cleaned or "2" in cleaned or "thu 2" in cleaned:
+                idx = 2
+            elif "third" in cleaned or "3" in cleaned or "thu 3" in cleaned:
+                idx = 3
+
+            actions.append({"tool": "select_youtube_video", "params": {"index": idx}})
+            return {"actions": actions, "speech_response": f"Playing video {idx}."}
 
         # 9. Open URL / Website
         url_match = re.search(r"(?:open|go\s+to|vào\s+trang)\s+(https?://\S+|www\.\S+|\S+\.(?:com|org|net|io|ai|vn))", cleaned)
@@ -464,6 +488,19 @@ class HermesRuntime:
             actions.append({"tool": "get_system_status", "params": {}})
             return {"actions": actions, "speech_response": "System metrics retrieved. Performance is nominal."}
 
+        # 11b. Direct Browser / IDE / YouTube Opening Rules
+        if any(b in cleaned for b in ("youtube", "you tube", "u tube", "du tup", "du túp", "diu tup", "diu túp")) and any(k in cleaned for k in ("mở", "bật", "open", "launch", "start", "vào", "vao")):
+            actions.append({"tool": "open_url", "params": {"url": "https://www.youtube.com"}})
+            return {"actions": actions, "speech_response": "Opening YouTube."}
+
+        if any(b in cleaned for b in ("trình duyệt", "browser", "chrome", "google chrome", "web browser")) and any(k in cleaned for k in ("mở", "bật", "open", "launch", "start")):
+            actions.append({"tool": "open_application", "params": {"app_name": "Google Chrome"}})
+            return {"actions": actions, "speech_response": "Opening Google Chrome."}
+
+        if any(b in cleaned for b in ("vs code", "vscode", "visual studio code", "code editor")) and any(k in cleaned for k in ("mở", "bật", "open", "launch", "start")):
+            actions.append({"tool": "open_application", "params": {"app_name": "Visual Studio Code"}})
+            return {"actions": actions, "speech_response": "Opening Visual Studio Code."}
+
         # 12. Application Launch via Resolved Entity
         if ctx.target_entity and ctx.target_entity.confidence >= 0.75 and (ctx.intent == "OPEN_APPLICATION" or any(k in cleaned for k in ("open", "mở", "bật", "launch"))):
             app_display_name = ctx.target_entity.name
@@ -481,8 +518,8 @@ class HermesRuntime:
                 "speech_response": "I am Jarvis, your desktop AI assistant. I can open applications, switch or close windows, search the web, inspect files, and manage your workspace."
             }
 
-        # 14. Non-actionable utterance -> Silent recovery
-        log.info("[HERMES_RUNTIME] Non-actionable utterance '%s' -> Silent recovery (no TTS voice spam)", text)
+        # 14. Non-actionable utterance -> Silent recovery (no TTS voice spam)
+        log.info("[HERMES_RUNTIME] Non-actionable utterance '%s' -> Silent recovery", text)
         return {
             "actions": [],
             "speech_response": ""

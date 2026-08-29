@@ -85,6 +85,12 @@ VIETNAMESE_PHONETIC_TRANSLITERATIONS: list[tuple[str, str]] = [
 
     # Window
     (r"\b(?:cửa\s*sổ|cua\s*so|cửa\s*so)\b", "window"),
+    (r"\b(?:then\s*with\s*those|then\s*windows|than\s*windows|than\s*window|zen\s*window|then\s*window)\b", "switch window"),
+
+    # Google Chrome / Web Browser
+    (r"\b(?:gúc\s*gồ\s*chôm|gúc\s*gồ\s*cờ\s*rôm|gu\s*gồ\s*chôm|cờ\s*rôm|chôm\s*chôm)\b", "chrome"),
+    (r"\b(?:xanh\s*chình\s*duyệt|sang\s*chình\s*duyệt|chình\s*duyệt|xanh\s*trình\s*duyệt|sang\s*trình\s*duyệt|qua\s*trình\s*duyệt|sang\s*chình\s*diệt|chình\s*diệt)\b", "trình duyệt"),
+    (r"\b(?:bao\s*sơ|sờ\s*bao|brao\s*sơ|bờ\s*rao\s*sơ)\b", "browser"),
 
     # Window Minimization
     (r"\b(?:many\s*my|many\s*mice|minimise|minima)\b", "minimize"),
@@ -119,7 +125,7 @@ VIETNAMESE_PHONETIC_TRANSLITERATIONS: list[tuple[str, str]] = [
 
     # YouTube
     (r"\b(?:du\s*túp|du\s*tup|diu\s*túp|diu\s*túp|du\s*tu\s*be|gu\s*túp)\b", "youtube"),
-    (r"\b(?:you\s*too|u\s*tube|u\s*the|u\s*tip|you\s*tip)\b", "youtube"),
+    (r"\b(?:you\s*too|u\s*tube|u\s*the|u\s*tip|you\s*tip|man\s*you|man\s*you\s*you|mo\s*you|mo\s*you\s*tube)\b", "youtube"),
 
     # Terminal / PowerShell / Command Prompt
     (r"\b(?:tơ\s*mi\s*nồ|tơ\s*min\s*nồ|tơ\s*mi\s*nần|tơ\s*mi\s*non)\b", "terminal"),
@@ -481,11 +487,12 @@ def calculate_entity_similarity(
                     best_alias = target
                     best_method = "token_overlap"
 
-                # 6. Phonetic Metaphone Similarity
-                phon_score = phonetic_similarity(q_var, t_var)
-                if phon_score >= 0.80 and (phon_score * 0.94) > best_score:
-                    best_score = phon_score * 0.94
-                    best_alias = target
-                    best_method = "metaphone"
+                # 6. Phonetic Metaphone Similarity (require at least 4 chars on both sides and similar length)
+                if len(q_var) >= 4 and len(t_var) >= 4 and abs(len(q_var) - len(t_var)) <= 3:
+                    phon_score = phonetic_similarity(q_var, t_var)
+                    if phon_score >= 0.85 and (phon_score * 0.90) > best_score:
+                        best_score = phon_score * 0.90
+                        best_alias = target
+                        best_method = "metaphone"
 
     return (min(1.0, round(best_score, 4)), best_alias, best_method)

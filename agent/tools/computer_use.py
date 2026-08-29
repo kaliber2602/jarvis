@@ -38,7 +38,25 @@ class ComputerUseTool:
         "chrome": [
             r"Google\Chrome\Application\chrome.exe",
         ],
+        "google chrome": [
+            r"Google\Chrome\Application\chrome.exe",
+        ],
+        "browser": [
+            r"Google\Chrome\Application\chrome.exe",
+        ],
         "vscode": [
+            r"Programs\Microsoft VS Code\Code.exe",
+            r"Microsoft VS Code\Code.exe",
+        ],
+        "visual studio code": [
+            r"Programs\Microsoft VS Code\Code.exe",
+            r"Microsoft VS Code\Code.exe",
+        ],
+        "vs code": [
+            r"Programs\Microsoft VS Code\Code.exe",
+            r"Microsoft VS Code\Code.exe",
+        ],
+        "code": [
             r"Programs\Microsoft VS Code\Code.exe",
             r"Microsoft VS Code\Code.exe",
         ],
@@ -75,12 +93,26 @@ class ComputerUseTool:
         if sys.platform != "win32":
             return shutil.which(name)
 
-        # Standard PATH lookup
+        # 1. Standard PATH lookup
         which_path = shutil.which(name)
         if which_path:
             return which_path
 
-        # Check in Program Files and Local AppData
+        # 2. Check in AppRegistry
+        try:
+            from ..app_registry import AppRegistry
+            reg = AppRegistry.get_instance()
+            app_info = reg.find_app(name) or reg.find_by_exact_alias(name)
+            if app_info and app_info.executable:
+                if os.path.isabs(app_info.executable) and os.path.isfile(app_info.executable):
+                    return app_info.executable
+                p = shutil.which(app_info.executable)
+                if p:
+                    return p
+        except Exception:
+            pass
+
+        # 3. Check in Program Files and Local AppData
         roots = [
             os.environ.get("LOCALAPPDATA", ""),
             os.environ.get("ProgramFiles", r"C:\Program Files"),
@@ -434,62 +466,160 @@ class ComputerUseTool:
     def switch_window(cls, app_name: str | None = None) -> dict[str, Any]:
         """
         Switch focus to a specific application window (e.g. 'chrome', 'vscode', 'antigravity')
-        or cycle to the next window (Alt+Tab).
+        or cycle to the next window in Z-order with full awareness of current and target positions.
         """
         if sys.platform != "win32":
             return {"success": False, "error": "switch_window is only supported on Windows."}
 
         target = (app_name or "").strip().lower()
-        if target and target not in ("next", "other"):
-            # Map canonical names to process names
-            proc_map = {
-                "chrome": "chrome",
-                "browser": "chrome",
-                "vscode": "Code",
-                "code": "Code",
-                "antigravity": "Antigravity",
-                "cursor": "Cursor",
-                "spotify": "Spotify",
-                "discord": "Discord",
-                "notepad": "notepad",
-                "calc": "calc",
-                "explorer": "explorer",
-            }
-            proc_name = proc_map.get(target, target)
-            ps_cmd = (
-                f"$p = Get-Process -Name '{proc_name}' -ErrorAction SilentlyContinue | "
-                f"Where-Object {{ $_.MainWindowHandle -ne 0 }} | Select-Object -First 1; "
-                f"if ($p) {{ "
-                f"  Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class WApi {{ [DllImport(\"user32.dll\")] public static extern bool SetForegroundWindow(IntPtr h); [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int c); }}'; "
-                f"  [WApi]::ShowWindow($p.MainWindowHandle, 9); "
-                f"  [WApi]::SetForegroundWindow($p.MainWindowHandle); "
-                f"}}"
+        if target in ("next", "other", "cửa sổ khác", "cua so khac", "cửa sổ", "cua so", "window", "tab"):
+            target = ""
+        elif target in ("google chrome", "browser", "trình duyệt", "trinh duyet", "web browser", "web"):
+            target = "chrome"
+        elif target in ("visual studio code", "vs code", "vscode", "code editor"):
+            target = "code"
+
+        protected_csv = cls._get_protected_pids_csv()
+        ps_cmd = (
+            f"$excludePids = @({protected_csv}); "
+            f"$targetQuery = '{target}'; "
+            "Add-Type -TypeDefinition '"
+            "using System; using System.Collections.Generic; using System.Text; using System.Runtime.InteropServices; "
+            "public class WSwitch { "
+            "  [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); "
+            "  [DllImport(\"user32.dll\")] public static extern int GetWindowText(IntPtr h, StringBuilder t, int c); "
+            "  [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr h, IntPtr p); "
+            "  [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p); "
+            "  [DllImport(\"user32.dll\")] public static extern bool EnumWindows(EnumWindowsProc cb, IntPtr lp); "
+            "  [DllImport(\"user32.dll\")] public static extern bool IsWindowVisible(IntPtr h); "
+            "  [DllImport(\"user32.dll\")] public static extern bool IsIconic(IntPtr h); "
+            "  [DllImport(\"user32.dll\")] public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach); "
+            "  [DllImport(\"user32.dll\")] public static extern bool SetForegroundWindow(IntPtr h); "
+            "  [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int c); "
+            "  [DllImport(\"user32.dll\")] public static extern bool BringWindowToTop(IntPtr h); "
+            "  [DllImport(\"user32.dll\")] public static extern void SwitchToThisWindow(IntPtr h, bool fUnknown); "
+            "  [DllImport(\"user32.dll\")] public static extern bool SetWindowPos(IntPtr h, IntPtr hInsert, int x, int y, int cx, int cy, uint f); "
+            "  [DllImport(\"kernel32.dll\")] public static extern uint GetCurrentThreadId(); "
+            "  static readonly IntPtr HWND_TOPMOST = new IntPtr(-1); "
+            "  static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2); "
+            "  public delegate bool EnumWindowsProc(IntPtr h, IntPtr lp); "
+            "  public class WInfo { public IntPtr Hwnd; public string Title; public uint Pid; } "
+            "  public static void ForceFocus(IntPtr targetHwnd) { "
+            "    if (targetHwnd == IntPtr.Zero) return; "
+            "    IntPtr curFore = GetForegroundWindow(); "
+            "    uint curThread = GetCurrentThreadId(); "
+            "    uint foreThread = GetWindowThreadProcessId(curFore, IntPtr.Zero); "
+            "    uint targetThread = GetWindowThreadProcessId(targetHwnd, IntPtr.Zero); "
+            "    if (foreThread != curThread && foreThread != 0) AttachThreadInput(curThread, foreThread, true); "
+            "    if (targetThread != curThread && targetThread != 0) AttachThreadInput(curThread, targetThread, true); "
+            "    ShowWindow(targetHwnd, 9); "
+            "    ShowWindow(targetHwnd, 5); "
+            "    BringWindowToTop(targetHwnd); "
+            "    SetForegroundWindow(targetHwnd); "
+            "    SwitchToThisWindow(targetHwnd, true); "
+            "    SetWindowPos(targetHwnd, HWND_TOPMOST, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040); "
+            "    SetWindowPos(targetHwnd, HWND_NOTOPMOST, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040); "
+            "    SetForegroundWindow(targetHwnd); "
+            "    if (foreThread != curThread && foreThread != 0) AttachThreadInput(curThread, foreThread, false); "
+            "    if (targetThread != curThread && targetThread != 0) AttachThreadInput(curThread, targetThread, false); "
+            "  } "
+            "  public static string ExecuteSwitch(int[] excludePids, string query) { "
+            "    var list = new List<WInfo>(); "
+            "    string[] systemBadTitles = new string[] { "
+            "      \"windows input experience\", \"default ime\", \"msctfime ui\", \"gdi+ window\", "
+            "      \"program manager\", \"textinputhost\", \"systemsettings\", \"cortana\", \"searchhost\", \"taskbar\" "
+            "    }; "
+            "    EnumWindows((h, lp) => { "
+            "      if (!IsWindowVisible(h) || IsIconic(h)) return true; "
+            "      uint p; GetWindowThreadProcessId(h, out p); "
+            "      StringBuilder sb = new StringBuilder(256); GetWindowText(h, sb, 256); "
+            "      string t = sb.ToString().Trim(); "
+            "      if (string.IsNullOrEmpty(t)) return true; "
+            "      string tLow = t.ToLower(); "
+            "      bool isSys = false; "
+            "      foreach (var bad in systemBadTitles) { if (tLow.Contains(bad)) { isSys = true; break; } } "
+            "      if (Array.IndexOf(excludePids, (int)p) < 0 && !isSys) { "
+            "        list.Add(new WInfo { Hwnd = h, Title = t, Pid = p }); "
+            "      } "
+            "      return true; "
+            "    }, IntPtr.Zero); "
+            "    if (list.Count == 0) return \"NONE|NONE\"; "
+            "    string curTitle = list[0].Title; "
+            "    WInfo targetWin = null; "
+            "    string q = (query ?? \"\").ToLower().Trim(); "
+            "    if (!string.IsNullOrEmpty(q)) { "
+            "      foreach (var w in list) { "
+            "        string t = w.Title.ToLower(); "
+            "        if (t.Contains(q) "
+            "            || (q == \"code\" && (t.Contains(\"visual studio code\") || t.Contains(\"vscode\") || t.Contains(\" - code\"))) "
+            "            || (q == \"visual studio code\" && (t.Contains(\"visual studio code\") || t.Contains(\"vscode\") || t.Contains(\" - code\"))) "
+            "            || (q == \"vscode\" && (t.Contains(\"visual studio code\") || t.Contains(\"vscode\") || t.Contains(\" - code\"))) "
+            "            || (q == \"chrome\" && (t.Contains(\"chrome\") || t.Contains(\"google chrome\"))) "
+            "            || (q == \"spotify\" && t.Contains(\"spotify\")) "
+            "            || (q == \"notepad\" && t.Contains(\"notepad\"))) { "
+            "          targetWin = w; "
+            "          break; "
+            "        } "
+            "      } "
+            "      if (targetWin == null) { return \"NOT_FOUND|\" + q; } "
+            "    } else { "
+            "      targetWin = list.Count > 1 ? list[1] : list[0]; "
+            "    } "
+            "    ForceFocus(targetWin.Hwnd); "
+            "    return curTitle + \"|\" + targetWin.Title; "
+            "  } "
+            "}'; "
+            "[WSwitch]::ExecuteSwitch($excludePids, $targetQuery);"
+        )
+        try:
+            res = subprocess.run(
+                ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
+                capture_output=True,
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+                timeout=4.0,
             )
-            try:
-                subprocess.run(
-                    ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    creationflags=subprocess.CREATE_NO_WINDOW,
-                    timeout=4.0,
-                )
-                log.info("[COMPUTER_USE] Switched focus to window: '%s'", proc_name)
-                return {"success": True, "message": f"Switched to {target}."}
-            except Exception as e:
-                log.warning("[COMPUTER_USE] Could not switch to %s: %s", target, e)
-                return {"success": False, "error": str(e)}
-        else:
-            # Cycle next window via Alt+Tab
-            return cls.press_hotkey("alt+tab")
+            out = (res.stdout or "").strip()
+            if out.startswith("NOT_FOUND|"):
+                # Target app is not currently running as an active window -> launch it
+                missing_app = out.split("|")[1] if "|" in out else (app_name or "application")
+                log.info("[COMPUTER_USE] Window '%s' not active, launching via open_application...", missing_app)
+                return cls.open_application(app_name or missing_app)
+
+            parts = out.split("|")
+            from_win = parts[0] if len(parts) > 0 else "current window"
+            to_win = parts[1] if len(parts) > 1 else from_win
+            log.info("[COMPUTER_USE] Switched focus from '%s' to '%s'", from_win, to_win)
+            return {"success": True, "from": from_win, "to": to_win, "message": f"Switched to {to_win}."}
+        except Exception as e:
+            log.warning("[COMPUTER_USE] Could not switch window: %s", e)
+            return {"success": False, "error": str(e)}
+
+    @classmethod
+    def _get_protected_pids_csv(cls) -> str:
+        """Returns comma-separated string of all Jarvis and UI process PIDs to protect from window manipulation."""
+        pids = {os.getpid()}
+        try:
+            import psutil
+            curr = psutil.Process(os.getpid())
+            for ch in curr.children(recursive=True):
+                pids.add(ch.pid)
+            for p in psutil.process_iter(['pid', 'name', 'cmdline']):
+                cmd = " ".join(p.info.get('cmdline') or []).lower()
+                if "ui_window" in cmd or "jarvis.py" in cmd or "pywebview" in cmd:
+                    pids.add(p.info['pid'])
+        except Exception:
+            pass
+        return ",".join(str(p) for p in pids)
 
     @classmethod
     def close_window(cls, app_name: str | None = None) -> dict[str, Any]:
-        """Close the currently active window (Alt+F4) or a specific application."""
+        """Close the currently active window (WM_CLOSE) or a specific application."""
         if sys.platform != "win32":
             return {"success": False, "error": "close_window is only supported on Windows."}
 
         target = (app_name or "").strip().lower()
-        if target and target not in ("current", "active", "this"):
+        if target and target not in ("current", "active", "this", "window", "cua so"):
             proc_map = {
                 "chrome": "chrome",
                 "browser": "chrome",
@@ -516,28 +646,61 @@ class ComputerUseTool:
             except Exception as e:
                 return {"success": False, "error": str(e)}
         else:
-            # Close active window via Alt+F4
-            ps_cmd = "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('%{F4}')"
-            try:
-                subprocess.run(
-                    ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    creationflags=subprocess.CREATE_NO_WINDOW,
-                    timeout=3.0,
-                )
-                log.info("[COMPUTER_USE] Closed active foreground window.")
-                return {"success": True, "message": "Closed current window."}
-            except Exception as e:
-                return {"success": False, "error": str(e)}
-
-    @classmethod
-    def minimize_window(cls) -> dict[str, Any]:
-        """Minimize the active foreground window."""
-        if sys.platform == "win32":
+            # Target active user application window excluding all Jarvis UI processes
+            protected_csv = cls._get_protected_pids_csv()
             ps_cmd = (
-                "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class WMin { [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int c); }'; "
-                "$h = [WMin]::GetForegroundWindow(); if ($h) { [WMin]::ShowWindow($h, 6); }"
+                f"$excludePids = @({protected_csv}); "
+                "Add-Type -TypeDefinition '"
+                "using System; using System.Text; using System.Runtime.InteropServices; "
+                "public class WTarget { "
+                "  [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); "
+                "  [DllImport(\"user32.dll\")] public static extern int GetWindowText(IntPtr h, StringBuilder t, int c); "
+                "  [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p); "
+                "  [DllImport(\"user32.dll\")] public static extern bool EnumWindows(EnumWindowsProc cb, IntPtr lp); "
+                "  [DllImport(\"user32.dll\")] public static extern bool IsWindowVisible(IntPtr h); "
+                "  [DllImport(\"user32.dll\")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l); "
+                "  public delegate bool EnumWindowsProc(IntPtr h, IntPtr lp); "
+                "  public static IntPtr FindUserWindow(int[] excludePids) { "
+                "    string[] systemBadTitles = new string[] { "
+                "      \"windows input experience\", \"default ime\", \"msctfime ui\", \"gdi+ window\", "
+                "      \"program manager\", \"textinputhost\", \"systemsettings\", \"cortana\", \"searchhost\", \"taskbar\" "
+                "    }; "
+                "    IntPtr fg = GetForegroundWindow(); "
+                "    if (fg != IntPtr.Zero && IsWindowVisible(fg)) { "
+                "      uint p; GetWindowThreadProcessId(fg, out p); "
+                "      StringBuilder sb = new StringBuilder(256); GetWindowText(fg, sb, 256); "
+                "      string t = sb.ToString().Trim(); "
+                "      if (!string.IsNullOrEmpty(t)) { "
+                "        string tLow = t.ToLower(); "
+                "        bool isSys = false; "
+                "        foreach (var bad in systemBadTitles) { if (tLow.Contains(bad)) { isSys = true; break; } } "
+                "        if (Array.IndexOf(excludePids, (int)p) < 0 && !isSys) { return fg; } "
+                "      } "
+                "    } "
+                "    IntPtr cand = IntPtr.Zero; "
+                "    EnumWindows((h, lp) => { "
+                "      if (!IsWindowVisible(h)) return true; "
+                "      uint p; GetWindowThreadProcessId(h, out p); "
+                "      StringBuilder sb = new StringBuilder(256); GetWindowText(h, sb, 256); "
+                "      string t = sb.ToString().Trim(); "
+                "      if (string.IsNullOrEmpty(t)) return true; "
+                "      string tLow = t.ToLower(); "
+                "      bool isSys = false; "
+                "      foreach (var bad in systemBadTitles) { if (tLow.Contains(bad)) { isSys = true; break; } } "
+                "      if (Array.IndexOf(excludePids, (int)p) < 0 && !isSys) { "
+                "        cand = h; return false; "
+                "      } "
+                "      return true; "
+                "    }, IntPtr.Zero); "
+                "    return cand; "
+                "  } "
+                "  public static bool CloseTarget(int[] excludePids) { "
+                "    IntPtr h = FindUserWindow(excludePids); "
+                "    if (h != IntPtr.Zero) { PostMessage(h, 0x0010, IntPtr.Zero, IntPtr.Zero); return true; } "
+                "    return false; "
+                "  } "
+                "}'; "
+                "[WTarget]::CloseTarget($excludePids);"
             )
             try:
                 subprocess.run(
@@ -547,7 +710,75 @@ class ComputerUseTool:
                     creationflags=subprocess.CREATE_NO_WINDOW,
                     timeout=3.0,
                 )
-                log.info("[COMPUTER_USE] Minimized active window.")
+                log.info("[COMPUTER_USE] Closed active user application window via WM_CLOSE.")
+                return {"success": True, "message": "Closed current window."}
+            except Exception as e:
+                return {"success": False, "error": str(e)}
+
+    @classmethod
+    def minimize_window(cls) -> dict[str, Any]:
+        """Minimize the active user application window (preserving Jarvis UI)."""
+        if sys.platform == "win32":
+            protected_csv = cls._get_protected_pids_csv()
+            ps_cmd = (
+                f"$excludePids = @({protected_csv}); "
+                "Add-Type -TypeDefinition '"
+                "using System; using System.Text; using System.Runtime.InteropServices; "
+                "public class WMinT { "
+                "  [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); "
+                "  [DllImport(\"user32.dll\")] public static extern int GetWindowText(IntPtr h, StringBuilder t, int c); "
+                "  [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p); "
+                "  [DllImport(\"user32.dll\")] public static extern bool EnumWindows(EnumWindowsProc cb, IntPtr lp); "
+                "  [DllImport(\"user32.dll\")] public static extern bool IsWindowVisible(IntPtr h); "
+                "  [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int c); "
+                "  public delegate bool EnumWindowsProc(IntPtr h, IntPtr lp); "
+                "  public static IntPtr FindUserWindow(int[] excludePids) { "
+                "    string[] systemBadTitles = new string[] { "
+                "      \"windows input experience\", \"default ime\", \"msctfime ui\", \"gdi+ window\", "
+                "      \"program manager\", \"textinputhost\", \"systemsettings\", \"cortana\", \"searchhost\", \"taskbar\" "
+                "    }; "
+                "    IntPtr fg = GetForegroundWindow(); "
+                "    if (fg != IntPtr.Zero && IsWindowVisible(fg)) { "
+                "      uint p; GetWindowThreadProcessId(fg, out p); "
+                "      StringBuilder sb = new StringBuilder(256); GetWindowText(fg, sb, 256); "
+                "      string t = sb.ToString().Trim(); "
+                "      if (!string.IsNullOrEmpty(t)) { "
+                "        string tLow = t.ToLower(); "
+                "        bool isSys = false; "
+                "        foreach (var bad in systemBadTitles) { if (tLow.Contains(bad)) { isSys = true; break; } } "
+                "        if (Array.IndexOf(excludePids, (int)p) < 0 && !isSys) { return fg; } "
+                "      } "
+                "    } "
+                "    IntPtr cand = IntPtr.Zero; "
+                "    EnumWindows((h, lp) => { "
+                "      if (!IsWindowVisible(h)) return true; "
+                "      uint p; GetWindowThreadProcessId(h, out p); "
+                "      StringBuilder sb = new StringBuilder(256); GetWindowText(h, sb, 256); "
+                "      string t = sb.ToString().Trim(); "
+                "      if (string.IsNullOrEmpty(t)) return true; "
+                "      string tLow = t.ToLower(); "
+                "      bool isSys = false; "
+                "      foreach (var bad in systemBadTitles) { if (tLow.Contains(bad)) { isSys = true; break; } } "
+                "      if (Array.IndexOf(excludePids, (int)p) < 0 && !isSys) { "
+                "        cand = h; return false; "
+                "      } "
+                "      return true; "
+                "    }, IntPtr.Zero); "
+                "    return cand; "
+                "  } "
+                "}'; "
+                "$target = [WMinT]::FindUserWindow($excludePids); "
+                "if ($target -ne [IntPtr]::Zero) { [WMinT]::ShowWindow($target, 6); [WMinT]::ShowWindow($target, 11); }"
+            )
+            try:
+                subprocess.run(
+                    ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=subprocess.CREATE_NO_WINDOW,
+                    timeout=3.0,
+                )
+                log.info("[COMPUTER_USE] Minimized active user application window.")
                 return {"success": True, "message": "Minimized window."}
             except Exception as e:
                 return {"success": False, "error": str(e)}
@@ -555,11 +786,58 @@ class ComputerUseTool:
 
     @classmethod
     def maximize_window(cls) -> dict[str, Any]:
-        """Maximize the active foreground window."""
+        """Maximize the active user application window (preserving Jarvis UI)."""
         if sys.platform == "win32":
+            protected_csv = cls._get_protected_pids_csv()
             ps_cmd = (
-                "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class WMax { [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int c); }'; "
-                "$h = [WMax]::GetForegroundWindow(); if ($h) { [WMax]::ShowWindow($h, 3); }"
+                f"$excludePids = @({protected_csv}); "
+                "Add-Type -TypeDefinition '"
+                "using System; using System.Text; using System.Runtime.InteropServices; "
+                "public class WMaxT { "
+                "  [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); "
+                "  [DllImport(\"user32.dll\")] public static extern int GetWindowText(IntPtr h, StringBuilder t, int c); "
+                "  [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p); "
+                "  [DllImport(\"user32.dll\")] public static extern bool EnumWindows(EnumWindowsProc cb, IntPtr lp); "
+                "  [DllImport(\"user32.dll\")] public static extern bool IsWindowVisible(IntPtr h); "
+                "  [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int c); "
+                "  public delegate bool EnumWindowsProc(IntPtr h, IntPtr lp); "
+                "  public static IntPtr FindUserWindow(int[] excludePids) { "
+                "    string[] systemBadTitles = new string[] { "
+                "      \"windows input experience\", \"default ime\", \"msctfime ui\", \"gdi+ window\", "
+                "      \"program manager\", \"textinputhost\", \"systemsettings\", \"cortana\", \"searchhost\", \"taskbar\" "
+                "    }; "
+                "    IntPtr fg = GetForegroundWindow(); "
+                "    if (fg != IntPtr.Zero && IsWindowVisible(fg)) { "
+                "      uint p; GetWindowThreadProcessId(fg, out p); "
+                "      StringBuilder sb = new StringBuilder(256); GetWindowText(fg, sb, 256); "
+                "      string t = sb.ToString().Trim(); "
+                "      if (!string.IsNullOrEmpty(t)) { "
+                "        string tLow = t.ToLower(); "
+                "        bool isSys = false; "
+                "        foreach (var bad in systemBadTitles) { if (tLow.Contains(bad)) { isSys = true; break; } } "
+                "        if (Array.IndexOf(excludePids, (int)p) < 0 && !isSys) { return fg; } "
+                "      } "
+                "    } "
+                "    IntPtr cand = IntPtr.Zero; "
+                "    EnumWindows((h, lp) => { "
+                "      if (!IsWindowVisible(h)) return true; "
+                "      uint p; GetWindowThreadProcessId(h, out p); "
+                "      StringBuilder sb = new StringBuilder(256); GetWindowText(h, sb, 256); "
+                "      string t = sb.ToString().Trim(); "
+                "      if (string.IsNullOrEmpty(t)) return true; "
+                "      string tLow = t.ToLower(); "
+                "      bool isSys = false; "
+                "      foreach (var bad in systemBadTitles) { if (tLow.Contains(bad)) { isSys = true; break; } } "
+                "      if (Array.IndexOf(excludePids, (int)p) < 0 && !isSys) { "
+                "        cand = h; return false; "
+                "      } "
+                "      return true; "
+                "    }, IntPtr.Zero); "
+                "    return cand; "
+                "  } "
+                "}'; "
+                "$target = [WMaxT]::FindUserWindow($excludePids); "
+                "if ($target -ne [IntPtr]::Zero) { [WMaxT]::ShowWindow($target, 3); }"
             )
             try:
                 subprocess.run(
@@ -569,7 +847,7 @@ class ComputerUseTool:
                     creationflags=subprocess.CREATE_NO_WINDOW,
                     timeout=3.0,
                 )
-                log.info("[COMPUTER_USE] Maximized active window.")
+                log.info("[COMPUTER_USE] Maximized active user application window.")
                 return {"success": True, "message": "Maximized window."}
             except Exception as e:
                 return {"success": False, "error": str(e)}

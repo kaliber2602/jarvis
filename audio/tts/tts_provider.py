@@ -192,21 +192,7 @@ class VieNeuProvider(TTSProvider):
                 "Run hybrid bootstrap or configure VIE_NEU_VOICE_DATASET."
             )
 
-        log.info("[TTS] VieNeu local synthesis for '%s' using reference '%s'...", clean_text[:40], Path(ref_audio).name)
-
-        # 1. Attempt neural synthesis via PyTorch/ONNX if available
-        try:
-            # Generate synthesized speech from reference audio profile
-            # Fallback to reading and adapting reference audio if lightweight simulation
-            with wave.open(str(ref_audio), "rb") as wf:
-                ref_pcm = wf.readframes(min(wf.getnframes(), self.sample_rate * 3))
-                rate = wf.getframerate()
-                if ref_pcm:
-                    return ref_pcm, rate
-        except Exception as e:
-            log.error("[TTS] VieNeu neural synthesis error: %s", e)
-            raise
-
+        # If VieNeu neural weights are not yet loaded, return empty bytes to trigger clean fallback
         return b"", self.sample_rate
 
 
