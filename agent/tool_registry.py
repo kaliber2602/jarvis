@@ -167,6 +167,10 @@ class ToolRegistry:
         """Manage browser/app tabs."""
         return ComputerUseTool.manage_tab(action, index)
 
+    def _tool_scroll_page(self, direction: str = "down", amount: int = 6) -> dict[str, Any]:
+        """Scroll active window or webpage up/down."""
+        return ComputerUseTool.scroll_page(direction, amount)
+
     def _tool_get_system_status(self) -> dict[str, Any]:
         """Retrieve CPU, RAM, disk metrics."""
         return SystemTool.get_system_status()
@@ -194,6 +198,10 @@ class ToolRegistry:
             "id": item_id,
             "message": "Memory stored successfully.",
         }
+
+    def _tool_resolve_and_click_target(self, query: str, action: str = "open", app_name: str = "chrome") -> dict[str, Any]:
+        """Resolve and interact with UI target using Hermes Visual Perception Engine."""
+        return ComputerUseTool.resolve_and_click_target(query, action, app_name)
 
     def _register_default_tools(self) -> None:
         """Register all default tools."""
@@ -273,6 +281,17 @@ class ToolRegistry:
         ))
 
         self.register_tool(ToolDefinition(
+            name="scroll_page",
+            description="Scroll or roll active window, webpage, or YouTube feed: 'down', 'up', 'top', 'bottom'.",
+            parameters=[
+                ToolParameter("direction", "string", "Direction to scroll: 'down', 'up', 'top', 'bottom'", required=False, default="down"),
+                ToolParameter("amount", "integer", "Number of scroll notches (default 6)", required=False, default=6),
+            ],
+            safety_level=ToolSafetyLevel.SAFE,
+            handler=self._tool_scroll_page,
+        ))
+
+        self.register_tool(ToolDefinition(
             name="get_system_status",
             description="Inspect system health, CPU, memory, disk, and battery telemetry.",
             parameters=[],
@@ -312,4 +331,16 @@ class ToolRegistry:
             ],
             safety_level=ToolSafetyLevel.SAFE,
             handler=self._tool_store_memory,
+        ))
+
+        self.register_tool(ToolDefinition(
+            name="resolve_and_click_target",
+            description="Perceive active UI window, resolve target object (video card, playlist, sidebar item, button, etc.), and click safe interaction point.",
+            parameters=[
+                ToolParameter("query", "string", "User target description (e.g. 'video thứ 3 hàng đầu', 'video thứ 2 trong Shorts', 'nút ba chấm video 2')"),
+                ToolParameter("action", "string", "Action type: 'open', 'open_menu', 'focus', 'click'", required=False, default="open"),
+                ToolParameter("app_name", "string", "Target application (e.g. 'chrome')", required=False, default="chrome"),
+            ],
+            safety_level=ToolSafetyLevel.SAFE,
+            handler=self._tool_resolve_and_click_target,
         ))

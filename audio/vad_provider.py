@@ -52,16 +52,22 @@ class SileroVADProvider(VADProvider):
         sample_rate: int = 16000,
         threshold: float = 0.5,
         speech_start_chunks: int = 2,    # ~160ms speech confirmation
-        end_silence_ms: int = 650,       # 650ms continuous silence for end-of-utterance
+        end_silence_ms: int = 650,       # 650ms continuous silence for natural conversational turn detection
         max_utterance_s: float = 12.0,
         pre_roll_chunks: int = 4,        # ~320ms pre-buffer
     ):
         self.sample_rate = sample_rate
         self.threshold = float(os.environ.get("SILERO_VAD_THRESHOLD", str(threshold)))
-        self.speech_start_chunks = speech_start_chunks
-        self.end_silence_chunks = max(3, int(end_silence_ms / 80))
+        self.speech_start_chunks = int(os.environ.get("VAD_SPEECH_START_CHUNKS", str(speech_start_chunks)))
+        
+        cfg_end_silence = int(os.environ.get("VAD_HANGOVER_MS", os.environ.get("VAD_END_SILENCE_MS", str(end_silence_ms))))
+        self.end_silence_chunks = max(3, int(cfg_end_silence / 80))
+        
         self.max_utterance_chunks = int(max_utterance_s * 1000 / 80)
-        self.pre_roll = deque(maxlen=pre_roll_chunks)
+        
+        cfg_pre_roll_ms = int(os.environ.get("VAD_PRE_ROLL_MS", str(pre_roll_chunks * 80)))
+        actual_pre_roll_chunks = max(2, int(cfg_pre_roll_ms / 80))
+        self.pre_roll = deque(maxlen=actual_pre_roll_chunks)
 
         self.state = "SILENCE"  # "SILENCE" | "SPEAKING"
         self.consecutive_speech = 0
@@ -185,7 +191,7 @@ class EnergyVADProvider(VADProvider):
         sample_rate: int = 16000,
         pre_roll_chunks: int = 4,
         speech_start_chunks: int = 2,
-        end_silence_ms: int = 650,
+        end_silence_ms: int = 380,
         max_utterance_s: float = 10.0,
     ):
         self.sample_rate = sample_rate

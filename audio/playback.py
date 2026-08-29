@@ -117,6 +117,8 @@ class SoundDevicePlayback:
             finally:
                 with self._lock:
                     self._is_playing = False
+                from audio.audio_manager import AudioManager
+                AudioManager.get_instance().set_speaking_until(time.monotonic() + 0.45)
                 if self._bridge.is_conversation_active():
                     self._bridge.set_state("listening")
                 if on_done and not self._stop_requested.is_set():

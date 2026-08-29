@@ -61,7 +61,7 @@ def test_app_registry():
     assert reg.find_by_exact_alias("viet code") is not None
     assert reg.find_by_exact_alias("viết code") is not None
     assert reg.find_by_exact_alias("chôm") is not None
-    assert reg.find_by_exact_alias("cưa sờ") is not None
+    assert reg.find_by_exact_alias("cơ xơ") is not None
 
 
 def test_stt_entity_resolution_benchmark():

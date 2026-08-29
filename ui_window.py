@@ -111,39 +111,36 @@ class JarvisWindowManager:
 
     def show(self):
         with self._lock:
+            if self.is_visible:
+                return
             self.is_visible = True
             log.info("[UI WINDOW] Showing Jarvis Orb overlay window...")
             try:
-                if self.window:
-                    self.window.show()
-                    self.window.restore()
                 hwnd = self.get_hwnd()
                 if hwnd and user32 is not None:
-                    SW_SHOW = 5
+                    SW_SHOWNA = 8
                     HWND_TOPMOST = -1
                     SWP_NOSIZE = 0x0001
                     SWP_NOMOVE = 0x0002
                     SWP_SHOWWINDOW = 0x0040
-                    user32.ShowWindow(hwnd, SW_SHOW)
+                    user32.ShowWindowAsync(hwnd, SW_SHOWNA)
                     user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW)
-                    user32.SetForegroundWindow(hwnd)
             except Exception as e:
                 log.warning("Could not show window: %s", e)
 
     def hide(self):
         with self._lock:
-            if self.is_visible:
-                self.is_visible = False
-                log.info("[UI WINDOW] Hiding Jarvis Orb overlay window...")
-                try:
-                    if self.window:
-                        self.window.hide()
-                    hwnd = self.get_hwnd()
-                    if hwnd and user32 is not None:
-                        SW_HIDE = 0
-                        user32.ShowWindow(hwnd, SW_HIDE)
-                except Exception as e:
-                    log.warning("Could not hide window: %s", e)
+            if not self.is_visible:
+                return
+            self.is_visible = False
+            log.info("[UI WINDOW] Hiding Jarvis Orb overlay window...")
+            try:
+                hwnd = self.get_hwnd()
+                if hwnd and user32 is not None:
+                    SW_HIDE = 0
+                    user32.ShowWindowAsync(hwnd, SW_HIDE)
+            except Exception as e:
+                log.warning("Could not hide window: %s", e)
 
 
 class WindowJsApi:
@@ -163,18 +160,50 @@ class WindowJsApi:
                 user32.SendMessageW(hwnd, WM_SYSCOMMAND, SC_SIZE + int(direction_code), 0)
 
 
+def _periodic_ui_memory_trim(mgr: JarvisWindowManager):
+    """Periodically release unused WebView2 & CLR working set memory back to the OS."""
+    import gc
+    if sys.platform == "win32" and kernel32 is not None:
+        try:
+            kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+            ctypes.windll.psapi.EmptyWorkingSet.argtypes = [wintypes.HANDLE]
+            ctypes.windll.psapi.EmptyWorkingSet.restype = wintypes.BOOL
+        except Exception:
+            pass
+
+    while mgr.running:
+        time.sleep(5.0)
+        try:
+            gc.collect()
+            if sys.platform == "win32" and kernel32 is not None:
+                ctypes.windll.psapi.EmptyWorkingSet(kernel32.GetCurrentProcess())
+        except Exception:
+            pass
+
+
 def start_ws_listener(mgr: JarvisWindowManager):
     """Background asyncio thread to listen for wake/hide signals from Python backend."""
+    # Start periodic memory trimming thread
+    threading.Thread(target=_periodic_ui_memory_trim, args=(mgr,), daemon=True, name="UIMemoryTrimmer").start()
+
     async def _listen():
         uri = f"ws://127.0.0.1:{WS_PORT}"
+        connected_once = False
+        retry_count = 0
         while mgr.running:
             try:
                 async with websockets.connect(uri) as ws:
                     log.info("[UI WINDOW] Connected to JarvisBridge at %s", uri)
+                    connected_once = True
+                    retry_count = 0
                     # Request initial state
                     await ws.send(json.dumps({"type": "get_state"}))
 
                     async for message in ws:
+                        # Fast-skip high-frequency audio telemetry meant for JS renderer
+                        if '"audio_level"' in message:
+                            continue
+
                         try:
                             data = json.loads(message)
                             mtype = data.get("type")
@@ -192,6 +221,11 @@ def start_ws_listener(mgr: JarvisWindowManager):
                         except Exception as ex:
                             log.debug("Error processing message: %s", ex)
             except Exception:
+                retry_count += 1
+                # If Jarvis backend closed after being connected, exit cleanly
+                if connected_once and retry_count >= 3:
+                    log.info("[UI WINDOW] Jarvis backend terminated. Exiting UI overlay.")
+                    os._exit(0)
                 await asyncio.sleep(1.0)
 
     loop = asyncio.new_event_loop()

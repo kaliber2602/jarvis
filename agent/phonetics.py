@@ -89,7 +89,7 @@ VIETNAMESE_PHONETIC_TRANSLITERATIONS: list[tuple[str, str]] = [
 
     # Google Chrome / Web Browser
     (r"\b(?:gúc\s*gồ\s*chôm|gúc\s*gồ\s*cờ\s*rôm|gu\s*gồ\s*chôm|cờ\s*rôm|chôm\s*chôm)\b", "chrome"),
-    (r"\b(?:xanh\s*chình\s*duyệt|sang\s*chình\s*duyệt|chình\s*duyệt|xanh\s*trình\s*duyệt|sang\s*trình\s*duyệt|qua\s*trình\s*duyệt|sang\s*chình\s*diệt|chình\s*diệt)\b", "trình duyệt"),
+    (r"\b(?:xanh\s*chình\s*duyệt|sang\s*chình\s*duyệt|chình\s*duyệt|xanh\s*trình\s*duyệt|sang\s*trình\s*duyệt|qua\s*trình\s*duyệt|sang\s*chình\s*diệt|chình\s*diệt|kênh\s*duyệt|tình\s*duyệt|kinh\s*duyệt|rình\s*duyệt|canh\s*duyet|tinh\s*duyet)\b", "browser"),
     (r"\b(?:bao\s*sơ|sờ\s*bao|brao\s*sơ|bờ\s*rao\s*sơ)\b", "browser"),
 
     # Window Minimization
@@ -127,6 +127,32 @@ VIETNAMESE_PHONETIC_TRANSLITERATIONS: list[tuple[str, str]] = [
     (r"\b(?:du\s*túp|du\s*tup|diu\s*túp|diu\s*túp|du\s*tu\s*be|gu\s*túp)\b", "youtube"),
     (r"\b(?:you\s*too|u\s*tube|u\s*the|u\s*tip|you\s*tip|man\s*you|man\s*you\s*you|mo\s*you|mo\s*you\s*tube)\b", "youtube"),
 
+    # YouTube Video Selection
+    (r"\b(?:chẳng|trọng|chào|trông|trang|chong|chông|trong)\s+video\b", "chọn video"),
+    (r"\b(?:thư\s*buông|thư\s*bộng|thư\s*bốn|thứ\s*buông|thứ\s*bộng|thứ\s*tự|thứ\s*ư|thức\s*ư)\b", "thứ 4"),
+    (r"\b(?:thức\s*nầm|thư\s*nầm|thứ\s*nầm|thức\s*năm|thư\s*năm)\b", "thứ 5"),
+    (r"\b(?:select\s+for\s+video|select\s+video\s+for|select\s+video\s+fall|so\s*let\s+video\s+fall|so\s*let\s+video|video\s+far|video\s+for|video\s+fall)\b", "select video 4"),
+
+    # Window Management Phonetics
+    (r"\b(?:ổng|đống|óng|ống|ông)\s+(?:cửa\s*sổ|window)(?:\s+(?:này|hiện\s*tại))?\b", "close window"),
+    (r"\b(?:closed?|browse|brows|blows|gross|close),?\s*(?:cool\s*and|and|current|this)?\s*(?:window|we\s*know)\b", "close window"),
+    (r"\b(?:closed?,?\s*cool\s*and\s*window)\b", "close window"),
+    (r"\b(?:many\s*my\s*widow|many\s*my\s*window|mini\s*mai|mi\s*ni\s*mai)\b", "minimize window"),
+    (r"\b(?:mác\s*xi\s*mai|mac\s*si\s*mai)\b", "maximize window"),
+
+    # Page / Window Scrolling Phonetics
+    (r"\b(?:throw\s+it\s+down|throw\s+down|throw\s+now|prodow|pro\s+down|hold\s+down|grow\s+now|grow\s+down|row\s+now|role\s+now|roll\s+now|glow\s+down|flow\s+down|blow\s+down)\b", "scroll down"),
+    (r"\b(?:throw\s+it\s+up|throw\s+up|prod\s+up|pro\s+up|hold\s+up|grow\s+up|row\s+up|role\s+up|roll\s+up|glow\s+up|flow\s+up|blow\s+up)\b", "scroll up"),
+    (r"\b(?:roll\s*đao|rôn\s*đao|rồ\s*đao|râu\s*đao|rô\s*đao|râu\s*dao|rôn\s*dao|sờ\s*cờ\s*rôn\s*đao|sờ\s*cro\s*đao|sờ\s*cờ\s*rô\s*đao|ro\s*đao|rô\s*đao)\b", "scroll down"),
+    (r"\b(?:roll\s*ắp|rôn\s*ắp|rồ\s*ắp|râu\s*ắp|rô\s*ắp|sờ\s*cờ\s*rôn\s*ắp|sờ\s*cro\s*ắp|ro\s*ắp)\b", "scroll up"),
+    (r"\b(?:roll\s+down|row\s+down|raw\s+down|role\s+down)\b", "scroll down"),
+    (r"\b(?:roll\s+up|row\s+up|raw\s+up|role\s+up)\b", "scroll up"),
+    (r"\b(?:cuộn\s*xuống|kéo\s*xuống|lướt\s*xuống)\b", "scroll down"),
+    (r"\b(?:cuộn\s*lên|kéo\s*lên|lướt\s*lên)\b", "scroll up"),
+
+    # Sleep Commands
+    (r"\b(?:chạy\s+vô\s+tụi\s+xì\s+lịp|tụi\s+xì\s+lịp|tụi\s+xì\s+lip|xì\s+lịp|xì\s+lip|si\s+lip|si\s+lịp)\b", "go to sleep"),
+
     # Terminal / PowerShell / Command Prompt
     (r"\b(?:tơ\s*mi\s*nồ|tơ\s*min\s*nồ|tơ\s*mi\s*nần|tơ\s*mi\s*non)\b", "terminal"),
     (r"\b(?:pao\s*eo\s*sen|pao\s*sao|pao\s*sen|pao\s*uê\s*sen)\b", "powershell"),
@@ -147,10 +173,10 @@ VIETNAMESE_PHONETIC_TRANSLITERATIONS: list[tuple[str, str]] = [
     (r"\b(?:previous\s*taff|previous\s*tap|tab\s*trước)\b", "previous tab"),
 
     # Action verbs (Vietnamese -> standard intent cue)
-    (r"\b(?:orban|or\s*ban|oh\s*but|oh\s*been|all\s*but|albany|urban|oban|o\s*ban|orbin|mở|bật|chạy|khởi\s*động|mở\s*lên|bật\s*lên|bat|but)\b", "open"),
+    (r"\b(?:orban|or\s*ban|oh\s*but|oh\s*been|all\s*but|all\s*one|all\s*on|albany|urban|oban|o\s*ban|orbin|mở|bật|chạy|khởi\s*động|mở\s*lên|bật\s*lên|bat|but)\b", "open"),
     (r"\b(?:đóng|tắt|thoát|tắt\s*đi|đóng\s*lại)\b", "close"),
     (r"\b(?:chuyển\s*sang|đổi\s*sang|chuyển\s*qua|qua)\b", "switch to"),
-    (r"\b(?:shot|shout|shaq|shut|sat|share|tìm\s*kiếm|tìm|tra\s*cứu|tìm\s*cho\s*tôi)\b", "search"),
+    (r"\b(?:shot|shout|shaq|shut|sat|share|sert\s*on|sert|tìm\s*kiếm|tìm|tra\s*cứu|tìm\s*cho\s*tôi)\b", "search"),
 ]
 
 

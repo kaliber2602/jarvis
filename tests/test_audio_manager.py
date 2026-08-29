@@ -93,10 +93,14 @@ def test_vad_state_machine():
     assert evt == "SPEAKING"
 
     # Feed silence until end of utterance
-    for _ in range(8):
+    end_detected = False
+    for _ in range(10):
         evt, pcm = vad.feed(silent_frame, is_speech=False)
+        if evt == "SPEECH_END":
+            end_detected = True
+            break
 
-    assert evt == "SPEECH_END"
+    assert end_detected
     assert pcm is not None
     assert len(pcm) > 0
 

@@ -173,13 +173,16 @@ class AudioManager:
 
         # Echo suppression & Barge-in check
         if self.is_speaking(now):
-            # Barge-in threshold: user speech exceeds elevated threshold during TTS
-            barge_in_thresh = max(self.noise_floor * 4.0, 0.035)
-            if level > barge_in_thresh:
-                log.info("[AUDIO] Barge-in speech energy detected (rms=%.4f > %.4f). Interrupting TTS...", level, barge_in_thresh)
-                self.interrupt_speaking()
-            else:
-                return
+            # Strict echo suppression: discard all microphone frames during TTS playback to prevent self-hearing feedback loops
+            import os
+            barge_in_enabled = os.environ.get("JARVIS_BARGE_IN", "false").lower() in ("true", "1", "yes")
+            if barge_in_enabled:
+                barge_in_thresh = max(self.noise_floor * 12.0, 0.25)
+                if level > barge_in_thresh:
+                    log.info("[AUDIO] Intentional barge-in speech energy detected (rms=%.4f > %.4f). Interrupting TTS...", level, barge_in_thresh)
+                    self.interrupt_speaking()
+                    return
+            return
 
         # Baseline noise floor tracking
         quiet_gate = self.noise_floor * self.quiet_gate_mult

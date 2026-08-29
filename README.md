@@ -1,11 +1,11 @@
 # Jarvis — AI Desktop Voice Assistant & Agent Architecture
 
 [![System Architecture](https://img.shields.io/badge/Architecture-Single%20Source%20of%20Truth-blue)](docs/JARVIS_SYSTEM_ARCHITECTURE.md)
-[![Tests](https://img.shields.io/badge/Tests-9%2F9%20Passing%20(100%25)-brightgreen)](tests/run_all_tests.py)
+[![Tests](https://img.shields.io/badge/Tests-10%2F10%20Passing%20(100%25)-brightgreen)](tests/run_all_tests.py)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-lightgrey)]()
 [![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-blue)]()
 
-Jarvis is an intelligent, context-aware desktop AI voice operating environment designed for Windows. It combines zero-latency acoustic trigger detection (claps & wake words), multilingual speech recognition (English + Vietnamese), Large Language Model reasoning (Qwen), autonomous agent planning (Hermes), typed computer-use automation, long-term vector memory (Qdrant), and hybrid voice synthesis (ElevenLabs + VieNeu-TTS) paired with a reactive 3D Holographic Earth Orb UI.
+Jarvis is an intelligent, context-aware desktop AI voice operating environment designed for Windows. It combines zero-latency acoustic trigger detection (claps & wake words), pure multilingual speech-to-text recognition (Faster-Whisper), an independent data-driven Command Understanding Engine (Bilingual Verb Lexicon + Multi-Step Decomposer), Large Language Model reasoning (Qwen), autonomous agent planning (Hermes), typed computer-use automation, long-term vector memory (Qdrant), and hybrid voice synthesis (ElevenLabs + VieNeu-TTS) paired with a reactive 3D Holographic Earth Orb UI.
 
 ---
 
@@ -19,10 +19,11 @@ Jarvis is an intelligent, context-aware desktop AI voice operating environment d
 ## 🌟 Key Features
 
 * **Single Microphone Ownership:** Strict mutex ensures VAD, STT, and Clap detection never conflict over the audio stream.
+* **Strict ASR Decoupling:** Faster-Whisper performs pure Speech-To-Text ($Audio \rightarrow Text$) with zero business logic or command prompt injection.
+* **Independent Command Understanding Engine:** Dedicated bilingual Verb Lexicon (`CanonicalVerb`), entity/parameter extraction, simple/complex multi-step decomposition, and execution dependency graphs.
 * **Multilingual Input $\rightarrow$ English Output:** Spoken commands can be in English, Vietnamese, or Code-Switching Mixed, while Jarvis AI responses are **always synthesized in natural English**.
 * **Instant Speech Barge-In:** User speech detected during TTS playback immediately halts audio output and switches to listening mode.
-* **Multi-Tier Transcript Normalization:** Phonetic transliteration, technical vocabulary expansion, and Small LLM correction normalize noisy speech transcripts.
-* **LLM Reasoning & Agent Loop:** Qwen LLM plans and executes multi-step computer tasks via the Hermes Agent runtime.
+* **LLM Reasoning & Agent Loop:** Qwen LLM plans and executes multi-step computer tasks via the Hermes Agent runtime with fallback reasoning.
 * **11 Typed Automation Tools:** Window snapping, browser tab navigation, application launching, system telemetry, and YouTube controls with `SafetyPolicy` destructive command filtering.
 * **Long-Term Vector Memory:** Persistent semantic memory powered by Qdrant embedded vector database.
 * **Hybrid TTS Model:** ElevenLabs bootstraps initial reference WAV voice datasets, while local VieNeu-TTS performs zero-credit runtime voice synthesis.
@@ -43,10 +44,13 @@ flowchart TD
 
     subgraph Chat Mode
         AM -->|CHAT Owner| VAD[Silero VAD / Energy VAD]
-        VAD --> STT[Faster-Whisper STT - Multilingual]
-        STT --> LANG[Language Detector: VI / EN / Mixed]
-        LANG --> NORM[Hybrid Normalizer: Rule + Dict + Small LLM]
-        NORM --> HERMES[Hermes Agent + Qwen LLM]
+        VAD --> STT[Faster-Whisper STT - Pure ASR]
+        STT --> RAW[Raw Transcript]
+        RAW --> CUE[Command Understanding Engine]
+        CUE --> LEX[Bilingual Verb Lexicon + Entity Parser]
+        LEX --> DEC[Simple / Complex Decomposer]
+        DEC --> PLAN[Structured CommandPlan]
+        PLAN --> HERMES[Hermes Agent + Qwen LLM]
         HERMES --> TOOLS[Tool Registry + Safety Policy]
         HERMES <--> MEMORY[(Qdrant Vector Memory)]
         HERMES --> TTS[Hybrid TTS / VieNeu Local Cloning]

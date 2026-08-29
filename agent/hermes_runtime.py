@@ -83,8 +83,16 @@ class HermesRuntime:
             return ComputerUseTool.minimize_window()
         elif tool_name == "maximize_window":
             return ComputerUseTool.maximize_window()
+        elif tool_name in ("scroll_page", "scroll_window", "scroll_down", "scroll_up", "roll_page", "roll_down", "roll_up"):
+            return ComputerUseTool.scroll_page(params.get("direction", "down"), params.get("amount", 6))
         elif tool_name == "select_youtube_video":
             return ComputerUseTool.select_youtube_video(params.get("index", 1))
+        elif tool_name in ("resolve_and_click_target", "ui_interact"):
+            return ComputerUseTool.resolve_and_click_target(
+                query=params.get("query", ""),
+                action=params.get("action", "open"),
+                app_name=params.get("app_name", "chrome"),
+            )
         elif tool_name == "click_coordinate":
             return ComputerUseTool.click_coordinate(params.get("x_ratio", 0.5), params.get("y_ratio", 0.5), params.get("click_count", 1))
         elif tool_name == "click_entity":
@@ -136,7 +144,6 @@ class HermesRuntime:
 
         emit(EventType.AGENT_STARTED, {"instruction": instruction})
         emit(EventType.AGENT_THINKING, {"status": "Analyzing request with Qwen reasoning..."})
-        await asyncio.sleep(0.15)
 
         # Plan the actions needed for the instruction
         plan = self._plan_instruction(instruction, interpretation_context=interpretation_context)
@@ -156,10 +163,8 @@ class HermesRuntime:
             executed_tools.append({"tool": tool_name, "params": params, "result": result})
 
             emit(EventType.AGENT_TOOL_FINISHED, {"tool": tool_name, "result": result})
-            await asyncio.sleep(0.1)
 
         emit(EventType.AGENT_VERIFYING, {"status": "Verifying execution results..."})
-        await asyncio.sleep(0.1)
 
         reply_text = plan.get("speech_response", "Task completed, sir.")
         emit(EventType.AGENT_COMPLETED, {"response": reply_text, "tools_count": len(executed_tools)})
@@ -216,6 +221,33 @@ class HermesRuntime:
         # 0.3 Check Voice Memory for direct overrides
         normalized, was_corrected = VoiceMemory.get_instance().normalize(ctx.normalized_transcript or text)
         cleaned = normalized.strip().lower()
+
+        # 0.4 Compound Command Clause Decomposition (e.g. "đóng cửa sổ, chuyển tab", "đóng cửa sổ và mở chrome")
+        split_pattern = r",|\s+và\s+|\s+then\s+|\s+rồi\s+|\s+sau đó\s+|\s+and\s+"
+        clauses = [c.strip() for c in re.split(split_pattern, cleaned) if c.strip()]
+        is_search = any(k in cleaned for k in ("search", "tìm", "google", "look up", "tra cứu"))
+        is_youtube_select = "youtube" in cleaned and any(k in cleaned for k in ("select", "chọn", "video"))
+        if len(clauses) > 1 and not is_search and not is_youtube_select:
+            compound_actions: list[dict[str, Any]] = []
+            speech_parts: list[str] = []
+            for clause in clauses:
+                sub_ctx = VoiceNormalizationPipeline.get_instance().process_transcript(clause)
+                sub_plan = self._plan_single_action(clause, sub_ctx)
+                if sub_plan and sub_plan.get("actions"):
+                    compound_actions.extend(sub_plan["actions"])
+                    if sub_plan.get("speech_response"):
+                        speech_parts.append(sub_plan["speech_response"])
+            if compound_actions:
+                combined_speech = " ".join(speech_parts) if speech_parts else "Executing actions."
+                return {
+                    "actions": compound_actions,
+                    "speech_response": combined_speech,
+                }
+
+        return self._plan_single_action(cleaned, ctx)
+
+    def _plan_single_action(self, cleaned: str, ctx: InterpretationContext) -> dict[str, Any]:
+        """Internal rule planner for a single instruction clause."""
         actions: list[dict[str, Any]] = []
 
         # 1. Compound Command Reasoning: e.g. "open VS Code and open the project from yesterday"
@@ -299,6 +331,49 @@ class HermesRuntime:
         if "center_window" in cleaned or "center" in cleaned or "dua vao giua" in cleaned or "giua man hinh" in cleaned:
             actions.append({"tool": "snap_window", "params": {"position": "center"}})
             return {"actions": actions, "speech_response": "Centered window on screen."}
+
+        # 3b. Window Minimization & Maximization
+        if "minimize_window" in cleaned or "minimize" in cleaned or "thu nhỏ" in cleaned or "thu nho" in cleaned or "hạ cửa sổ" in cleaned or "ha cua so" in cleaned:
+            actions.append({"tool": "minimize_window", "params": {}})
+            return {"actions": actions, "speech_response": "Minimized window."}
+
+        if "maximize_window" in cleaned or "maximize" in cleaned or "phóng to" in cleaned or "phong to" in cleaned or "toàn màn hình" in cleaned or "toan man hinh" in cleaned or "fullscreen" in cleaned:
+            actions.append({"tool": "maximize_window", "params": {}})
+            return {"actions": actions, "speech_response": "Maximized window."}
+
+        # 3c. Page Scrolling / Rolling (YouTube, Browser, Active Window)
+        scroll_down_patterns = (
+            "scroll_down", "scroll down", "roll down", "roll_down", "row down", "raw down",
+            "cuon xuong", "cuộn xuống", "keo xuong", "kéo xuống", "luot xuong", "lướt xuống",
+            "xuong duoi", "xuống dưới", "lan chuot xuong", "lăn chuột xuống", "cuon trang xuong", "cuộn trang xuống"
+        )
+        scroll_up_patterns = (
+            "scroll_up", "scroll up", "roll up", "roll_up", "row up", "raw up",
+            "cuon len", "cuộn lên", "keo len", "kéo lên", "luot len", "lướt lên",
+            "len tren", "lên trên", "lan chuot len", "lăn chuột lên", "cuon trang len", "cuộn trang lên"
+        )
+        scroll_top_patterns = (
+            "scroll to top", "len dau trang", "lên đầu trang", "dau trang", "đầu trang", "ve dau trang", "về đầu trang"
+        )
+        scroll_bottom_patterns = (
+            "scroll to bottom", "xuong cuoi trang", "xuống cuối trang", "cuoi trang", "cuối trang", "ve cuoi trang", "về cuối trang"
+        )
+
+        if any(sp in cleaned for sp in scroll_top_patterns):
+            actions.append({"tool": "scroll_page", "params": {"direction": "top"}})
+            return {"actions": actions, "speech_response": "Scrolled to top of page."}
+
+        if any(sp in cleaned for sp in scroll_bottom_patterns):
+            actions.append({"tool": "scroll_page", "params": {"direction": "bottom"}})
+            return {"actions": actions, "speech_response": "Scrolled to bottom of page."}
+
+        if any(sp in cleaned for sp in scroll_down_patterns):
+            actions.append({"tool": "scroll_page", "params": {"direction": "down", "amount": 6}})
+            return {"actions": actions, "speech_response": "Scrolling down."}
+
+        if any(sp in cleaned for sp in scroll_up_patterns):
+            actions.append({"tool": "scroll_page", "params": {"direction": "up", "amount": 6}})
+            return {"actions": actions, "speech_response": "Scrolling up."}
 
         # 4. Window Switching / Focus
         switch_patterns = (
@@ -431,25 +506,43 @@ class HermesRuntime:
 
         # 8b. Active Window YouTube Video Selection / Click
         video_select_match = re.search(
-            r"(?:chọn|click|play|bật|mở|select|xem|phát)?\s*(?:video|clip)\s*(?:thứ\s*|number\s*|so\s*|số\s*)?(\d+|1|2|3|4|dau\s*tien|đầu\s*tiên|first|1st|thu\s*hai|thứ\s*hai|second|2nd|thu\s*ba|thứ\s*ba|third|3rd)",
+            r"(?:chọn|click|play|bật|mở|select|xem|phát)?\s*(?:video|clip)?\s*(?:thứ\s*|number\s*|so\s*|số\s*)?(\d+|dau\s*tien|đầu\s*tiên|first|1st|one|một|thu\s*hai|thứ\s*hai|second|2nd|two|hai|thu\s*ba|thứ\s*ba|third|3rd|three|ba|thu\s*bon|thứ\s*bốn|thứ\s*tư|thu\s*tu|thứ\s*tự|thứ\s*ư|thức\s*ư|fourth|4th|four|for|fall|far|bốn|tư|thu\s*nam|thứ\s*năm|fifth|5th|five|năm|thu\s*sau|thứ\s*sáu|sixth|6th|six|sáu|thu\s*bay|thứ\s*bảy|seventh|7th|seven|bảy|thu\s*tam|thứ\s*tám|eighth|8th|eight|tám|thu\s*chin|thứ\s*chín|ninth|9th|nine|chín|mười|ten|10th|tiếp\s*theo|tiếp\s*tục|next)",
             cleaned
         )
-        if video_select_match or any(k in cleaned for k in ("second video", "first video", "third video", "video 1", "video 2", "video 3", "video 4")):
+        if (video_select_match and any(vk in cleaned for vk in ("video", "clip", "chọn", "select", "play", "thứ", "thu"))) or any(k in cleaned for k in ("second video", "first video", "third video", "fourth video", "fifth video", "video 1", "video 2", "video 3", "video 4", "video 5", "video 6")):
             idx = 1
             if video_select_match:
-                raw_idx = video_select_match.group(1).strip()
-                if raw_idx in ("2", "thu hai", "thứ hai", "second", "2nd"):
+                raw_idx = video_select_match.group(1).strip().lower()
+                if raw_idx in ("2", "thu hai", "thứ hai", "second", "2nd", "two", "hai"):
                     idx = 2
-                elif raw_idx in ("3", "thu ba", "thứ ba", "third", "3rd"):
+                elif raw_idx in ("3", "thu ba", "thứ ba", "third", "3rd", "three", "ba"):
                     idx = 3
-                elif raw_idx in ("4", "thu bon", "thứ bốn", "fourth", "4th"):
+                elif raw_idx in ("4", "thu bon", "thứ bốn", "thứ tư", "thu tu", "thứ tự", "thứ ư", "thức ư", "fourth", "4th", "four", "for", "fall", "far", "bốn", "tư"):
                     idx = 4
+                elif raw_idx in ("5", "thu nam", "thứ năm", "fifth", "5th", "five", "năm"):
+                    idx = 5
+                elif raw_idx in ("6", "thu sau", "thứ sáu", "sixth", "6th", "six", "sáu"):
+                    idx = 6
+                elif raw_idx in ("7", "thu bay", "thứ bảy", "seventh", "7th", "seven", "bảy"):
+                    idx = 7
+                elif raw_idx in ("8", "thu tam", "thứ tám", "eighth", "8th", "eight", "tám"):
+                    idx = 8
+                elif raw_idx in ("9", "thu chin", "thứ chín", "ninth", "9th", "nine", "chín"):
+                    idx = 9
+                elif raw_idx in ("10", "mười", "ten", "10th"):
+                    idx = 10
+                elif raw_idx in ("tiếp theo", "tiếp tục", "next"):
+                    idx = 1
                 elif raw_idx.isdigit():
                     idx = int(raw_idx)
             elif "second" in cleaned or "2" in cleaned or "thu 2" in cleaned:
                 idx = 2
             elif "third" in cleaned or "3" in cleaned or "thu 3" in cleaned:
                 idx = 3
+            elif "fourth" in cleaned or "4" in cleaned or "thu 4" in cleaned or "for" in cleaned or "thứ tự" in cleaned or "thứ ư" in cleaned:
+                idx = 4
+            elif "fifth" in cleaned or "5" in cleaned or "thu 5" in cleaned:
+                idx = 5
 
             actions.append({"tool": "select_youtube_video", "params": {"index": idx}})
             return {"actions": actions, "speech_response": f"Playing video {idx}."}
@@ -510,7 +603,19 @@ class HermesRuntime:
             })
             return {"actions": actions, "speech_response": f"Opening {app_display_name}."}
 
-        # 13. Conversational Greetings or General Queries
+        # 13. Wake & Presence Acknowledgment in Conversation Mode
+        wake_greetings = {
+            "jarvis", "javis", "javas", "hey jarvis", "jarvis ơi", "ơi jarvis",
+            "jarvis đâu rồi", "jarvis nghe không", "nghe không jarvis", "are you there",
+            "can you hear me", "jarvis listening"
+        }
+        cleaned_words = re.sub(r'[^\w\s]', '', cleaned).strip()
+        if cleaned_words in wake_greetings or any(cleaned_words == wg for wg in wake_greetings):
+            return {
+                "actions": [],
+                "speech_response": "Yes, I am here and listening. How can I help you?"
+            }
+
         conversational_greetings = ("hello", "hi", "who are you", "what can you do", "help me", "how are you", "what are you", "bạn là ai", "giúp tôi", "chào bạn")
         if any(cg in cleaned for cg in conversational_greetings):
             return {
@@ -519,7 +624,7 @@ class HermesRuntime:
             }
 
         # 14. Non-actionable utterance -> Silent recovery (no TTS voice spam)
-        log.info("[HERMES_RUNTIME] Non-actionable utterance '%s' -> Silent recovery", text)
+        log.info("[HERMES_RUNTIME] Non-actionable utterance '%s' -> Silent recovery", cleaned)
         return {
             "actions": [],
             "speech_response": ""

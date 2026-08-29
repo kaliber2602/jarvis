@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from .stt.bilingual_stt_resolver import BilingualSTTResolver
 from .stt.stt_provider import FasterWhisperProvider, GoogleSTTProvider, STTResult, VoskSTTProvider, get_stt_provider
 from .voice_memory import VoiceMemory
 
@@ -19,8 +20,8 @@ log = logging.getLogger("smart_stt")
 class SmartSTT:
     """
     Intelligent Multi-Modal Speech Recognition Engine.
-    1. Primary: Configurable STT Provider (Faster-Whisper / Google Web Speech).
-    2. Fallback: Local Vosk Kaldi offline model.
+    1. Primary: BilingualSTTResolver (Faster-Whisper with Candidate Scoring & Quality Gate).
+    2. Fallback: Google Web Speech / Local Vosk Kaldi offline model.
     3. Normalization: VoiceMemory phonetic auto-correction & self-learning.
     """
 
@@ -34,30 +35,34 @@ class SmartSTT:
 
     def __init__(self):
         self._provider = get_stt_provider()
+        self._resolver = BilingualSTTResolver.get_instance()
 
-    def transcribe_audio_pcm(
+    def transcribe_turn(
         self,
         pcm_bytes: bytes,
         sample_rate: int = 16000,
+        session_context: dict[str, Any] | None = None,
         vosk_recognizer: Any = None,
-    ) -> str:
+    ) -> STTResult:
         """
-        Transcribe raw PCM audio (16-bit Mono) using the most accurate available engine.
+        Transcribe raw PCM audio (16-bit Mono) using the Bilingual STT Resolver.
+        Returns rich structured STTResult with candidate scoring and linguistic metadata.
         """
-        if not pcm_bytes or len(pcm_bytes) < sample_rate * 0.25 * 2:  # Less than 0.25s
-            return ""
+        if not pcm_bytes or len(pcm_bytes) < sample_rate * 0.20 * 2:  # Less than 0.20s
+            return STTResult(text="", raw_text="", language="en", confidence=0.0, provider="smart_stt")
 
-        # 1. Primary: Faster-Whisper / Configured STT Provider
-        result: STTResult = self._provider.transcribe(pcm_bytes, sample_rate=sample_rate)
-        text = result.text.strip()
+        # 1. Primary: BilingualSTTResolver
+        res = self._resolver.resolve_audio(pcm_bytes, sample_rate=sample_rate, session_context=session_context)
+        text = res.text.strip()
 
-        # 2. Fallback: Google Speech Recognition if Faster-Whisper returned empty
+        # 2. Fallback: Google Speech Recognition if Primary returned empty
         if not text:
             try:
                 google_res = GoogleSTTProvider().transcribe(pcm_bytes, sample_rate=sample_rate)
                 text = google_res.text.strip()
                 if text:
                     log.info("[STT] Google STT fallback transcribed: '%s'", text)
+                    res = google_res
             except Exception as e:
                 log.debug("[STT] Google fallback failed: %s", e)
 
@@ -68,14 +73,30 @@ class SmartSTT:
                 text = vosk_res.text.strip()
                 if text:
                     log.info("📝 [STT] Vosk fallback transcribed: '%s'", text)
+                    res = vosk_res
             except Exception as e:
                 log.debug("[STT] Vosk fallback error: %s", e)
 
         if not text:
-            return ""
+            return STTResult(text="", raw_text="", language="en", confidence=0.0, provider="smart_stt")
 
-        # 4. Intelligent Deduplication & Phonetic Normalization
-        return self.normalize_turn_text(text)
+        deduped = self.deduplicate_phrase(text)
+        res.text = deduped
+        res.raw_text = deduped
+        return res
+
+    def transcribe_audio_pcm(
+        self,
+        pcm_bytes: bytes,
+        sample_rate: int = 16000,
+        vosk_recognizer: Any = None,
+    ) -> str:
+        """
+        Transcribe raw PCM audio (16-bit Mono) and return canonical transcript string.
+        Maintains 100% backward compatibility for existing callers.
+        """
+        res = self.transcribe_turn(pcm_bytes, sample_rate=sample_rate, vosk_recognizer=vosk_recognizer)
+        return res.text
 
     @staticmethod
     def deduplicate_phrase(text: str) -> str:

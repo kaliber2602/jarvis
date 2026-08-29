@@ -61,7 +61,12 @@ class CommandRouter:
     }
 
     @classmethod
-    def route(cls, text: str, active_context: dict[str, Any] | None = None) -> tuple[RouteTarget, str, dict[str, Any]]:
+    def route(
+        cls,
+        text: str,
+        active_context: dict[str, Any] | None = None,
+        interpretation: InterpretationContext | None = None,
+    ) -> tuple[RouteTarget, str, dict[str, Any]]:
         """
         Route an incoming recognized speech string.
         Returns:
@@ -72,7 +77,7 @@ class CommandRouter:
 
         # 1. Process through Voice Normalization & Interpretation Pipeline
         pipeline = VoiceNormalizationPipeline.get_instance()
-        ctx: InterpretationContext = pipeline.process_transcript(text, active_context=active_context)
+        ctx: InterpretationContext = interpretation or pipeline.process_transcript(text, active_context=active_context)
         cleaned = ctx.normalized_transcript.strip().lower()
 
         # 2. Filter out filler noises and short ambient fragments
@@ -95,7 +100,7 @@ class CommandRouter:
             }
 
         # 5. Fast-Path Deterministic Single-App Launch Commands
-        if ctx.intent == "OPEN_APPLICATION" and not ctx.is_compound and ctx.confidence >= 0.85 and ctx.target_entity:
+        if ctx.intent == "OPEN_APPLICATION" and not ctx.is_compound and ctx.confidence >= 0.70 and ctx.target_entity:
             canonical_id = ctx.target_entity.canonical_id
             if canonical_id == "vscode":
                 log.info("[ROUTER] Fast-path routing to 'open_vscode' for '%s'", text)

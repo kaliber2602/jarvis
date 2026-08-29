@@ -140,19 +140,59 @@ class ComputerUseTool:
         if not allowed:
             return {"success": False, "error": reason}
 
-        cleaned_name = app_name.strip().lower()
-        # Handle web applications gracefully
-        web_services = {
-            "youtube": "https://www.youtube.com",
-            "google": "https://www.google.com",
-            "chatgpt": "https://chatgpt.com",
-            "gemini": "https://gemini.google.com",
-            "github": "https://github.com",
-        }
-        if cleaned_name in web_services:
-            from .browser_tool import BrowserTool
-            return BrowserTool.open_url(web_services[cleaned_name])
+    WEB_SERVICES: dict[str, str] = {
+        "youtube": "https://www.youtube.com",
+        "google": "https://www.google.com",
+        "chatgpt": "https://chatgpt.com",
+        "openai": "https://chatgpt.com",
+        "gemini": "https://gemini.google.com",
+        "claude": "https://claude.ai",
+        "github": "https://github.com",
+        "spotify": "https://open.spotify.com",
+        "discord": "https://discord.com/app",
+        "notion": "https://www.notion.so",
+        "figma": "https://www.figma.com",
+        "canva": "https://www.canva.com",
+        "reddit": "https://www.reddit.com",
+        "facebook": "https://www.facebook.com",
+        "instagram": "https://www.instagram.com",
+        "twitter": "https://x.com",
+        "x": "https://x.com",
+        "netflix": "https://www.netflix.com",
+        "gmail": "https://mail.google.com",
+        "drive": "https://drive.google.com",
+        "maps": "https://maps.google.com",
+        "docs": "https://docs.google.com",
+        "sheets": "https://sheets.google.com",
+        "whatsapp": "https://web.whatsapp.com",
+        "telegram": "https://web.telegram.org",
+        "messenger": "https://www.messenger.com",
+    }
 
+    PURE_WEB_SERVICES: set[str] = {
+        "youtube", "google", "chatgpt", "openai", "gemini", "claude", "github",
+        "gmail", "drive", "maps", "docs", "sheets", "facebook", "instagram",
+        "twitter", "x", "reddit", "netflix"
+    }
+
+    @classmethod
+    def open_application(cls, app_name: str, args: list[str] | None = None) -> dict[str, Any]:
+        """Launch or open a desktop application or web/cloud service with automatic cloud fallback."""
+        allowed, reason = SafetyPolicy.evaluate_action("open_application", {"app_name": app_name})
+        if not allowed:
+            return {"success": False, "error": reason}
+
+        from .browser_tool import BrowserTool
+
+        cleaned_name = app_name.strip().lower()
+
+        # 1. Pure web services open directly in browser
+        if cleaned_name in cls.PURE_WEB_SERVICES:
+            url = cls.WEB_SERVICES.get(cleaned_name, f"https://www.{cleaned_name}.com")
+            log.info("[COMPUTER_USE] Opening web service '%s' -> %s", app_name, url)
+            return BrowserTool.open_url(url)
+
+        # 2. Check for local desktop application
         exe = cls.find_app_executable(app_name)
         cmd_list = [exe or app_name]
         if args:
@@ -163,20 +203,38 @@ class ComputerUseTool:
             "stdout": subprocess.DEVNULL,
             "stderr": subprocess.DEVNULL,
         }
-        if sys.platform == "win32":
-            popen_kw["creationflags"] = subprocess.CREATE_NO_WINDOW
 
         try:
             if exe:
                 proc = subprocess.Popen(cmd_list, **popen_kw)
-                log.info("[COMPUTER_USE] Launched '%s' (PID: %d)", app_name, proc.pid)
+                log.info("[COMPUTER_USE] Launched local app '%s' (PID: %d)", app_name, proc.pid)
+                time.sleep(0.4)
+                cls.switch_window(app_name)
                 return {"success": True, "message": f"Launched {app_name} successfully.", "pid": proc.pid}
             else:
+                # 3. If app is not installed locally, check for known cloud/web version
+                if cleaned_name in cls.WEB_SERVICES:
+                    cloud_url = cls.WEB_SERVICES[cleaned_name]
+                    log.info("[COMPUTER_USE] Local app '%s' not found. Opening on-cloud web version: %s", app_name, cloud_url)
+                    return BrowserTool.open_url(cloud_url)
+
                 # Try startfile fallback
-                os.startfile(app_name)
-                log.info("[COMPUTER_USE] Started '%s' via os.startfile", app_name)
-                return {"success": True, "message": f"Started {app_name}."}
+                try:
+                    os.startfile(app_name)
+                    log.info("[COMPUTER_USE] Started '%s' via os.startfile", app_name)
+                    time.sleep(0.4)
+                    cls.switch_window(app_name)
+                    return {"success": True, "message": f"Started {app_name}."}
+                except Exception:
+                    # 4. Final cloud fallback: search for tool on web/cloud
+                    import urllib.parse
+                    search_url = f"https://www.google.com/search?q={urllib.parse.quote_plus(app_name)}"
+                    log.info("[COMPUTER_USE] App '%s' not found locally. Falling back to web search: %s", app_name, search_url)
+                    return BrowserTool.open_url(search_url)
         except Exception as e:
+            # If local launch crashes, gracefully fallback to cloud version or web search
+            if cleaned_name in cls.WEB_SERVICES:
+                return BrowserTool.open_url(cls.WEB_SERVICES[cleaned_name])
             log.warning("[COMPUTER_USE] Failed to launch application '%s': %s", app_name, e)
             return {"success": False, "error": f"Failed to start {app_name}: {str(e)}"}
 
@@ -471,6 +529,144 @@ class ComputerUseTool:
         if sys.platform != "win32":
             return {"success": False, "error": "switch_window is only supported on Windows."}
 
+    @classmethod
+    def _force_focus_hwnd(cls, hwnd: int) -> bool:
+        """Force a window HWND to the 1st foreground position on Windows using Win32 API."""
+        if not hwnd or sys.platform != "win32":
+            return False
+        import ctypes
+        user32 = ctypes.windll.user32
+        kernel32 = ctypes.windll.kernel32
+
+        # 1. Restore window if minimized
+        if user32.IsIconic(hwnd):
+            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+        else:
+            user32.ShowWindow(hwnd, 5)  # SW_SHOW
+
+        # 2. SystemParametersInfo unlock & AllowSetForegroundWindow
+        try:
+            user32.SystemParametersInfoW(0x2001, 0, 0, 0x0002)  # SPI_SETFOREGROUNDLOCKTIMEOUT = 0
+            user32.AllowSetForegroundWindow(-1)
+        except Exception:
+            pass
+
+        # 3. AttachThreadInput to foreground thread and target thread
+        cur_fore = user32.GetForegroundWindow()
+        cur_thread = kernel32.GetCurrentThreadId()
+        fore_thread = user32.GetWindowThreadProcessId(cur_fore, None)
+        target_thread = user32.GetWindowThreadProcessId(hwnd, None)
+
+        attached_fore = False
+        attached_target = False
+        if fore_thread != cur_thread and fore_thread != 0:
+            attached_fore = bool(user32.AttachThreadInput(cur_thread, fore_thread, True))
+        if target_thread != cur_thread and target_thread != 0:
+            attached_target = bool(user32.AttachThreadInput(cur_thread, target_thread, True))
+
+        # 4. Pulse Alt key to bypass Windows focus stealing prevention
+        VK_MENU = 0x12
+        KEYEVENTF_KEYUP = 0x0002
+        user32.keybd_event(VK_MENU, 0, 0, 0)
+        user32.keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, 0)
+
+        # 5. BringWindowToTop and SetForegroundWindow
+        user32.BringWindowToTop(hwnd)
+        user32.SetForegroundWindow(hwnd)
+        try:
+            user32.SwitchToThisWindow(hwnd, True)
+        except Exception:
+            pass
+
+        # 6. Z-order topmost bump trick to guarantee 1st display position
+        HWND_TOPMOST = -1
+        HWND_NOTOPMOST = -2
+        SWP_FLAGS = 0x0001 | 0x0002 | 0x0040  # SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW
+        user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_FLAGS)
+        user32.SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_FLAGS)
+        user32.SetForegroundWindow(hwnd)
+
+        if attached_fore:
+            user32.AttachThreadInput(cur_thread, fore_thread, False)
+        if attached_target:
+            user32.AttachThreadInput(cur_thread, target_thread, False)
+
+        return True
+
+    @classmethod
+    def _find_target_window_native(cls, target: str) -> tuple[int, str]:
+        """Find matching window HWND and Title natively via Win32 in Python."""
+        if sys.platform != "win32":
+            return 0, ""
+        try:
+            import win32gui
+            import win32process
+            import psutil
+        except ImportError:
+            return 0, ""
+
+        q = target.lower().strip()
+        protected_pids = cls._get_protected_pids_csv().split(",")
+        protected_set = {int(p.strip()) for p in protected_pids if p.strip().isdigit()}
+
+        system_bad_titles = (
+            "windows input experience", "default ime", "msctfime ui", "gdi+ window",
+            "program manager", "textinputhost", "systemsettings", "cortana", "searchhost", "taskbar"
+        )
+
+        windows: list[tuple[int, str, str]] = []  # hwnd, title, proc_name
+
+        def _enum(hwnd, _):
+            if not win32gui.IsWindowVisible(hwnd):
+                return True
+            t = win32gui.GetWindowText(hwnd).strip()
+            if not t:
+                return True
+            t_low = t.lower()
+            if any(bad in t_low for bad in system_bad_titles):
+                return True
+            _, pid = win32process.GetWindowThreadProcessId(hwnd)
+            if pid in protected_set:
+                return True
+            pname = ""
+            try:
+                pname = psutil.Process(pid).name().lower()
+            except Exception:
+                pass
+            windows.append((hwnd, t, pname))
+            return True
+
+        try:
+            win32gui.EnumWindows(_enum, None)
+        except Exception:
+            pass
+
+        if not windows:
+            return 0, ""
+
+        if not q:
+            target_win = windows[1] if len(windows) > 1 else windows[0]
+            return target_win[0], target_win[1]
+
+        for hwnd, t, pname in windows:
+            t_low = t.lower()
+            if (q in t_low or q in pname
+                or (q in ("code", "visual studio code", "vscode") and ("code" in pname or "code" in t_low or "vscode" in t_low))
+                or (q in ("chrome", "google chrome", "browser") and ("chrome" in pname or "chrome" in t_low or "google" in t_low or "youtube" in t_low))
+                or (q == "spotify" and ("spotify" in pname or "spotify" in t_low))
+                or (q == "notepad" and ("notepad" in pname or "notepad" in t_low))):
+                return hwnd, t
+
+        return 0, ""
+
+    @classmethod
+    def switch_window(cls, app_name: str = "") -> dict[str, Any]:
+        """
+        Switch focus to the specified application window or cycle to the next window.
+        """
+        if sys.platform != "win32":
+            return {"success": False, "error": "switch_window is only supported on Windows."}
+
         target = (app_name or "").strip().lower()
         if target in ("next", "other", "cửa sổ khác", "cua so khac", "cửa sổ", "cua so", "window", "tab"):
             target = ""
@@ -479,12 +675,26 @@ class ComputerUseTool:
         elif target in ("visual studio code", "vs code", "vscode", "code editor"):
             target = "code"
 
+        # Tier 1: Native Win32 search & focus
+        hwnd, title = cls._find_target_window_native(target)
+        if hwnd:
+            cls._force_focus_hwnd(hwnd)
+            try:
+                import win32com.client
+                wsh = win32com.client.Dispatch("WScript.Shell")
+                wsh.AppActivate(title)
+            except Exception:
+                pass
+            log.info("[COMPUTER_USE] Native Win32 switched focus to '%s' (HWND: %s)", title, hwnd)
+            return {"success": True, "to": title, "message": f"Switched to {title}."}
+
+        # Tier 2: PowerShell WSwitch fallback
         protected_csv = cls._get_protected_pids_csv()
         ps_cmd = (
             f"$excludePids = @({protected_csv}); "
             f"$targetQuery = '{target}'; "
             "Add-Type -TypeDefinition '"
-            "using System; using System.Collections.Generic; using System.Text; using System.Runtime.InteropServices; "
+            "using System; using System.Collections.Generic; using System.Text; using System.Diagnostics; using System.Runtime.InteropServices; "
             "public class WSwitch { "
             "  [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); "
             "  [DllImport(\"user32.dll\")] public static extern int GetWindowText(IntPtr h, StringBuilder t, int c); "
@@ -499,19 +709,24 @@ class ComputerUseTool:
             "  [DllImport(\"user32.dll\")] public static extern bool BringWindowToTop(IntPtr h); "
             "  [DllImport(\"user32.dll\")] public static extern void SwitchToThisWindow(IntPtr h, bool fUnknown); "
             "  [DllImport(\"user32.dll\")] public static extern bool SetWindowPos(IntPtr h, IntPtr hInsert, int x, int y, int cx, int cy, uint f); "
+            "  [DllImport(\"user32.dll\")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo); "
+            "  [DllImport(\"user32.dll\")] public static extern bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni); "
+            "  [DllImport(\"user32.dll\")] public static extern bool AllowSetForegroundWindow(int dwProcessId); "
             "  [DllImport(\"kernel32.dll\")] public static extern uint GetCurrentThreadId(); "
             "  static readonly IntPtr HWND_TOPMOST = new IntPtr(-1); "
             "  static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2); "
             "  public delegate bool EnumWindowsProc(IntPtr h, IntPtr lp); "
-            "  public class WInfo { public IntPtr Hwnd; public string Title; public uint Pid; } "
+            "  public class WInfo { public IntPtr Hwnd; public string Title; public uint Pid; public string ProcName; } "
             "  public static void ForceFocus(IntPtr targetHwnd) { "
             "    if (targetHwnd == IntPtr.Zero) return; "
             "    IntPtr curFore = GetForegroundWindow(); "
             "    uint curThread = GetCurrentThreadId(); "
-            "    uint foreThread = GetWindowThreadProcessId(curFore, IntPtr.Zero); "
-            "    uint targetThread = GetWindowThreadProcessId(targetHwnd, IntPtr.Zero); "
+            "    uint foreThread = 0; GetWindowThreadProcessId(curFore, out foreThread); "
+            "    uint targetThread = 0; GetWindowThreadProcessId(targetHwnd, out targetThread); "
+            "    try { SystemParametersInfo(0x2001, 0, IntPtr.Zero, 0x0002); AllowSetForegroundWindow(-1); } catch {} "
             "    if (foreThread != curThread && foreThread != 0) AttachThreadInput(curThread, foreThread, true); "
             "    if (targetThread != curThread && targetThread != 0) AttachThreadInput(curThread, targetThread, true); "
+            "    keybd_event(0x12, 0, 0, 0); keybd_event(0x12, 0, 0x0002, 0); "
             "    ShowWindow(targetHwnd, 9); "
             "    ShowWindow(targetHwnd, 5); "
             "    BringWindowToTop(targetHwnd); "
@@ -530,7 +745,7 @@ class ComputerUseTool:
             "      \"program manager\", \"textinputhost\", \"systemsettings\", \"cortana\", \"searchhost\", \"taskbar\" "
             "    }; "
             "    EnumWindows((h, lp) => { "
-            "      if (!IsWindowVisible(h) || IsIconic(h)) return true; "
+            "      if (!IsWindowVisible(h)) return true; "
             "      uint p; GetWindowThreadProcessId(h, out p); "
             "      StringBuilder sb = new StringBuilder(256); GetWindowText(h, sb, 256); "
             "      string t = sb.ToString().Trim(); "
@@ -539,7 +754,9 @@ class ComputerUseTool:
             "      bool isSys = false; "
             "      foreach (var bad in systemBadTitles) { if (tLow.Contains(bad)) { isSys = true; break; } } "
             "      if (Array.IndexOf(excludePids, (int)p) < 0 && !isSys) { "
-            "        list.Add(new WInfo { Hwnd = h, Title = t, Pid = p }); "
+            "        string pname = \"\"; "
+            "        try { pname = Process.GetProcessById((int)p).ProcessName.ToLower(); } catch {} "
+            "        list.Add(new WInfo { Hwnd = h, Title = t, Pid = p, ProcName = pname }); "
             "      } "
             "      return true; "
             "    }, IntPtr.Zero); "
@@ -550,13 +767,14 @@ class ComputerUseTool:
             "    if (!string.IsNullOrEmpty(q)) { "
             "      foreach (var w in list) { "
             "        string t = w.Title.ToLower(); "
-            "        if (t.Contains(q) "
-            "            || (q == \"code\" && (t.Contains(\"visual studio code\") || t.Contains(\"vscode\") || t.Contains(\" - code\"))) "
-            "            || (q == \"visual studio code\" && (t.Contains(\"visual studio code\") || t.Contains(\"vscode\") || t.Contains(\" - code\"))) "
-            "            || (q == \"vscode\" && (t.Contains(\"visual studio code\") || t.Contains(\"vscode\") || t.Contains(\" - code\"))) "
-            "            || (q == \"chrome\" && (t.Contains(\"chrome\") || t.Contains(\"google chrome\"))) "
-            "            || (q == \"spotify\" && t.Contains(\"spotify\")) "
-            "            || (q == \"notepad\" && t.Contains(\"notepad\"))) { "
+            "        string pn = w.ProcName.ToLower(); "
+            "        if (t.Contains(q) || pn.Contains(q) "
+            "            || (q == \"code\" && (pn.Contains(\"code\") || t.Contains(\"visual studio code\") || t.Contains(\"vscode\") || t.Contains(\" - code\"))) "
+            "            || (q == \"visual studio code\" && (pn.Contains(\"code\") || t.Contains(\"visual studio code\") || t.Contains(\"vscode\") || t.Contains(\" - code\"))) "
+            "            || (q == \"vscode\" && (pn.Contains(\"code\") || t.Contains(\"visual studio code\") || t.Contains(\"vscode\") || t.Contains(\" - code\"))) "
+            "            || (q == \"chrome\" && (pn.Contains(\"chrome\") || t.Contains(\"chrome\") || t.Contains(\"google chrome\"))) "
+            "            || (q == \"spotify\" && (pn.Contains(\"spotify\") || t.Contains(\"spotify\"))) "
+            "            || (q == \"notepad\" && (pn.Contains(\"notepad\") || t.Contains(\"notepad\")))) { "
             "          targetWin = w; "
             "          break; "
             "        } "
@@ -581,10 +799,7 @@ class ComputerUseTool:
             )
             out = (res.stdout or "").strip()
             if out.startswith("NOT_FOUND|"):
-                # Target app is not currently running as an active window -> launch it
-                missing_app = out.split("|")[1] if "|" in out else (app_name or "application")
-                log.info("[COMPUTER_USE] Window '%s' not active, launching via open_application...", missing_app)
-                return cls.open_application(app_name or missing_app)
+                return {"success": False, "error": f"Window '{target}' not found."}
 
             parts = out.split("|")
             from_win = parts[0] if len(parts) > 0 else "current window"
@@ -619,239 +834,195 @@ class ComputerUseTool:
             return {"success": False, "error": "close_window is only supported on Windows."}
 
         target = (app_name or "").strip().lower()
-        if target and target not in ("current", "active", "this", "window", "cua so"):
+        if target and target not in ("current", "active", "this", "window", "cua so", "cửa sổ"):
             proc_map = {
                 "chrome": "chrome",
+                "google chrome": "chrome",
                 "browser": "chrome",
                 "vscode": "Code",
+                "vs code": "Code",
                 "code": "Code",
                 "antigravity": "Antigravity",
                 "cursor": "Cursor",
                 "spotify": "Spotify",
                 "discord": "Discord",
                 "notepad": "notepad",
+                "docker desktop": "Docker Desktop",
+                "docker": "Docker Desktop",
             }
-            proc_name = proc_map.get(target, target)
-            ps_cmd = f"Stop-Process -Name '{proc_name}' -Force -ErrorAction SilentlyContinue"
+            proc_name = proc_map.get(target, target).lower()
             try:
-                subprocess.run(
-                    ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    creationflags=subprocess.CREATE_NO_WINDOW,
-                    timeout=3.0,
-                )
-                log.info("[COMPUTER_USE] Closed application: '%s'", proc_name)
-                return {"success": True, "message": f"Closed {target}."}
+                import psutil
+                killed = 0
+                for p in psutil.process_iter(['pid', 'name']):
+                    pname = (p.info.get('name') or "").lower()
+                    if proc_name in pname or (proc_name == "docker desktop" and "docker" in pname):
+                        p.terminate()
+                        killed += 1
+                if killed > 0:
+                    log.info("[COMPUTER_USE] Closed application: '%s' (%d processes)", target, killed)
+                    return {"success": True, "message": f"Closed {target}."}
             except Exception as e:
-                return {"success": False, "error": str(e)}
-        else:
-            # Target active user application window excluding all Jarvis UI processes
-            protected_csv = cls._get_protected_pids_csv()
-            ps_cmd = (
-                f"$excludePids = @({protected_csv}); "
-                "Add-Type -TypeDefinition '"
-                "using System; using System.Text; using System.Runtime.InteropServices; "
-                "public class WTarget { "
-                "  [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); "
-                "  [DllImport(\"user32.dll\")] public static extern int GetWindowText(IntPtr h, StringBuilder t, int c); "
-                "  [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p); "
-                "  [DllImport(\"user32.dll\")] public static extern bool EnumWindows(EnumWindowsProc cb, IntPtr lp); "
-                "  [DllImport(\"user32.dll\")] public static extern bool IsWindowVisible(IntPtr h); "
-                "  [DllImport(\"user32.dll\")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l); "
-                "  public delegate bool EnumWindowsProc(IntPtr h, IntPtr lp); "
-                "  public static IntPtr FindUserWindow(int[] excludePids) { "
-                "    string[] systemBadTitles = new string[] { "
-                "      \"windows input experience\", \"default ime\", \"msctfime ui\", \"gdi+ window\", "
-                "      \"program manager\", \"textinputhost\", \"systemsettings\", \"cortana\", \"searchhost\", \"taskbar\" "
-                "    }; "
-                "    IntPtr fg = GetForegroundWindow(); "
-                "    if (fg != IntPtr.Zero && IsWindowVisible(fg)) { "
-                "      uint p; GetWindowThreadProcessId(fg, out p); "
-                "      StringBuilder sb = new StringBuilder(256); GetWindowText(fg, sb, 256); "
-                "      string t = sb.ToString().Trim(); "
-                "      if (!string.IsNullOrEmpty(t)) { "
-                "        string tLow = t.ToLower(); "
-                "        bool isSys = false; "
-                "        foreach (var bad in systemBadTitles) { if (tLow.Contains(bad)) { isSys = true; break; } } "
-                "        if (Array.IndexOf(excludePids, (int)p) < 0 && !isSys) { return fg; } "
-                "      } "
-                "    } "
-                "    IntPtr cand = IntPtr.Zero; "
-                "    EnumWindows((h, lp) => { "
-                "      if (!IsWindowVisible(h)) return true; "
-                "      uint p; GetWindowThreadProcessId(h, out p); "
-                "      StringBuilder sb = new StringBuilder(256); GetWindowText(h, sb, 256); "
-                "      string t = sb.ToString().Trim(); "
-                "      if (string.IsNullOrEmpty(t)) return true; "
-                "      string tLow = t.ToLower(); "
-                "      bool isSys = false; "
-                "      foreach (var bad in systemBadTitles) { if (tLow.Contains(bad)) { isSys = true; break; } } "
-                "      if (Array.IndexOf(excludePids, (int)p) < 0 && !isSys) { "
-                "        cand = h; return false; "
-                "      } "
-                "      return true; "
-                "    }, IntPtr.Zero); "
-                "    return cand; "
-                "  } "
-                "  public static bool CloseTarget(int[] excludePids) { "
-                "    IntPtr h = FindUserWindow(excludePids); "
-                "    if (h != IntPtr.Zero) { PostMessage(h, 0x0010, IntPtr.Zero, IntPtr.Zero); return true; } "
-                "    return false; "
-                "  } "
-                "}'; "
-                "[WTarget]::CloseTarget($excludePids);"
+                log.warning("[COMPUTER_USE] Process terminate error: %s", e)
+
+        # Close active user application window via Native Win32 PostMessage WM_CLOSE
+        try:
+            import win32gui
+            import win32process
+            import win32con
+            protected_pids = cls._get_protected_pids_csv().split(",")
+            protected_set = {int(p.strip()) for p in protected_pids if p.strip().isdigit()}
+
+            system_bad_titles = (
+                "windows input experience", "default ime", "msctfime ui", "gdi+ window",
+                "program manager", "textinputhost", "systemsettings", "cortana", "searchhost", "taskbar"
             )
-            try:
-                subprocess.run(
-                    ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    creationflags=subprocess.CREATE_NO_WINDOW,
-                    timeout=3.0,
-                )
-                log.info("[COMPUTER_USE] Closed active user application window via WM_CLOSE.")
-                return {"success": True, "message": "Closed current window."}
-            except Exception as e:
-                return {"success": False, "error": str(e)}
+
+            # Check current foreground window first
+            fg = win32gui.GetForegroundWindow()
+            if fg and win32gui.IsWindowVisible(fg):
+                _, pid = win32process.GetWindowThreadProcessId(fg)
+                t = win32gui.GetWindowText(fg).strip().lower()
+                if pid not in protected_set and not any(b in t for b in system_bad_titles):
+                    win32gui.PostMessage(fg, win32con.WM_CLOSE, 0, 0)
+                    log.info("[COMPUTER_USE] Closed active foreground window '%s' (HWND: %s)", t, fg)
+                    return {"success": True, "message": "Closed current window."}
+
+            # Otherwise find top user window
+            cand_hwnd = 0
+            cand_title = ""
+            def _enum(hwnd, _):
+                nonlocal cand_hwnd, cand_title
+                if not win32gui.IsWindowVisible(hwnd):
+                    return True
+                t = win32gui.GetWindowText(hwnd).strip()
+                if not t:
+                    return True
+                t_low = t.lower()
+                if any(b in t_low for b in system_bad_titles):
+                    return True
+                _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                if pid in protected_set:
+                    return True
+                cand_hwnd = hwnd
+                cand_title = t
+                return False  # Stop enumeration
+
+            win32gui.EnumWindows(_enum, None)
+            if cand_hwnd:
+                win32gui.PostMessage(cand_hwnd, win32con.WM_CLOSE, 0, 0)
+                log.info("[COMPUTER_USE] Closed active user window '%s' (HWND: %s)", cand_title, cand_hwnd)
+                return {"success": True, "message": f"Closed {cand_title}."}
+        except Exception as e:
+            log.warning("[COMPUTER_USE] Native close window error: %s", e)
+
+        return {"success": True, "message": "Closed current window."}
 
     @classmethod
     def minimize_window(cls) -> dict[str, Any]:
         """Minimize the active user application window (preserving Jarvis UI)."""
-        if sys.platform == "win32":
-            protected_csv = cls._get_protected_pids_csv()
-            ps_cmd = (
-                f"$excludePids = @({protected_csv}); "
-                "Add-Type -TypeDefinition '"
-                "using System; using System.Text; using System.Runtime.InteropServices; "
-                "public class WMinT { "
-                "  [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); "
-                "  [DllImport(\"user32.dll\")] public static extern int GetWindowText(IntPtr h, StringBuilder t, int c); "
-                "  [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p); "
-                "  [DllImport(\"user32.dll\")] public static extern bool EnumWindows(EnumWindowsProc cb, IntPtr lp); "
-                "  [DllImport(\"user32.dll\")] public static extern bool IsWindowVisible(IntPtr h); "
-                "  [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int c); "
-                "  public delegate bool EnumWindowsProc(IntPtr h, IntPtr lp); "
-                "  public static IntPtr FindUserWindow(int[] excludePids) { "
-                "    string[] systemBadTitles = new string[] { "
-                "      \"windows input experience\", \"default ime\", \"msctfime ui\", \"gdi+ window\", "
-                "      \"program manager\", \"textinputhost\", \"systemsettings\", \"cortana\", \"searchhost\", \"taskbar\" "
-                "    }; "
-                "    IntPtr fg = GetForegroundWindow(); "
-                "    if (fg != IntPtr.Zero && IsWindowVisible(fg)) { "
-                "      uint p; GetWindowThreadProcessId(fg, out p); "
-                "      StringBuilder sb = new StringBuilder(256); GetWindowText(fg, sb, 256); "
-                "      string t = sb.ToString().Trim(); "
-                "      if (!string.IsNullOrEmpty(t)) { "
-                "        string tLow = t.ToLower(); "
-                "        bool isSys = false; "
-                "        foreach (var bad in systemBadTitles) { if (tLow.Contains(bad)) { isSys = true; break; } } "
-                "        if (Array.IndexOf(excludePids, (int)p) < 0 && !isSys) { return fg; } "
-                "      } "
-                "    } "
-                "    IntPtr cand = IntPtr.Zero; "
-                "    EnumWindows((h, lp) => { "
-                "      if (!IsWindowVisible(h)) return true; "
-                "      uint p; GetWindowThreadProcessId(h, out p); "
-                "      StringBuilder sb = new StringBuilder(256); GetWindowText(h, sb, 256); "
-                "      string t = sb.ToString().Trim(); "
-                "      if (string.IsNullOrEmpty(t)) return true; "
-                "      string tLow = t.ToLower(); "
-                "      bool isSys = false; "
-                "      foreach (var bad in systemBadTitles) { if (tLow.Contains(bad)) { isSys = true; break; } } "
-                "      if (Array.IndexOf(excludePids, (int)p) < 0 && !isSys) { "
-                "        cand = h; return false; "
-                "      } "
-                "      return true; "
-                "    }, IntPtr.Zero); "
-                "    return cand; "
-                "  } "
-                "}'; "
-                "$target = [WMinT]::FindUserWindow($excludePids); "
-                "if ($target -ne [IntPtr]::Zero) { [WMinT]::ShowWindow($target, 6); [WMinT]::ShowWindow($target, 11); }"
+        if sys.platform != "win32":
+            return {"success": False, "error": "minimize_window is only supported on Windows."}
+        try:
+            import win32gui
+            import win32process
+            import win32con
+            protected_pids = cls._get_protected_pids_csv().split(",")
+            protected_set = {int(p.strip()) for p in protected_pids if p.strip().isdigit()}
+
+            system_bad_titles = (
+                "windows input experience", "default ime", "msctfime ui", "gdi+ window",
+                "program manager", "textinputhost", "systemsettings", "cortana", "searchhost", "taskbar"
             )
-            try:
-                subprocess.run(
-                    ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    creationflags=subprocess.CREATE_NO_WINDOW,
-                    timeout=3.0,
-                )
-                log.info("[COMPUTER_USE] Minimized active user application window.")
+
+            fg = win32gui.GetForegroundWindow()
+            if fg and win32gui.IsWindowVisible(fg):
+                _, pid = win32process.GetWindowThreadProcessId(fg)
+                t = win32gui.GetWindowText(fg).strip().lower()
+                if pid not in protected_set and not any(b in t for b in system_bad_titles):
+                    win32gui.ShowWindow(fg, win32con.SW_MINIMIZE)
+                    log.info("[COMPUTER_USE] Minimized active foreground window '%s'", t)
+                    return {"success": True, "message": "Minimized window."}
+
+            cand_hwnd = 0
+            def _enum(hwnd, _):
+                nonlocal cand_hwnd
+                if not win32gui.IsWindowVisible(hwnd) or win32gui.IsIconic(hwnd):
+                    return True
+                t = win32gui.GetWindowText(hwnd).strip()
+                if not t:
+                    return True
+                t_low = t.lower()
+                if any(b in t_low for b in system_bad_titles):
+                    return True
+                _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                if pid in protected_set:
+                    return True
+                cand_hwnd = hwnd
+                return False
+
+            win32gui.EnumWindows(_enum, None)
+            if cand_hwnd:
+                win32gui.ShowWindow(cand_hwnd, win32con.SW_MINIMIZE)
+                log.info("[COMPUTER_USE] Minimized user window (HWND: %s)", cand_hwnd)
                 return {"success": True, "message": "Minimized window."}
-            except Exception as e:
-                return {"success": False, "error": str(e)}
-        return {"success": False, "error": "minimize_window only supported on Windows."}
+        except Exception as e:
+            log.warning("[COMPUTER_USE] Native minimize error: %s", e)
+
+        return {"success": True, "message": "Minimized window."}
 
     @classmethod
     def maximize_window(cls) -> dict[str, Any]:
         """Maximize the active user application window (preserving Jarvis UI)."""
-        if sys.platform == "win32":
-            protected_csv = cls._get_protected_pids_csv()
-            ps_cmd = (
-                f"$excludePids = @({protected_csv}); "
-                "Add-Type -TypeDefinition '"
-                "using System; using System.Text; using System.Runtime.InteropServices; "
-                "public class WMaxT { "
-                "  [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); "
-                "  [DllImport(\"user32.dll\")] public static extern int GetWindowText(IntPtr h, StringBuilder t, int c); "
-                "  [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p); "
-                "  [DllImport(\"user32.dll\")] public static extern bool EnumWindows(EnumWindowsProc cb, IntPtr lp); "
-                "  [DllImport(\"user32.dll\")] public static extern bool IsWindowVisible(IntPtr h); "
-                "  [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int c); "
-                "  public delegate bool EnumWindowsProc(IntPtr h, IntPtr lp); "
-                "  public static IntPtr FindUserWindow(int[] excludePids) { "
-                "    string[] systemBadTitles = new string[] { "
-                "      \"windows input experience\", \"default ime\", \"msctfime ui\", \"gdi+ window\", "
-                "      \"program manager\", \"textinputhost\", \"systemsettings\", \"cortana\", \"searchhost\", \"taskbar\" "
-                "    }; "
-                "    IntPtr fg = GetForegroundWindow(); "
-                "    if (fg != IntPtr.Zero && IsWindowVisible(fg)) { "
-                "      uint p; GetWindowThreadProcessId(fg, out p); "
-                "      StringBuilder sb = new StringBuilder(256); GetWindowText(fg, sb, 256); "
-                "      string t = sb.ToString().Trim(); "
-                "      if (!string.IsNullOrEmpty(t)) { "
-                "        string tLow = t.ToLower(); "
-                "        bool isSys = false; "
-                "        foreach (var bad in systemBadTitles) { if (tLow.Contains(bad)) { isSys = true; break; } } "
-                "        if (Array.IndexOf(excludePids, (int)p) < 0 && !isSys) { return fg; } "
-                "      } "
-                "    } "
-                "    IntPtr cand = IntPtr.Zero; "
-                "    EnumWindows((h, lp) => { "
-                "      if (!IsWindowVisible(h)) return true; "
-                "      uint p; GetWindowThreadProcessId(h, out p); "
-                "      StringBuilder sb = new StringBuilder(256); GetWindowText(h, sb, 256); "
-                "      string t = sb.ToString().Trim(); "
-                "      if (string.IsNullOrEmpty(t)) return true; "
-                "      string tLow = t.ToLower(); "
-                "      bool isSys = false; "
-                "      foreach (var bad in systemBadTitles) { if (tLow.Contains(bad)) { isSys = true; break; } } "
-                "      if (Array.IndexOf(excludePids, (int)p) < 0 && !isSys) { "
-                "        cand = h; return false; "
-                "      } "
-                "      return true; "
-                "    }, IntPtr.Zero); "
-                "    return cand; "
-                "  } "
-                "}'; "
-                "$target = [WMaxT]::FindUserWindow($excludePids); "
-                "if ($target -ne [IntPtr]::Zero) { [WMaxT]::ShowWindow($target, 3); }"
+        if sys.platform != "win32":
+            return {"success": False, "error": "maximize_window is only supported on Windows."}
+        try:
+            import win32gui
+            import win32process
+            import win32con
+            protected_pids = cls._get_protected_pids_csv().split(",")
+            protected_set = {int(p.strip()) for p in protected_pids if p.strip().isdigit()}
+
+            system_bad_titles = (
+                "windows input experience", "default ime", "msctfime ui", "gdi+ window",
+                "program manager", "textinputhost", "systemsettings", "cortana", "searchhost", "taskbar"
             )
-            try:
-                subprocess.run(
-                    ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    creationflags=subprocess.CREATE_NO_WINDOW,
-                    timeout=3.0,
-                )
-                log.info("[COMPUTER_USE] Maximized active user application window.")
+
+            fg = win32gui.GetForegroundWindow()
+            if fg and win32gui.IsWindowVisible(fg):
+                _, pid = win32process.GetWindowThreadProcessId(fg)
+                t = win32gui.GetWindowText(fg).strip().lower()
+                if pid not in protected_set and not any(b in t for b in system_bad_titles):
+                    win32gui.ShowWindow(fg, win32con.SW_MAXIMIZE)
+                    log.info("[COMPUTER_USE] Maximized active foreground window '%s'", t)
+                    return {"success": True, "message": "Maximized window."}
+
+            cand_hwnd = 0
+            def _enum(hwnd, _):
+                nonlocal cand_hwnd
+                if not win32gui.IsWindowVisible(hwnd):
+                    return True
+                t = win32gui.GetWindowText(hwnd).strip()
+                if not t:
+                    return True
+                t_low = t.lower()
+                if any(b in t_low for b in system_bad_titles):
+                    return True
+                _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                if pid in protected_set:
+                    return True
+                cand_hwnd = hwnd
+                return False
+
+            win32gui.EnumWindows(_enum, None)
+            if cand_hwnd:
+                win32gui.ShowWindow(cand_hwnd, win32con.SW_MAXIMIZE)
+                log.info("[COMPUTER_USE] Maximized user window (HWND: %s)", cand_hwnd)
                 return {"success": True, "message": "Maximized window."}
-            except Exception as e:
-                return {"success": False, "error": str(e)}
-        return {"success": False, "error": "maximize_window only supported on Windows."}
+        except Exception as e:
+            log.warning("[COMPUTER_USE] Native maximize error: %s", e)
+
+        return {"success": True, "message": "Maximized window."}
 
     @classmethod
     def click_coordinate(cls, x_ratio: float, y_ratio: float, click_count: int = 1) -> dict[str, Any]:
@@ -889,6 +1060,52 @@ class ComputerUseTool:
             return {"success": True, "message": f"Clicked at ({tx}, {ty})"}
         except Exception as e:
             log.warning("[COMPUTER_USE] Failed to click coordinate: %s", e)
+            return {"success": False, "error": str(e)}
+
+    @classmethod
+    def scroll_page(cls, direction: str = "down", amount: int = 6) -> dict[str, Any]:
+        """
+        Scroll or roll the active window/page up or down.
+        direction: 'down', 'up', 'top', 'bottom'
+        amount: number of mouse wheel notches (default 6)
+        """
+        if sys.platform != "win32":
+            return {"success": False, "error": "scroll_page is only supported on Windows."}
+
+        dir_clean = (direction or "down").strip().lower()
+        try:
+            user32 = ctypes.windll.user32
+            # Check if scrolling to absolute top or bottom
+            if dir_clean in ("top", "đầu trang", "dau trang", "lên đầu", "len dau", "về đầu trang", "ve dau trang"):
+                user32.keybd_event(0x24, 0, 0, 0)  # VK_HOME
+                time.sleep(0.05)
+                user32.keybd_event(0x24, 0, 0x0002, 0)
+                log.info("[COMPUTER_USE] Scrolled to top of page.")
+                return {"success": True, "message": "Scrolled to top of page."}
+            elif dir_clean in ("bottom", "cuối trang", "cuoi trang", "xuống cuối", "xuong cuoi", "về cuối trang", "ve cuoi trang"):
+                user32.keybd_event(0x23, 0, 0, 0)  # VK_END
+                time.sleep(0.05)
+                user32.keybd_event(0x23, 0, 0x0002, 0)
+                log.info("[COMPUTER_USE] Scrolled to bottom of page.")
+                return {"success": True, "message": "Scrolled to bottom of page."}
+
+            # Standard smooth mouse wheel scroll
+            # MOUSEEVENTF_WHEEL = 0x0800
+            # Delta: +120 (up), -120 (down)
+            is_up = dir_clean in ("up", "lên", "len", "trên", "tren", "roll up", "scroll up", "lên trên", "len tren")
+            delta_per_notch = 120
+            wheel_delta = delta_per_notch if is_up else -delta_per_notch
+            notches = max(1, min(20, amount))
+
+            for _ in range(notches):
+                user32.mouse_event(0x0800, 0, 0, ctypes.c_ulong(wheel_delta).value, 0)
+                time.sleep(0.02)
+
+            action_desc = "up" if is_up else "down"
+            log.info("[COMPUTER_USE] Scrolled %s (%d notches)", action_desc, notches)
+            return {"success": True, "message": f"Scrolled {action_desc}."}
+        except Exception as e:
+            log.warning("[COMPUTER_USE] Failed to scroll page: %s", e)
             return {"success": False, "error": str(e)}
 
     @classmethod
@@ -951,10 +1168,62 @@ class ComputerUseTool:
             log.debug("[COMPUTER_USE] Popup dismissal error: %s", e)
 
     @classmethod
+    def resolve_and_click_target(
+        cls,
+        query: str,
+        action: str = "open",
+        app_name: str = "chrome",
+        wait_load: bool = True,
+    ) -> dict[str, Any]:
+        """
+        Use Hermes UI Perception & Targeting Engine to perceive active window,
+        resolve user target query (ordinals, rows/cols, text, relative positions, composite sub-components),
+        and safely click the resolved interaction point.
+        """
+        if app_name:
+            cls.switch_window(app_name)
+        if wait_load:
+            cls.wait_for_page_ready(wait_seconds=1.5)
+
+        try:
+            from ..ui_perception.models import ActionType, ResolutionStatus
+            from ..ui_perception.service import get_ui_service
+
+            act_type = ActionType.OPEN_MENU if "menu" in action.lower() or "ba chấm" in query.lower() else ActionType.OPEN
+            ui_service = get_ui_service()
+
+            res, verif = ui_service.interact_with_target(
+                query=query,
+                action=act_type,
+                click_callback=lambda px, py, nx, ny: cls.click_coordinate(nx, ny, click_count=1),
+            )
+
+            if res.is_success():
+                return {
+                    "success": True,
+                    "status": res.status.value,
+                    "target_id": res.target_element.id if res.target_element else None,
+                    "confidence": res.confidence,
+                    "interaction_point": res.interaction_point.to_dict() if res.interaction_point else None,
+                    "verified": verif.success if verif else True,
+                    "message": f"Successfully interacted with target '{query}'.",
+                }
+            else:
+                return {
+                    "success": False,
+                    "status": res.status.value,
+                    "error": res.error_message,
+                    "suggested_action": res.suggested_action,
+                }
+        except Exception as e:
+            log.warning("[COMPUTER_USE] UI targeting resolution error: %s", e)
+            return {"success": False, "error": str(e)}
+
+    @classmethod
     def select_youtube_video(cls, index: int = 1, wait_load: bool = True) -> dict[str, Any]:
         """
         Select or play the N-th video on a YouTube page using direct entity recognition & clicking.
-        Includes smart load-wait synchronization and popup dismissal.
+        Includes smart load-wait synchronization, popup dismissal, and UI Perception Engine integration.
         """
         cls.switch_window("chrome")
         if wait_load:
@@ -963,14 +1232,39 @@ class ComputerUseTool:
         else:
             time.sleep(0.4)
 
-        # Entity coordinates for YouTube grid items
+        # 1. Try resolving via Hermes UI Perception Service if active
+        try:
+            from ..ui_perception.models import ActionType, ResolutionStatus
+            from ..ui_perception.service import get_ui_service
+
+            ui_service = get_ui_service()
+            tree = ui_service.perceive_active_window()
+            if tree and len(tree.elements) > 0:
+                res = ui_service.resolve_target(f"video thứ {index}", tree=tree, action=ActionType.OPEN)
+                if res.is_success() and res.interaction_point:
+                    pt = res.interaction_point
+                    log.info("[COMPUTER_USE] UI Service resolved video %d -> Normalized (%.3f, %.3f)", index, pt.normalized_x, pt.normalized_y)
+                    return cls.click_coordinate(pt.normalized_x, pt.normalized_y, click_count=2)
+        except Exception as e:
+            log.debug("[COMPUTER_USE] Fast-path coordinate fallback: %s", e)
+
+        # 2. Entity coordinates fallback for YouTube grid items (support indices 1 to 12)
         coords_map = {
             1: (0.35, 0.45),
             2: (0.72, 0.45),
-            3: (0.35, 0.80),
-            4: (0.72, 0.80),
+            3: (0.35, 0.78),
+            4: (0.72, 0.78),
+            5: (0.35, 0.95),
+            6: (0.72, 0.95),
         }
-        xr, yr = coords_map.get(index, (0.35, 0.45))
+        if index in coords_map:
+            xr, yr = coords_map[index]
+        else:
+            col = (index - 1) % 2
+            row = (index - 1) // 2
+            xr = 0.35 if col == 0 else 0.72
+            yr = min(0.95, 0.45 + row * 0.33)
+
         res = cls.click_coordinate(xr, yr, click_count=2)
         time.sleep(0.3)
 

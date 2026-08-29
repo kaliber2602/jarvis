@@ -54,6 +54,16 @@ class LanguageDetector:
         "in", "on", "at", "because", "need", "debug", "code", "file", "folder",
     }
 
+    TECH_AND_LOANWORDS = {
+        "neural network", "neural networks", "machine learning", "deep learning",
+        "docker", "docker desktop", "docker compose", "fastapi", "python", "javascript",
+        "typescript", "visual studio code", "vs code", "vscode", "chrome", "google chrome",
+        "google", "youtube", "spotify", "notepad", "discord", "antigravity", "cursor",
+        "github", "gitlab", "terminal", "powershell", "cmd", "postman", "figma", "steam",
+        "yesterday", "tutorial", "information", "course", "install", "how to install",
+        "debug", "api", "rest api", "graphql", "dataset", "framework", "database",
+    }
+
     @classmethod
     def get_instance(cls) -> LanguageDetector:
         if cls._instance is None:
@@ -75,6 +85,55 @@ class LanguageDetector:
             except Exception as e:
                 log.debug("[LANGUAGE] fastText load failed: %s", e)
 
+    def analyze_code_switching(self, text: str) -> dict[str, Any]:
+        """
+        Analyze code-switching structure, token/segment language tagging, and technical loanwords
+        WITHOUT mutating or translating the raw transcript text.
+        """
+        raw = text.strip()
+        if not raw:
+            return {
+                "text": "",
+                "primary_language": "en",
+                "languages": ["en"],
+                "mixed_language": False,
+                "segments": [],
+                "entities": [],
+            }
+
+        low = raw.lower()
+        words = re.findall(r"\w+", low)
+        detected_entities = [e for e in self.TECH_AND_LOANWORDS if e in low]
+
+        # Segment / Token language tagging
+        segments = []
+        vi_count = 0
+        en_count = 0
+
+        for w in words:
+            if self.VI_DIACRITICS_PATTERN.search(w) or w in self.COMMON_VI_WORDS:
+                segments.append({"text": w, "language": "vi"})
+                vi_count += 1
+            elif w in self.COMMON_EN_WORDS or any(w in ent.split() for ent in self.TECH_AND_LOANWORDS):
+                segments.append({"text": w, "language": "en"})
+                en_count += 1
+            else:
+                # Neutral / proper noun token
+                segments.append({"text": w, "language": "neutral"})
+
+        is_mixed = (vi_count > 0 and en_count > 0) or (vi_count > 0 and bool(detected_entities)) or (en_count > 0 and bool(self.VI_DIACRITICS_PATTERN.search(raw)))
+        primary = "vi" if vi_count >= en_count and (vi_count > 0 or self.VI_DIACRITICS_PATTERN.search(raw)) else "en"
+        languages = ["vi", "en"] if is_mixed else [primary]
+
+        return {
+            "text": raw,
+            "primary_language": primary,
+            "languages": languages,
+            "mixed_language": is_mixed,
+            "segments": segments,
+            "entities": detected_entities,
+        }
+
     def detect(self, text: str) -> Tuple[LanguageType, float, dict[str, Any]]:
         """
         Detect language of user input.
@@ -85,50 +144,19 @@ class LanguageDetector:
         if not raw:
             return LanguageType.UNKNOWN, 0.0, {}
 
-        # 1. FastText inference if model exists
-        if self._fasttext_model is not None:
-            try:
-                labels, probs = self._fasttext_model.predict(raw, k=2)
-                top_label = labels[0].replace("__label__", "")
-                top_prob = float(probs[0])
-                if top_label in ("vi", "vie"):
-                    return LanguageType.VIETNAMESE, top_prob, {"fasttext_label": top_label}
-                elif top_label in ("en", "eng"):
-                    return LanguageType.ENGLISH, top_prob, {"fasttext_label": top_label}
-            except Exception as e:
-                log.debug("[LANGUAGE] fastText inference error: %s", e)
+        # 1. Detailed Code-Switching & Linguistic Analysis
+        analysis = self.analyze_code_switching(raw)
 
-        # 2. Heuristic Diacritics and Vocabulary Frequency Analysis
-        words = re.findall(r"\w+", raw.lower())
-        total_words = len(words)
-        if total_words == 0:
-            return LanguageType.UNKNOWN, 0.0, {}
+        if analysis["mixed_language"]:
+            log.info("[LANGUAGE] Detected MIXED Vietnamese + English utterance: '%s' (entities=%s)", raw, analysis["entities"])
+            return LanguageType.MIXED, 0.95, analysis
 
-        has_vi_diacritics = bool(self.VI_DIACRITICS_PATTERN.search(raw))
-        vi_count = sum(1 for w in words if w in self.COMMON_VI_WORDS)
-        en_count = sum(1 for w in words if w in self.COMMON_EN_WORDS)
-
-        # Diacritics presence
-        diacritic_words = sum(1 for w in words if self.VI_DIACRITICS_PATTERN.search(w))
-
-        # Decision Logic
-        if (diacritic_words > 0 or vi_count > 0) and en_count > 0:
-            # Both languages present in the sentence
-            log.info("[LANGUAGE] Detected MIXED Vietnamese + English utterance: '%s'", raw)
-            return LanguageType.MIXED, 0.92, {
-                "vi_words": vi_count,
-                "en_words": en_count,
-                "diacritic_words": diacritic_words,
-            }
-
-        if diacritic_words > 0 or vi_count > en_count:
-            conf = min(0.98, 0.70 + 0.1 * diacritic_words + 0.05 * vi_count)
+        if analysis["primary_language"] == "vi":
+            diacritic_count = len(self.VI_DIACRITICS_PATTERN.findall(raw))
+            conf = min(0.98, 0.75 + 0.05 * diacritic_count)
             log.info("[LANGUAGE] Detected VIETNAMESE utterance: '%s' (conf=%.2f)", raw, conf)
-            return LanguageType.VIETNAMESE, conf, {
-                "vi_words": vi_count,
-                "diacritic_words": diacritic_words,
-            }
+            return LanguageType.VIETNAMESE, conf, analysis
 
-        conf = min(0.98, 0.75 + 0.05 * en_count)
+        conf = 0.90 if any(w in raw.lower().split() for w in self.COMMON_EN_WORDS) else 0.80
         log.info("[LANGUAGE] Detected ENGLISH utterance: '%s' (conf=%.2f)", raw, conf)
-        return LanguageType.ENGLISH, conf, {"en_words": en_count}
+        return LanguageType.ENGLISH, conf, analysis

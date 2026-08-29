@@ -23,10 +23,10 @@ class AudioVAD:
     def __init__(
         self,
         sample_rate: int = 16000,
-        pre_roll_chunks: int = 4,      # ~320ms rolling pre-buffer at 80ms/chunk
+        pre_roll_chunks: int = 6,      # ~480ms rolling pre-buffer at 80ms/chunk
         speech_start_chunks: int = 2,  # ~160ms speech confirmation
-        end_silence_ms: int = 650,     # 650ms continuous silence for end-of-utterance
-        max_utterance_s: float = 10.0,
+        end_silence_ms: int = 650,     # 650ms continuous silence for natural conversational turn detection
+        max_utterance_s: float = 12.0,
         provider_name: str | None = None,
     ):
         self.sample_rate = sample_rate

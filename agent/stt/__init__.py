@@ -1,3 +1,9 @@
+from .bilingual_stt_resolver import (
+    BilingualSTTResolver,
+    CandidateScorer,
+    SessionLanguagePrior,
+    TranscriptCandidate,
+)
 from .stt_provider import (
     FasterWhisperProvider,
     GoogleSTTProvider,
@@ -14,4 +20,8 @@ __all__ = [
     "VoskSTTProvider",
     "GoogleSTTProvider",
     "get_stt_provider",
+    "BilingualSTTResolver",
+    "CandidateScorer",
+    "SessionLanguagePrior",
+    "TranscriptCandidate",
 ]

@@ -7,15 +7,21 @@ import sys
 import time
 
 TEST_FILES = [
+    "test_audio_preprocessor.py",
     "test_vad.py",
     "test_audio_manager.py",
     "test_smart_stt.py",
+    "test_bilingual_stt_resolver.py",
+    "test_code_switching.py",
     "test_normalizer.py",
+    "test_command_understanding.py",
     "test_language_detector.py",
     "test_agent.py",
+    "test_ui_perception.py",
     "test_tts_pipeline.py",
     "test_playback_barge_in.py",
     "test_memory.py",
+    "benchmark_bilingual_stt.py",
 ]
 
 def main() -> int:
@@ -37,11 +43,15 @@ def main() -> int:
         test_path = tests_dir / test_file
         print(f"[{idx}/{total}] Running {test_file}...", end=" ", flush=True)
 
+        test_env = dict(os.environ, PYTHONIOENCODING="utf-8")
         res = subprocess.run(
             [sys.executable, str(test_path)],
             cwd=str(root_dir),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=test_env,
         )
 
         if res.returncode == 0:

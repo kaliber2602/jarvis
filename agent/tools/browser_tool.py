@@ -49,22 +49,17 @@ class BrowserTool:
         if not u.startswith("http://") and not u.startswith("https://"):
             u = "https://" + u
 
-        chrome = cls._chrome_executable()
         try:
-            if chrome:
+            if sys.platform == "win32":
+                os.startfile(u)
+                log.info("[BROWSER] Opened URL in browser: %s", u)
+                return {"success": True, "message": f"Opened {u} in browser."}
+            elif chrome:
                 args = [chrome]
                 if new_window:
                     args.append("--new-window")
                 args.append(u)
-                popen_kw: dict = {
-                    "args": args,
-                    "stdin": subprocess.DEVNULL,
-                    "stdout": subprocess.DEVNULL,
-                    "stderr": subprocess.DEVNULL,
-                }
-                if sys.platform == "win32":
-                    popen_kw["creationflags"] = subprocess.CREATE_NO_WINDOW
-                subprocess.Popen(**popen_kw)
+                subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 log.info("[BROWSER] Opened URL in Chrome: %s", u)
                 return {"success": True, "message": f"Opened {u} in Chrome."}
             else:
@@ -73,7 +68,11 @@ class BrowserTool:
                 return {"success": True, "message": f"Opened {u} in browser."}
         except Exception as e:
             log.warning("[BROWSER] Error opening URL: %s", e)
-            return {"success": False, "error": str(e)}
+            try:
+                webbrowser.open(u)
+                return {"success": True, "message": f"Opened {u} in fallback browser."}
+            except Exception as fb_err:
+                return {"success": False, "error": str(fb_err)}
 
     @classmethod
     def search_web(cls, query: str, engine: str = "google") -> dict[str, Any]:

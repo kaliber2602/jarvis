@@ -79,14 +79,16 @@ class VoiceMemory:
         # Search / Find cues recognized with accents
         "suggests": "search",
         "suggest": "search",
-        "shot": "search",
-        "snap": "search",
+        "shout": "search",
+        "shut": "search",
+        "search for": "search",
         "five for me": "find for me",
         "fine for me": "find for me",
         "das cbt": "chatgpt",
         "yeah cbt": "chatgpt",
         "see the right": "chatgpt",
         "sigh jass cpt": "search chatgpt",
+        "snap yeah see the right": "search chatgpt",
 
         # YouTube Video Selection / Click & Play
         "play video 1": "click first video",

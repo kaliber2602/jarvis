@@ -89,8 +89,8 @@
   // 2. HIGH-PRECISION GIS EARTH TEXTURE GENERATOR
   // ==========================================
   function createGISEarthTexture() {
-    const width = 4096;
-    const height = 2048;
+    const width = 2048;
+    const height = 1024;
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -329,7 +329,9 @@
     }
 
     setRealAmplitude(val) {
-      this.targetAmplitude = Math.max(0.0, Math.min(1.0, val));
+      const num = typeof val === 'number' ? val : parseFloat(val);
+      if (isNaN(num)) return;
+      this.targetAmplitude = Math.max(0.0, Math.min(1.0, num));
       this.hasRealAudio = true;
       this.lastRealAudioTime = performance.now();
     }
@@ -1421,12 +1423,14 @@
           this.setState(data.state);
         }
       } else if (type === 'audio_level') {
-        if (this.state === 'listening') {
-          this.audio.setRealAmplitude(data.value);
+        const lvl = (data.value !== undefined) ? data.value : data.level;
+        if (this.state === 'listening' && lvl !== undefined) {
+          this.audio.setRealAmplitude(lvl);
         }
       } else if (type === 'tts_audio_level') {
-        if (this.state === 'speaking') {
-          this.audio.setRealAmplitude(data.value);
+        const lvl = (data.value !== undefined) ? data.value : data.level;
+        if (this.state === 'speaking' && lvl !== undefined) {
+          this.audio.setRealAmplitude(lvl);
         }
       } else if (type === 'session_ended') {
         this.setState('hidden');
@@ -1628,8 +1632,13 @@
     }
 
     onWindowResize() {
-      this.width = window.innerWidth || 480;
-      this.height = window.innerHeight || 480;
+      const newW = window.innerWidth || 480;
+      const newH = window.innerHeight || 480;
+      if (newW <= 20 || newH <= 20) return;
+      if (newW === this.width && newH === this.height) return;
+
+      this.width = newW;
+      this.height = newH;
       
       this.updateCameraPlacement();
 

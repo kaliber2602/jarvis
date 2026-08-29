@@ -1,0 +1,2013 @@
+2026-08-29 22:49:53 [INFO] [BRIDGE] Reclaiming port 8765 from stale process PID 20952...
+2026-08-29 22:49:53 [INFO] JarvisBridge WebSocket server started on ws://127.0.0.1:8765
+2026-08-29 22:49:54 [INFO] server listening on 127.0.0.1:8765
+2026-08-29 22:49:54 [INFO] Launched Jarvis desktop UI overlay process (hidden by default, PID: 23068).
+2026-08-29 22:49:54 [INFO] connection open
+2026-08-29 22:49:54 [INFO] [BRIDGE] UI client connected: ('127.0.0.1', 56188)
+2026-08-29 22:49:55 [INFO] connection open
+2026-08-29 22:49:55 [INFO] [BRIDGE] UI client connected: ('127.0.0.1', 49573)
+2026-08-29 22:49:57 [INFO] [VAD] Loading Silero VAD from local torch hub cache: C:\Users\ADMIN/.cache\torch\hub\snakers4_silero-vad_master
+2026-08-29 22:49:57 [INFO] [VAD] Silero VAD neural model ready (threshold=0.50).
+2026-08-29 22:49:57 [INFO] Initializing OpenWakeWord neural model ('hey_jarvis')...
+2026-08-29 22:49:57 [INFO] OpenWakeWord model ready (keyword: 'hey_jarvis', confidence threshold=0.55).
+2026-08-29 22:49:58 [INFO] [AUDIO] Ownership transfer: NONE -> TRIGGER
+2026-08-29 22:49:58 [INFO] ===============================================================
+2026-08-29 22:49:58 [INFO]  JARVIS RUNTIME COORDINATOR — HERMES AGENT & SINGLE AUDIO OWNER
+2026-08-29 22:49:58 [INFO] ===============================================================
+2026-08-29 22:49:58 [INFO]  Microphone Invariant: Central AudioManager (Single Stream)
+2026-08-29 22:49:58 [INFO]  Mode 1: TRIGGER MODE (Claps & Deterministic Shortcuts)
+2026-08-29 22:49:58 [INFO]  Mode 2: CHAT MODE (VAD + STT + Hermes Agent + Computer Use)
+2026-08-29 22:49:58 [INFO]  Activation: 'Hey Jarvis, I need your help' -> Chat Mode & Hermes
+2026-08-29 22:49:58 [INFO]  Deactivation: 'Jarvis, go to sleep' -> Return to Trigger Mode
+2026-08-29 22:49:58 [INFO]  Audio capture: Rate=16000 Hz, Block=80 ms
+2026-08-29 22:49:58 [INFO] ===============================================================
+2026-08-29 22:49:58 [INFO] Audio devices:
+   0 Microsoft Sound Mapper - Input, MME (2 in, 0 out)
+>  1 Microphone (MCHOSE K20), MME (1 in, 0 out)
+   2 Microsoft Sound Mapper - Output, MME (0 in, 2 out)
+<  3 Realtek HD Audio 2nd output (Re, MME (0 in, 2 out)
+   4 Speakers (Realtek(R) Audio), MME (0 in, 8 out)
+   5 SAMSUNG (NVIDIA High Definition, MME (0 in, 2 out)
+   6 Realtek Digital Output (Realtek, MME (0 in, 2 out)
+   7 Speakers (MCHOSE K20), MME (0 in, 8 out)
+   8 Primary Sound Capture Driver, Windows DirectSound (2 in, 0 out)
+   9 Microphone (MCHOSE K20), Windows DirectSound (1 in, 0 out)
+  10 Primary Sound Driver, Windows DirectSound (0 in, 2 out)
+  11 Realtek HD Audio 2nd output (Realtek(R) Audio), Windows DirectSound (0 in, 2 out)
+  12 Speakers (Realtek(R) Audio), Windows DirectSound (0 in, 8 out)
+  13 SAMSUNG (NVIDIA High Definition Audio), Windows DirectSound (0 in, 2 out)
+  14 Realtek Digital Output (Realtek(R) Audio), Windows DirectSound (0 in, 2 out)
+  15 Speakers (MCHOSE K20), Windows DirectSound (0 in, 8 out)
+  16 Speakers (Realtek(R) Audio), Windows WASAPI (0 in, 2 out)
+  17 SAMSUNG (NVIDIA High Definition Audio), Windows WASAPI (0 in, 2 out)
+  18 Realtek Digital Output (Realtek(R) Audio), Windows WASAPI (0 in, 2 out)
+  19 Speakers (MCHOSE K20), Windows WASAPI (0 in, 8 out)
+  20 Realtek HD Audio 2nd output (Realtek(R) Audio), Windows WASAPI (0 in, 2 out)
+  21 Microphone (MCHOSE K20), Windows WASAPI (1 in, 0 out)
+  22 Headphones (Realtek HD Audio 2nd output), Windows WDM-KS (0 in, 2 out)
+  23 Stereo Mix (Realtek HD Audio Stereo input), Windows WDM-KS (2 in, 0 out)
+  24 Line In (Realtek HD Audio Line input), Windows WDM-KS (2 in, 0 out)
+  25 Microphone (Realtek HD Audio Mic input), Windows WDM-KS (2 in, 0 out)
+  26 Speakers (Realtek HD Audio output), Windows WDM-KS (0 in, 8 out)
+  27 SPDIF Out (Realtek HDA SPDIF Out), Windows WDM-KS (0 in, 2 out)
+  28 Microphone (MicIn), Windows WDM-KS (1 in, 0 out)
+  29 Speakers (Speaker), Windows WDM-KS (0 in, 8 out)
+  30 Output (NVIDIA High Definition Audio), Windows WDM-KS (0 in, 2 out)
+2026-08-29 22:49:58 [INFO] Using default microphone [1]: Microphone (MCHOSE K20) (probe rms=0.00129)
+2026-08-29 22:50:38 [INFO] 🌟 [INTENT: CONVERSATION] Dedicated phrase detected ('the dalai i need your help') -> Materializing Jarvis Orb...
+2026-08-29 22:50:38 [INFO] [JARVIS] Wake detected -> Conversation session acquired. ID: b1954236
+2026-08-29 22:50:38 [INFO] [JARVIS] Conversation session acquired. ID: b1954236
+2026-08-29 22:50:38 [INFO] [AUDIO] Ownership transfer: TRIGGER -> CHAT
+2026-08-29 22:50:38 [INFO] [HERMES_RUNTIME] Session started: b1954236
+2026-08-29 22:50:38 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\d0ecfd35be7f28a737660d7a.wav
+2026-08-29 22:50:38 [INFO] [JARVIS] State changed -> speaking
+2026-08-29 22:50:40 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:50:42 [INFO] [VAD] Speech started.
+2026-08-29 22:50:42 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-29 22:50:43 [INFO] [VAD] Speech ended (utterance bytes=58880).
+2026-08-29 22:50:43 [INFO] [AUDIO] duration=1.84s rms=0.09000 peak=0.5894 silence_ratio=0.71 is_valid=True
+2026-08-29 22:50:43 [INFO] [STT] Initializing Faster-Whisper (model='base', device='cpu', compute_type='int8')...
+2026-08-29 22:50:45 [INFO] [STT] Faster-Whisper model ready (threads=8).
+2026-08-29 22:50:45 [INFO] Processing audio with duration 00:01.840
+2026-08-29 22:50:45 [INFO] Detected language 'en' with probability 0.72
+2026-08-29 22:50:46 [INFO] [STT] Faster-Whisper: transcribed='Open YouTube.' | lang='en' (prob=0.72)
+2026-08-29 22:50:46 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Open YouTube.' (conf=0.90)
+2026-08-29 22:50:46 [INFO] [STT] model=base language_mode=auto text='Open YouTube.' avg_logprob=-0.164 no_speech_prob=0.038 compression_ratio=0.62
+2026-08-29 22:50:46 [INFO] [LANGUAGE] primary=en languages=['vi', 'en'] mixed_language=True
+2026-08-29 22:50:46 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Open YouTube.' confidence=0.72 score=0.146
+2026-08-29 22:50:46 [INFO] [APP_REGISTRY] Discovered 78 Windows Start Menu applications.
+2026-08-29 22:50:46 [INFO] [VOICE_MEMORY] Loaded 31 learned phrase mappings from user_voice_memory.json
+2026-08-29 22:50:47 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Open YouTube.'
+  [NORMALIZED]: 'Open YouTube.'
+  [INTENT]: OPEN_APPLICATION (confidence=0.98, compound=False)
+  [ENTITY]: YouTube (method=levenshtein, confidence=0.93)
+2026-08-29 22:50:47 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Open YouTube.' | Normalized: 'Open YouTube.'
+2026-08-29 22:50:47 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Open YouTube.' (Raw STT: 'Open YouTube.')
+2026-08-29 22:50:47 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Open YouTube.' (conf=0.90)
+2026-08-29 22:50:47 [INFO] 🎙️ [STT] raw = 'Open YouTube.'
+2026-08-29 22:50:47 [INFO] 🌐 [LANGUAGE] detected = 'en' (confidence=0.90, response_rule='ALWAYS_ENGLISH')
+2026-08-29 22:50:47 [INFO] ✨ [NORMALIZER] normalized = 'Open YouTube.'
+2026-08-29 22:50:47 [INFO] 🎯 [INTENT] type = OPEN_APPLICATION (confidence=0.98, compound=False)
+2026-08-29 22:50:47 [INFO] 🏷️ [ENTITY] candidate = 'YouTube' (alias='YouTube', method=levenshtein, confidence=0.93)
+2026-08-29 22:50:47 [INFO] [ROUTER] Fast-path routing to 'open_app:youtube' for 'Open YouTube.'
+2026-08-29 22:50:47 [INFO] [ROUTER] Command: 'Open YouTube.' -> Target: DETERMINISTIC_ACTION (Action: open_app:youtube)
+2026-08-29 22:50:47 [INFO] [JARVIS] State changed -> processing
+2026-08-29 22:50:47 [INFO] [ACTION] Fast-path executing deterministic action: open_app:youtube
+2026-08-29 22:50:47 [INFO] [TOOL] open_application('YouTube')
+2026-08-29 22:50:47 [INFO] [TOOL_REGISTRY] Executing 'open_application' with params: {'app_name': 'YouTube'}
+2026-08-29 22:50:47 [INFO] [COMPUTER_USE] Opening web service 'YouTube' -> https://www.youtube.com
+2026-08-29 22:50:47 [INFO] [BROWSER] Opened URL in browser: https://www.youtube.com
+2026-08-29 22:50:47 [INFO] [RESULT] success
+2026-08-29 22:50:47 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\df453efcd9c6d4e03836a8a9.wav
+2026-08-29 22:50:47 [INFO] [JARVIS] State changed -> speaking
+2026-08-29 22:50:48 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:50:48 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:50:48 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-29 22:50:50 [INFO] [VAD] Speech started.
+2026-08-29 22:50:50 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-29 22:50:52 [INFO] [VAD] Speech ended (utterance bytes=71680).
+2026-08-29 22:50:52 [INFO] [AUDIO] duration=2.24s rms=0.09000 peak=0.5114 silence_ratio=0.57 is_valid=True
+2026-08-29 22:50:52 [INFO] Processing audio with duration 00:02.240
+2026-08-29 22:50:53 [INFO] Detected language 'vi' with probability 0.98
+2026-08-29 22:50:54 [INFO] [STT] Faster-Whisper: transcribed='Chào ổng video thứ 2.' | lang='vi' (prob=0.98)
+2026-08-29 22:50:54 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Chào ổng video thứ 2.' (conf=0.90)
+2026-08-29 22:50:54 [INFO] [STT] model=base language_mode=auto text='Chào ổng video thứ 2.' avg_logprob=-0.571 no_speech_prob=0.028 compression_ratio=0.74
+2026-08-29 22:50:54 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-29 22:50:54 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Chào ổng video thứ 2.' confidence=0.98 score=-0.597
+2026-08-29 22:50:55 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Chào ổng video thứ 2.'
+  [NORMALIZED]: 'Chào ổng video thứ 2.'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-29 22:50:55 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Chào ổng video thứ 2.' | Normalized: 'Chào ổng video thứ 2.'
+2026-08-29 22:50:55 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Chào ổng video thứ 2.' (Raw STT: 'Chào ổng video thứ 2.')
+2026-08-29 22:50:55 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Chào ổng video thứ 2.' (conf=0.90)
+2026-08-29 22:50:55 [INFO] 🎙️ [STT] raw = 'Chào ổng video thứ 2.'
+2026-08-29 22:50:55 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.90, response_rule='ALWAYS_ENGLISH')
+2026-08-29 22:50:55 [INFO] ✨ [NORMALIZER] normalized = 'Chào ổng video thứ 2.'
+2026-08-29 22:50:55 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-29 22:50:55 [INFO] [ROUTER] Routing natural-language task 'Chào ổng video thứ 2.' to Hermes Agent
+2026-08-29 22:50:55 [INFO] [ROUTER] Command: 'Chào ổng video thứ 2.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-29 22:50:55 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: b1954236
+2026-08-29 22:50:55 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-29 22:50:55 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'Chào ổng video thứ 2.'...
+2026-08-29 22:50:55 [INFO] [CHAT -> HERMES] Dispatching instruction: 'Chào ổng video thứ 2.' (Intent: CONVERSATION)
+2026-08-29 22:50:55 [INFO] [HERMES_CLIENT] Sending message to Hermes for session b1954236: 'Chào ổng video thứ 2.'
+2026-08-29 22:50:55 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-29 22:50:55 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-29 22:50:59 [INFO] [HERMES_RUNTIME] Generated plan for 'Chào ổng video thứ 2.': ['select_youtube_video']
+2026-08-29 22:50:59 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'select_youtube_video' (params: {'index': 2})
+2026-08-29 22:50:59 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-29 22:50:59 [INFO] [HERMES_RUNTIME] Executing tool: select_youtube_video ({'index': 2})
+2026-08-29 22:51:00 [INFO] [COMPUTER_USE] Native Win32 switched focus to 'Translate this page?' (HWND: 5442508)
+2026-08-29 22:51:00 [INFO] [COMPUTER_USE] Waiting for YouTube page & video grid to settle...
+2026-08-29 22:51:03 [INFO] [HermesUI] Perceived window 'YouTube - Google Chrome' (Elements: 0, Composites: 0, Stability: 1.00)
+2026-08-29 22:51:03 [INFO] [COMPUTER_USE] Clicked at relative (0.72, 0.45) -> Screen (1385, 463)
+2026-08-29 22:51:03 [INFO] [HERMES EVENT] ✅ Tool finished: 'select_youtube_video' (result: {'success': True, 'message': 'Clicked and played YouTube video 2.'})
+2026-08-29 22:51:03 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-29 22:51:03 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-29 22:51:03 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Playing video 2.'
+2026-08-29 22:51:03 [INFO] [HERMES_CLIENT] Received Hermes response: 'Playing video 2.'
+2026-08-29 22:51:03 [INFO] [HERMES -> CHAT] Final response synthesized: 'Playing video 2.' (success=True)
+2026-08-29 22:51:03 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\ef803ccc89d907373d7adec3.wav
+2026-08-29 22:51:03 [INFO] [JARVIS] State changed -> speaking
+2026-08-29 22:51:05 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:51:05 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:51:05 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-29 22:51:16 [INFO] [VAD] Speech started.
+2026-08-29 22:51:16 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-29 22:51:19 [INFO] [VAD] Speech ended (utterance bytes=104960).
+2026-08-29 22:51:19 [INFO] [AUDIO] duration=3.28s rms=0.09000 peak=0.6827 silence_ratio=0.53 is_valid=True
+2026-08-29 22:51:19 [INFO] Processing audio with duration 00:03.280
+2026-08-29 22:51:20 [INFO] Detected language 'vi' with probability 0.93
+2026-08-29 22:51:21 [INFO] [STT] Faster-Whisper: transcribed='Trong nhận sách video, trọng video tiếp theo' | lang='vi' (prob=0.93)
+2026-08-29 22:51:21 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Trong nhận sách video, trọng video tiếp theo' (conf=0.95)
+2026-08-29 22:51:21 [INFO] [STT] model=base language_mode=auto text='Trong nhận sách video, trọng video tiếp theo' avg_logprob=-0.434 no_speech_prob=0.064 compression_ratio=0.91
+2026-08-29 22:51:21 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-29 22:51:21 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Trong nhận sách video, trọng video tiếp theo' confidence=0.93 score=-0.511
+2026-08-29 22:51:22 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Trong nhận sách video, trọng video tiếp theo'
+  [NORMALIZED]: 'Trong nhận sách video, chọn video tiếp theo'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=True)
+  [ENTITY]: Notion (method=metaphone, confidence=0.77)
+2026-08-29 22:51:22 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Trong nhận sách video, trọng video tiếp theo' | Normalized: 'Trong nhận sách video, chọn video tiếp theo'
+2026-08-29 22:51:22 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Trong nhận sách video, chọn video tiếp theo' (Raw STT: 'Trong nhận sách video, trọng video tiếp theo')
+2026-08-29 22:51:22 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Trong nhận sách video, trọng video tiếp theo' (conf=0.95)
+2026-08-29 22:51:22 [INFO] 🎙️ [STT] raw = 'Trong nhận sách video, trọng video tiếp theo'
+2026-08-29 22:51:22 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.95, response_rule='ALWAYS_ENGLISH')
+2026-08-29 22:51:22 [INFO] ✨ [NORMALIZER] normalized = 'Trong nhận sách video, chọn video tiếp theo'
+2026-08-29 22:51:22 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=True)
+2026-08-29 22:51:22 [INFO] 🏷️ [ENTITY] candidate = 'Notion' (alias='nô sơn', method=metaphone, confidence=0.77)
+2026-08-29 22:51:22 [INFO] [ROUTER] Routing natural-language task 'Trong nhận sách video, trọng video tiếp theo' to Hermes Agent
+2026-08-29 22:51:22 [INFO] [ROUTER] Command: 'Trong nhận sách video, chọn video tiếp theo' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-29 22:51:22 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: b1954236
+2026-08-29 22:51:22 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-29 22:51:22 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'Trong nhận sách video, chọn video tiếp theo'...
+2026-08-29 22:51:22 [INFO] [CHAT -> HERMES] Dispatching instruction: 'Trong nhận sách video, chọn video tiếp theo' (Intent: CONVERSATION)
+2026-08-29 22:51:22 [INFO] [HERMES_CLIENT] Sending message to Hermes for session b1954236: 'Trong nhận sách video, chọn video tiếp theo'
+2026-08-29 22:51:22 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-29 22:51:22 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-29 22:51:27 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'trong nhận sách video'
+  [NORMALIZED]: 'trong nhận sách video'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: Notion (method=metaphone, confidence=0.77)
+2026-08-29 22:51:27 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'trong nhận sách video' -> Silent recovery
+2026-08-29 22:51:28 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'chọn video tiếp theo'
+  [NORMALIZED]: 'chọn video tiếp theo'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=True)
+  [ENTITY]: YouTube (method=metaphone, confidence=0.82)
+2026-08-29 22:51:28 [INFO] [HERMES_RUNTIME] Generated plan for 'Trong nhận sách video, chọn video tiếp theo': ['select_youtube_video']
+2026-08-29 22:51:28 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'select_youtube_video' (params: {'index': 1})
+2026-08-29 22:51:28 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-29 22:51:28 [INFO] [HERMES_RUNTIME] Executing tool: select_youtube_video ({'index': 1})
+2026-08-29 22:51:28 [INFO] [COMPUTER_USE] Native Win32 switched focus to 'Restore pages?' (HWND: 8849136)
+2026-08-29 22:51:28 [INFO] [COMPUTER_USE] Waiting for YouTube page & video grid to settle...
+2026-08-29 22:51:30 [INFO] [HermesUI] Perceived window 'Restore pages?' (Elements: 0, Composites: 0, Stability: 0.00)
+2026-08-29 22:51:31 [INFO] [COMPUTER_USE] Clicked at relative (0.35, 0.45) -> Screen (1708, 148)
+2026-08-29 22:51:31 [INFO] [HERMES EVENT] ✅ Tool finished: 'select_youtube_video' (result: {'success': True, 'message': 'Clicked and played YouTube video 1.'})
+2026-08-29 22:51:31 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-29 22:51:31 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-29 22:51:31 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Playing video 1.'
+2026-08-29 22:51:31 [INFO] [HERMES_CLIENT] Received Hermes response: 'Playing video 1.'
+2026-08-29 22:51:31 [INFO] [HERMES -> CHAT] Final response synthesized: 'Playing video 1.' (success=True)
+2026-08-29 22:51:31 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\b8116be7ec171d15a95ca712.wav
+2026-08-29 22:51:31 [INFO] [JARVIS] State changed -> speaking
+2026-08-29 22:51:32 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:51:32 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:51:32 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-29 22:51:35 [INFO] [VAD] Speech started.
+2026-08-29 22:51:35 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-29 22:51:38 [INFO] [VAD] Speech ended (utterance bytes=122880).
+2026-08-29 22:51:38 [INFO] [AUDIO] duration=3.84s rms=0.09000 peak=0.6842 silence_ratio=0.52 is_valid=True
+2026-08-29 22:51:38 [INFO] Processing audio with duration 00:03.840
+2026-08-29 22:51:39 [INFO] Detected language 'vi' with probability 0.97
+2026-08-29 22:51:41 [INFO] [STT] Faster-Whisper: transcribed='Trong nhìn sách video, trọng video thứ 2' | lang='vi' (prob=0.97)
+2026-08-29 22:51:41 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Trong nhìn sách video, trọng video thứ 2' (conf=0.95)
+2026-08-29 22:51:41 [INFO] [STT] model=base language_mode=auto text='Trong nhìn sách video, trọng video thứ 2' avg_logprob=-0.382 no_speech_prob=0.067 compression_ratio=0.92
+2026-08-29 22:51:41 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-29 22:51:41 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Trong nhìn sách video, trọng video thứ 2' confidence=0.97 score=-0.450
+2026-08-29 22:51:42 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Trong nhìn sách video, trọng video thứ 2'
+  [NORMALIZED]: 'Trong nhìn sách video, chọn video thứ 2'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: Notion (method=metaphone, confidence=0.77)
+2026-08-29 22:51:42 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Trong nhìn sách video, trọng video thứ 2' | Normalized: 'Trong nhìn sách video, chọn video thứ 2'
+2026-08-29 22:51:42 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Trong nhìn sách video, chọn video thứ 2' (Raw STT: 'Trong nhìn sách video, trọng video thứ 2')
+2026-08-29 22:51:42 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Trong nhìn sách video, trọng video thứ 2' (conf=0.95)
+2026-08-29 22:51:42 [INFO] 🎙️ [STT] raw = 'Trong nhìn sách video, trọng video thứ 2'
+2026-08-29 22:51:42 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.95, response_rule='ALWAYS_ENGLISH')
+2026-08-29 22:51:42 [INFO] ✨ [NORMALIZER] normalized = 'Trong nhìn sách video, chọn video thứ 2'
+2026-08-29 22:51:42 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-29 22:51:42 [INFO] 🏷️ [ENTITY] candidate = 'Notion' (alias='nô sơn', method=metaphone, confidence=0.77)
+2026-08-29 22:51:42 [INFO] [ROUTER] Routing natural-language task 'Trong nhìn sách video, trọng video thứ 2' to Hermes Agent
+2026-08-29 22:51:42 [INFO] [ROUTER] Command: 'Trong nhìn sách video, chọn video thứ 2' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-29 22:51:42 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: b1954236
+2026-08-29 22:51:42 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-29 22:51:42 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'Trong nhìn sách video, chọn video thứ 2'...
+2026-08-29 22:51:42 [INFO] [CHAT -> HERMES] Dispatching instruction: 'Trong nhìn sách video, chọn video thứ 2' (Intent: CONVERSATION)
+2026-08-29 22:51:42 [INFO] [HERMES_CLIENT] Sending message to Hermes for session b1954236: 'Trong nhìn sách video, chọn video thứ 2'
+2026-08-29 22:51:42 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-29 22:51:42 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-29 22:51:46 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'trong nhìn sách video'
+  [NORMALIZED]: 'trong nhìn sách video'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: Notion (method=metaphone, confidence=0.77)
+2026-08-29 22:51:46 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'trong nhìn sách video' -> Silent recovery
+2026-08-29 22:51:47 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'chọn video thứ 2'
+  [NORMALIZED]: 'chọn video thứ 2'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-29 22:51:47 [INFO] [HERMES_RUNTIME] Generated plan for 'Trong nhìn sách video, chọn video thứ 2': ['select_youtube_video']
+2026-08-29 22:51:47 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'select_youtube_video' (params: {'index': 2})
+2026-08-29 22:51:47 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-29 22:51:47 [INFO] [HERMES_RUNTIME] Executing tool: select_youtube_video ({'index': 2})
+2026-08-29 22:51:47 [INFO] [COMPUTER_USE] Native Win32 switched focus to '[Vietsub + Lyrics] Базовый минимум "Bare minimum" - SABI, MIA BOYKA - YouTube - Google Chrome' (HWND: 19531734)
+2026-08-29 22:51:47 [INFO] [COMPUTER_USE] Waiting for YouTube page & video grid to settle...
+2026-08-29 22:51:50 [INFO] [HermesUI] Perceived window '[Vietsub + Lyrics] Базовый минимум "Bare minimum" - SABI, MIA BOYKA - YouTube - Google Chrome' (Elements: 0, Composites: 0, Stability: 0.00)
+2026-08-29 22:51:50 [INFO] [COMPUTER_USE] Clicked at relative (0.72, 0.45) -> Screen (1385, 463)
+2026-08-29 22:51:50 [INFO] [HERMES EVENT] ✅ Tool finished: 'select_youtube_video' (result: {'success': True, 'message': 'Clicked and played YouTube video 2.'})
+2026-08-29 22:51:50 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-29 22:51:50 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-29 22:51:50 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Playing video 2.'
+2026-08-29 22:51:50 [INFO] [HERMES_CLIENT] Received Hermes response: 'Playing video 2.'
+2026-08-29 22:51:50 [INFO] [HERMES -> CHAT] Final response synthesized: 'Playing video 2.' (success=True)
+2026-08-29 22:51:50 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\ef803ccc89d907373d7adec3.wav
+2026-08-29 22:51:50 [INFO] [JARVIS] State changed -> speaking
+2026-08-29 22:51:52 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:51:52 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:51:52 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-29 22:52:16 [INFO] [VAD] Speech started.
+2026-08-29 22:52:16 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-29 22:52:18 [INFO] [VAD] Speech ended (utterance bytes=64000).
+2026-08-29 22:52:18 [INFO] [AUDIO] duration=2.00s rms=0.09000 peak=0.5235 silence_ratio=0.66 is_valid=True
+2026-08-29 22:52:18 [INFO] Processing audio with duration 00:02.000
+2026-08-29 22:52:18 [INFO] Detected language 'en' with probability 0.48
+2026-08-29 22:52:19 [INFO] [STT] Language 'en' (prob=0.48) uncertain/empty -> Re-transcribing with bilingual fallback...
+2026-08-29 22:52:19 [INFO] Processing audio with duration 00:02.000
+2026-08-29 22:52:21 [INFO] [STT] Faster-Whisper: transcribed='Open YouTube.' | lang='en' (prob=1.00)
+2026-08-29 22:52:21 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Open YouTube.' (conf=0.90)
+2026-08-29 22:52:21 [INFO] [STT] model=base language_mode=auto text='Open YouTube.' avg_logprob=-0.213 no_speech_prob=0.166 compression_ratio=0.62
+2026-08-29 22:52:21 [INFO] [LANGUAGE] primary=en languages=['vi', 'en'] mixed_language=True
+2026-08-29 22:52:21 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Open YouTube.' confidence=1.00 score=-0.244
+2026-08-29 22:52:21 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Open YouTube.'
+  [NORMALIZED]: 'Open YouTube.'
+  [INTENT]: OPEN_APPLICATION (confidence=0.98, compound=False)
+  [ENTITY]: YouTube (method=levenshtein, confidence=0.93)
+2026-08-29 22:52:21 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Open YouTube.' | Normalized: 'Open YouTube.'
+2026-08-29 22:52:21 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Open YouTube.' (Raw STT: 'Open YouTube.')
+2026-08-29 22:52:21 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Open YouTube.' (conf=0.90)
+2026-08-29 22:52:21 [INFO] 🎙️ [STT] raw = 'Open YouTube.'
+2026-08-29 22:52:21 [INFO] 🌐 [LANGUAGE] detected = 'en' (confidence=0.90, response_rule='ALWAYS_ENGLISH')
+2026-08-29 22:52:21 [INFO] ✨ [NORMALIZER] normalized = 'Open YouTube.'
+2026-08-29 22:52:21 [INFO] 🎯 [INTENT] type = OPEN_APPLICATION (confidence=0.98, compound=False)
+2026-08-29 22:52:21 [INFO] 🏷️ [ENTITY] candidate = 'YouTube' (alias='YouTube', method=levenshtein, confidence=0.93)
+2026-08-29 22:52:21 [INFO] [ROUTER] Fast-path routing to 'open_app:youtube' for 'Open YouTube.'
+2026-08-29 22:52:21 [INFO] [ROUTER] Command: 'Open YouTube.' -> Target: DETERMINISTIC_ACTION (Action: open_app:youtube)
+2026-08-29 22:52:21 [INFO] [JARVIS] State changed -> processing
+2026-08-29 22:52:21 [INFO] [ACTION] Fast-path executing deterministic action: open_app:youtube
+2026-08-29 22:52:21 [INFO] [TOOL] open_application('YouTube')
+2026-08-29 22:52:21 [INFO] [TOOL_REGISTRY] Executing 'open_application' with params: {'app_name': 'YouTube'}
+2026-08-29 22:52:21 [INFO] [COMPUTER_USE] Opening web service 'YouTube' -> https://www.youtube.com
+2026-08-29 22:52:21 [INFO] [BROWSER] Opened URL in browser: https://www.youtube.com
+2026-08-29 22:52:21 [INFO] [RESULT] success
+2026-08-29 22:52:21 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\df453efcd9c6d4e03836a8a9.wav
+2026-08-29 22:52:21 [INFO] [JARVIS] State changed -> speaking
+2026-08-29 22:52:22 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:52:22 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:52:22 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-29 22:52:27 [INFO] [VAD] Speech started.
+2026-08-29 22:52:27 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-29 22:52:28 [INFO] [VAD] Speech ended (utterance bytes=69120).
+2026-08-29 22:52:28 [INFO] [AUDIO] duration=2.16s rms=0.09000 peak=0.5247 silence_ratio=0.58 is_valid=True
+2026-08-29 22:52:28 [INFO] Processing audio with duration 00:02.160
+2026-08-29 22:52:29 [INFO] Detected language 'vi' with probability 0.99
+2026-08-29 22:52:30 [INFO] [STT] Faster-Whisper: transcribed='Trọng video thứ 3.' | lang='vi' (prob=0.99)
+2026-08-29 22:52:30 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Trọng video thứ 3.' (conf=0.85)
+2026-08-29 22:52:30 [INFO] [STT] model=base language_mode=auto text='Trọng video thứ 3.' avg_logprob=-0.461 no_speech_prob=0.017 compression_ratio=0.73
+2026-08-29 22:52:30 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-29 22:52:30 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Trọng video thứ 3.' confidence=0.99 score=-0.458
+2026-08-29 22:52:31 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Trọng video thứ 3.'
+  [NORMALIZED]: 'chọn video thứ 3.'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-29 22:52:31 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Trọng video thứ 3.' | Normalized: 'chọn video thứ 3.'
+2026-08-29 22:52:31 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'chọn video thứ 3.' (Raw STT: 'Trọng video thứ 3.')
+2026-08-29 22:52:31 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Trọng video thứ 3.' (conf=0.85)
+2026-08-29 22:52:31 [INFO] 🎙️ [STT] raw = 'Trọng video thứ 3.'
+2026-08-29 22:52:31 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.85, response_rule='ALWAYS_ENGLISH')
+2026-08-29 22:52:31 [INFO] ✨ [NORMALIZER] normalized = 'chọn video thứ 3.'
+2026-08-29 22:52:31 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-29 22:52:31 [INFO] [ROUTER] Routing natural-language task 'Trọng video thứ 3.' to Hermes Agent
+2026-08-29 22:52:31 [INFO] [ROUTER] Command: 'chọn video thứ 3.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-29 22:52:31 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: b1954236
+2026-08-29 22:52:31 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-29 22:52:31 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'chọn video thứ 3.'...
+2026-08-29 22:52:31 [INFO] [CHAT -> HERMES] Dispatching instruction: 'chọn video thứ 3.' (Intent: CONVERSATION)
+2026-08-29 22:52:31 [INFO] [HERMES_CLIENT] Sending message to Hermes for session b1954236: 'chọn video thứ 3.'
+2026-08-29 22:52:31 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-29 22:52:31 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-29 22:52:35 [INFO] [HERMES_RUNTIME] Generated plan for 'chọn video thứ 3.': ['select_youtube_video']
+2026-08-29 22:52:35 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'select_youtube_video' (params: {'index': 3})
+2026-08-29 22:52:35 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-29 22:52:35 [INFO] [HERMES_RUNTIME] Executing tool: select_youtube_video ({'index': 3})
+2026-08-29 22:52:36 [INFO] [COMPUTER_USE] Waiting for YouTube page & video grid to settle...
+2026-08-29 22:52:38 [INFO] [HermesUI] Perceived window 'Restore pages?' (Elements: 0, Composites: 0, Stability: 0.00)
+2026-08-29 22:52:39 [INFO] [COMPUTER_USE] Clicked at relative (0.35, 0.78) -> Screen (669, 809)
+2026-08-29 22:52:39 [INFO] [HERMES EVENT] ✅ Tool finished: 'select_youtube_video' (result: {'success': True, 'message': 'Clicked and played YouTube video 3.'})
+2026-08-29 22:52:39 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-29 22:52:39 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-29 22:52:39 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Playing video 3.'
+2026-08-29 22:52:39 [INFO] [HERMES_CLIENT] Received Hermes response: 'Playing video 3.'
+2026-08-29 22:52:39 [INFO] [HERMES -> CHAT] Final response synthesized: 'Playing video 3.' (success=True)
+2026-08-29 22:52:39 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\5c3f93556a064b0fcc6f6c34.wav
+2026-08-29 22:52:39 [INFO] [JARVIS] State changed -> speaking
+2026-08-29 22:52:40 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:52:40 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:52:40 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-29 22:52:41 [INFO] [VAD] Speech started.
+2026-08-29 22:52:41 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-29 22:52:42 [INFO] [VAD] Speech ended (utterance bytes=51200).
+2026-08-29 22:52:42 [INFO] [AUDIO] duration=1.60s rms=0.09000 peak=0.6635 silence_ratio=0.55 is_valid=True
+2026-08-29 22:52:42 [INFO] Processing audio with duration 00:01.600
+2026-08-29 22:52:43 [INFO] Detected language 'zh' with probability 0.24
+2026-08-29 22:52:44 [INFO] [STT] Language 'zh' (prob=0.24) uncertain/empty -> Re-transcribing with bilingual fallback...
+2026-08-29 22:52:44 [INFO] Processing audio with duration 00:01.600
+2026-08-29 22:52:45 [INFO] [STT] Faster-Whisper: transcribed='Ciao.' | lang='en' (prob=1.00)
+2026-08-29 22:52:45 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Ciao.' (conf=0.80)
+2026-08-29 22:52:45 [INFO] [STT] model=base language_mode=auto text='Ciao.' avg_logprob=-0.800 no_speech_prob=0.139 compression_ratio=0.38
+2026-08-29 22:52:45 [INFO] [LANGUAGE] primary=en languages=['en'] mixed_language=False
+2026-08-29 22:52:45 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Ciao.' confidence=1.00 score=-2.104
+2026-08-29 22:52:45 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Ciao.'
+  [NORMALIZED]: 'Ciao.'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-29 22:52:45 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Ciao.' | Normalized: 'Ciao.'
+2026-08-29 22:52:45 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Ciao.' (Raw STT: 'Ciao.')
+2026-08-29 22:52:45 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Ciao.' (conf=0.80)
+2026-08-29 22:52:45 [INFO] 🎙️ [STT] raw = 'Ciao.'
+2026-08-29 22:52:45 [INFO] 🌐 [LANGUAGE] detected = 'en' (confidence=0.80, response_rule='ALWAYS_ENGLISH')
+2026-08-29 22:52:45 [INFO] ✨ [NORMALIZER] normalized = 'Ciao.'
+2026-08-29 22:52:45 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-29 22:52:45 [INFO] [ROUTER] Routing natural-language task 'Ciao.' to Hermes Agent
+2026-08-29 22:52:45 [INFO] [ROUTER] Command: 'Ciao.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-29 22:52:45 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: b1954236
+2026-08-29 22:52:45 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-29 22:52:45 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'Ciao.'...
+2026-08-29 22:52:45 [INFO] [CHAT -> HERMES] Dispatching instruction: 'Ciao.' (Intent: CONVERSATION)
+2026-08-29 22:52:45 [INFO] [HERMES_CLIENT] Sending message to Hermes for session b1954236: 'Ciao.'
+2026-08-29 22:52:45 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-29 22:52:45 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-29 22:52:49 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'ciao.' -> Silent recovery
+2026-08-29 22:52:49 [INFO] [HERMES_RUNTIME] Generated plan for 'Ciao.': []
+2026-08-29 22:52:49 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-29 22:52:49 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-29 22:52:49 [INFO] [HERMES EVENT] 🎯 Completed! Response: ''
+2026-08-29 22:52:49 [INFO] [HERMES_CLIENT] Received Hermes response: ''
+2026-08-29 22:52:49 [INFO] [HERMES -> CHAT] Final response synthesized: '' (success=True)
+2026-08-29 22:52:49 [INFO] [HERMES] Response is silent (no speech synthesis needed).
+2026-08-29 22:52:49 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:52:49 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-29 22:52:50 [INFO] [VAD] Speech started.
+2026-08-29 22:52:50 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-29 22:52:56 [INFO] [VAD] Speech ended (utterance bytes=199680).
+2026-08-29 22:52:56 [INFO] [AUDIO] duration=6.24s rms=0.09000 peak=0.6681 silence_ratio=0.55 is_valid=True
+2026-08-29 22:52:56 [INFO] Processing audio with duration 00:06.240
+2026-08-29 22:52:57 [INFO] Detected language 'vi' with probability 0.96
+2026-08-29 22:53:00 [INFO] [STT] Faster-Whisper: transcribed='Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái' | lang='vi' (prob=0.96)
+2026-08-29 22:53:00 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái' (conf=0.98)
+2026-08-29 22:53:00 [INFO] [STT] model=base language_mode=auto text='Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái' avg_logprob=-0.865 no_speech_prob=0.261 compression_ratio=0.99
+2026-08-29 22:53:00 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-29 22:53:00 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái' confidence=0.96 score=-1.529
+2026-08-29 22:53:02 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái'
+  [NORMALIZED]: 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=True)
+  [ENTITY]: Docker Desktop (method=metaphone, confidence=0.77)
+2026-08-29 22:53:02 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái' | Normalized: 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái'
+2026-08-29 22:53:02 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái' (Raw STT: 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái')
+2026-08-29 22:53:02 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái' (conf=0.98)
+2026-08-29 22:53:02 [INFO] 🎙️ [STT] raw = 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái'
+2026-08-29 22:53:02 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.98, response_rule='ALWAYS_ENGLISH')
+2026-08-29 22:53:02 [INFO] ✨ [NORMALIZER] normalized = 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái'
+2026-08-29 22:53:02 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=True)
+2026-08-29 22:53:02 [INFO] 🏷️ [ENTITY] candidate = 'Docker Desktop' (alias='đốc cơ', method=metaphone, confidence=0.77)
+2026-08-29 22:53:02 [INFO] [ROUTER] Routing natural-language task 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái' to Hermes Agent
+2026-08-29 22:53:02 [INFO] [ROUTER] Command: 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-29 22:53:02 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: b1954236
+2026-08-29 22:53:02 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-29 22:53:02 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái'...
+2026-08-29 22:53:02 [INFO] [CHAT -> HERMES] Dispatching instruction: 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái' (Intent: CONVERSATION)
+2026-08-29 22:53:02 [INFO] [HERMES_CLIENT] Sending message to Hermes for session b1954236: 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái'
+2026-08-29 22:53:02 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-29 22:53:02 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-29 22:53:06 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'không'
+  [NORMALIZED]: 'không'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: Docker Desktop (method=metaphone, confidence=0.77)
+2026-08-29 22:53:06 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'không' -> Silent recovery
+2026-08-29 22:53:07 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'em mới cập nhận 20 nền'
+  [NORMALIZED]: 'em mới cập nhận 20 nền'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: Notion (method=metaphone, confidence=0.77)
+2026-08-29 22:53:07 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'em mới cập nhận 20 nền' -> Silent recovery
+2026-08-29 22:53:07 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'thứ như có ạ'
+  [NORMALIZED]: 'thứ như có ạ'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: Spotify (method=metaphone, confidence=0.90)
+2026-08-29 22:53:07 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'thứ như có ạ' -> Silent recovery
+2026-08-29 22:53:08 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'em chỉ đứng lại cái'
+  [NORMALIZED]: 'em chỉ đứng lại cái'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: Spotify (method=metaphone, confidence=0.90)
+2026-08-29 22:53:08 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'em chỉ đứng lại cái' -> Silent recovery
+2026-08-29 22:53:08 [INFO] [HERMES_RUNTIME] Generated plan for 'Không, em mới cập nhận 20 nền, Thứ như có ạ, em chỉ đứng lại cái': ['select_youtube_video']
+2026-08-29 22:53:08 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'select_youtube_video' (params: {'index': 20})
+2026-08-29 22:53:08 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-29 22:53:08 [INFO] [HERMES_RUNTIME] Executing tool: select_youtube_video ({'index': 20})
+2026-08-29 22:53:08 [INFO] [COMPUTER_USE] Waiting for YouTube page & video grid to settle...
+2026-08-29 22:53:11 [INFO] [HermesUI] Perceived window 'Riot Client' (Elements: 0, Composites: 0, Stability: 0.00)
+2026-08-29 22:53:11 [INFO] [COMPUTER_USE] Clicked at relative (0.72, 0.95) -> Screen (1297, 928)
+2026-08-29 22:53:11 [INFO] [HERMES EVENT] ✅ Tool finished: 'select_youtube_video' (result: {'success': True, 'message': 'Clicked and played YouTube video 20.'})
+2026-08-29 22:53:11 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-29 22:53:11 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-29 22:53:11 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Playing video 20.'
+2026-08-29 22:53:11 [INFO] [HERMES_CLIENT] Received Hermes response: 'Playing video 20.'
+2026-08-29 22:53:11 [INFO] [HERMES -> CHAT] Final response synthesized: 'Playing video 20.' (success=True)
+2026-08-29 22:53:11 [INFO] [TTS] Initializing TTS provider for mode 'hybrid'...
+2026-08-29 22:53:11 [INFO] [TTS] Initializing VieNeu local neural TTS engine (dataset=C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\voice_assets\jarvis)...
+2026-08-29 22:53:11 [INFO] [TTS] Hybrid Mode: Voice dataset ready (20 samples). Using local VieNeu runtime.
+2026-08-29 22:53:11 [INFO] [TTS] Synthesizing response: 'Playing video 20.'
+2026-08-29 22:53:11 [INFO] [TTS] Falling back to ElevenLabs runtime synthesis...
+2026-08-29 22:53:12 [INFO] [TTS] Requesting ElevenLabs synthesis: 'Playing video 20.' (voice=IXXiMMkScyYf0VAI4AFp)...
+2026-08-29 22:53:13 [INFO] HTTP Request: POST https://api.elevenlabs.io/v1/text-to-speech/IXXiMMkScyYf0VAI4AFp?output_format=pcm_24000 "HTTP/1.1 200 OK"
+2026-08-29 22:53:13 [INFO] [TTS] Saved phrase audio to cache: c0998ce7a7e94d3a4aa2565d.wav
+2026-08-29 22:53:13 [INFO] [PLAYBACK] Playing audio (66874 bytes, 1.39s, 24000 Hz)
+2026-08-29 22:53:13 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:53:13 [INFO] [JARVIS] State changed -> speaking
+2026-08-29 22:53:13 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-29 22:53:13 [INFO] [PLAYBACK] Playing 33437 samples (1.39s at 24000 Hz)...
+2026-08-29 22:53:15 [INFO] [PLAYBACK] Playback completed normally.
+2026-08-29 22:53:15 [INFO] [JARVIS] State changed -> listening
+2026-08-29 22:53:16 [INFO] [VAD] Speech started.
+2026-08-29 22:53:16 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-29 22:53:18 [INFO] [VAD] Speech ended (utterance bytes=71680).
+2026-08-29 22:53:18 [INFO] [AUDIO] duration=2.24s rms=0.09000 peak=0.6298 silence_ratio=0.62 is_valid=True
+2026-08-29 22:53:18 [INFO] Processing audio with duration 00:02.240
+2026-08-29 22:53:19 [INFO] Detected language 'vi' with probability 0.82
+2026-08-29 22:53:21 [INFO] [STT] Faster-Whisper: transcribed='Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ' | lang='vi' (prob=0.82)
+2026-08-29 22:53:21 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ' (conf=0.98)
+2026-08-29 22:53:21 [INFO] [STT] model=base language_mode=auto text='Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ' avg_logprob=-0.568 no_speech_prob=0.013 compression_ratio=3.03
+2026-08-29 22:53:21 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-29 22:53:21 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ đi ngủ' confidence=0.82 score=-1.587
+2026-08-29 22:53:22 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ'
+  [NORMALIZED]: 'Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ'
+  [INTENT]: SLEEP_DISMISS (confidence=0.99, compound=True)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-29 22:53:22 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ' | Normalized: 'Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ'
+2026-08-29 22:53:22 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ' (Raw STT: 'Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ')
+2026-08-29 22:53:22 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ' (conf=0.98)
+2026-08-29 22:53:22 [INFO] 🎙️ [STT] raw = 'Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ'
+2026-08-29 22:53:22 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.98, response_rule='ALWAYS_ENGLISH')
+2026-08-29 22:53:22 [INFO] ✨ [NORMALIZER] normalized = 'Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ'
+2026-08-29 22:53:22 [INFO] 🎯 [INTENT] type = SLEEP_DISMISS (confidence=0.99, compound=True)
+2026-08-29 22:53:22 [INFO] [ROUTER] Detected sleep/close command in 'Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ'
+2026-08-29 22:53:22 [INFO] [ROUTER] Command: 'Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ' -> Target: SLEEP_DISMISS (Action: sleep)
+2026-08-29 22:53:22 [INFO] 🛑 [CONVERSATION CLOSE] User requested sleep ('Lệp nhạc, đi ngủ đi ngủ đi ngủ đi ngủ') -> Closing session...
+2026-08-29 22:53:22 [INFO] [JARVIS] Sleep/Close command detected -> Orb closing animation initiated.
+2026-08-29 22:53:22 [INFO] [AUDIO] Ownership transfer: CHAT -> TRIGGER
+2026-08-29 22:53:22 [INFO] [HERMES_RUNTIME] Session closed: b1954236
+2026-08-29 22:53:22 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\133ac38c254194538895ff7e.wav
+2026-08-29 22:53:23 [INFO] [JARVIS] Session ended -> UI hidden. Background wake detector ready.
+2026-08-30 00:06:50 [INFO] JarvisBridge WebSocket server started on ws://127.0.0.1:8765
+2026-08-30 00:06:50 [INFO] server listening on 127.0.0.1:8765
+2026-08-30 00:06:50 [INFO] Launched Jarvis desktop UI overlay process (hidden by default, PID: 7684).
+2026-08-30 00:06:50 [INFO] connection open
+2026-08-30 00:06:50 [INFO] [BRIDGE] UI client connected: ('127.0.0.1', 51198)
+2026-08-30 00:06:51 [INFO] connection open
+2026-08-30 00:06:51 [INFO] [BRIDGE] UI client connected: ('127.0.0.1', 59092)
+2026-08-30 00:06:53 [INFO] [VAD] Loading Silero VAD from local torch hub cache: C:\Users\ADMIN/.cache\torch\hub\snakers4_silero-vad_master
+2026-08-30 00:06:53 [INFO] [VAD] Silero VAD neural model ready (threshold=0.50).
+2026-08-30 00:06:53 [INFO] Initializing OpenWakeWord neural model ('hey_jarvis')...
+2026-08-30 00:06:53 [INFO] OpenWakeWord model ready (keyword: 'hey_jarvis', confidence threshold=0.55).
+2026-08-30 00:06:54 [INFO] [AUDIO] Ownership transfer: NONE -> TRIGGER
+2026-08-30 00:06:54 [INFO] ===============================================================
+2026-08-30 00:06:54 [INFO]  JARVIS RUNTIME COORDINATOR — HERMES AGENT & SINGLE AUDIO OWNER
+2026-08-30 00:06:54 [INFO] ===============================================================
+2026-08-30 00:06:54 [INFO]  Microphone Invariant: Central AudioManager (Single Stream)
+2026-08-30 00:06:54 [INFO]  Mode 1: TRIGGER MODE (Claps & Deterministic Shortcuts)
+2026-08-30 00:06:54 [INFO]  Mode 2: CHAT MODE (VAD + STT + Hermes Agent + Computer Use)
+2026-08-30 00:06:54 [INFO]  Activation: 'Hey Jarvis, I need your help' -> Chat Mode & Hermes
+2026-08-30 00:06:54 [INFO]  Deactivation: 'Jarvis, go to sleep' -> Return to Trigger Mode
+2026-08-30 00:06:54 [INFO]  Audio capture: Rate=16000 Hz, Block=80 ms
+2026-08-30 00:06:54 [INFO] ===============================================================
+2026-08-30 00:06:54 [INFO] Audio devices:
+   0 Microsoft Sound Mapper - Input, MME (2 in, 0 out)
+>  1 Microphone (MCHOSE K20), MME (1 in, 0 out)
+   2 Microsoft Sound Mapper - Output, MME (0 in, 2 out)
+<  3 Realtek HD Audio 2nd output (Re, MME (0 in, 2 out)
+   4 Speakers (Realtek(R) Audio), MME (0 in, 8 out)
+   5 SAMSUNG (NVIDIA High Definition, MME (0 in, 2 out)
+   6 Realtek Digital Output (Realtek, MME (0 in, 2 out)
+   7 Speakers (MCHOSE K20), MME (0 in, 8 out)
+   8 Primary Sound Capture Driver, Windows DirectSound (2 in, 0 out)
+   9 Microphone (MCHOSE K20), Windows DirectSound (1 in, 0 out)
+  10 Primary Sound Driver, Windows DirectSound (0 in, 2 out)
+  11 Realtek HD Audio 2nd output (Realtek(R) Audio), Windows DirectSound (0 in, 2 out)
+  12 Speakers (Realtek(R) Audio), Windows DirectSound (0 in, 8 out)
+  13 SAMSUNG (NVIDIA High Definition Audio), Windows DirectSound (0 in, 2 out)
+  14 Realtek Digital Output (Realtek(R) Audio), Windows DirectSound (0 in, 2 out)
+  15 Speakers (MCHOSE K20), Windows DirectSound (0 in, 8 out)
+  16 Speakers (Realtek(R) Audio), Windows WASAPI (0 in, 2 out)
+  17 SAMSUNG (NVIDIA High Definition Audio), Windows WASAPI (0 in, 2 out)
+  18 Realtek Digital Output (Realtek(R) Audio), Windows WASAPI (0 in, 2 out)
+  19 Speakers (MCHOSE K20), Windows WASAPI (0 in, 8 out)
+  20 Realtek HD Audio 2nd output (Realtek(R) Audio), Windows WASAPI (0 in, 2 out)
+  21 Microphone (MCHOSE K20), Windows WASAPI (1 in, 0 out)
+  22 Headphones (Realtek HD Audio 2nd output), Windows WDM-KS (0 in, 2 out)
+  23 Stereo Mix (Realtek HD Audio Stereo input), Windows WDM-KS (2 in, 0 out)
+  24 Line In (Realtek HD Audio Line input), Windows WDM-KS (2 in, 0 out)
+  25 Microphone (Realtek HD Audio Mic input), Windows WDM-KS (2 in, 0 out)
+  26 Speakers (Realtek HD Audio output), Windows WDM-KS (0 in, 8 out)
+  27 SPDIF Out (Realtek HDA SPDIF Out), Windows WDM-KS (0 in, 2 out)
+  28 Microphone (MicIn), Windows WDM-KS (1 in, 0 out)
+  29 Speakers (Speaker), Windows WDM-KS (0 in, 8 out)
+  30 Output (NVIDIA High Definition Audio), Windows WDM-KS (0 in, 2 out)
+2026-08-30 00:06:54 [INFO] Using default microphone [1]: Microphone (MCHOSE K20) (probe rms=0.01656)
+2026-08-30 00:07:20 [INFO] 🎙️ [WAKE DETECTED]: 'Hey Jarvis'! (confidence=0.73 >= 0.55) — Listening for commands / claps...
+2026-08-30 00:07:20 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\80f12fdf470d1e95bef56bda.wav
+2026-08-30 00:07:22 [INFO] 👏 Clap hit [1] (rms=0.0654). Waiting for next clap...
+2026-08-30 00:07:23 [INFO] 👏 Clap hit [1] (rms=0.0413). Waiting for next clap...
+2026-08-30 00:07:27 [INFO] 👏 Clap hit [1] (rms=0.0278). Waiting for next clap...
+2026-08-30 00:07:28 [INFO] ⏳ Wake window expired (8.0s). Returning to waiting mode...
+2026-08-30 00:07:43 [INFO] JarvisBridge WebSocket server started on ws://127.0.0.1:8765
+2026-08-30 00:07:43 [INFO] server listening on 127.0.0.1:8765
+2026-08-30 00:07:44 [INFO] Launched Jarvis desktop UI overlay process (hidden by default, PID: 15356).
+2026-08-30 00:07:44 [INFO] connection open
+2026-08-30 00:07:44 [INFO] [BRIDGE] UI client connected: ('127.0.0.1', 62931)
+2026-08-30 00:07:45 [INFO] connection open
+2026-08-30 00:07:45 [INFO] [BRIDGE] UI client connected: ('127.0.0.1', 58034)
+2026-08-30 00:07:47 [INFO] [VAD] Loading Silero VAD from local torch hub cache: C:\Users\ADMIN/.cache\torch\hub\snakers4_silero-vad_master
+2026-08-30 00:07:47 [INFO] [VAD] Silero VAD neural model ready (threshold=0.50).
+2026-08-30 00:07:47 [INFO] Initializing OpenWakeWord neural model ('hey_jarvis')...
+2026-08-30 00:07:47 [INFO] OpenWakeWord model ready (keyword: 'hey_jarvis', confidence threshold=0.55).
+2026-08-30 00:07:47 [INFO] [AUDIO] Ownership transfer: NONE -> TRIGGER
+2026-08-30 00:07:47 [INFO] ===============================================================
+2026-08-30 00:07:47 [INFO]  JARVIS RUNTIME COORDINATOR — HERMES AGENT & SINGLE AUDIO OWNER
+2026-08-30 00:07:47 [INFO] ===============================================================
+2026-08-30 00:07:47 [INFO]  Microphone Invariant: Central AudioManager (Single Stream)
+2026-08-30 00:07:47 [INFO]  Mode 1: TRIGGER MODE (Claps & Deterministic Shortcuts)
+2026-08-30 00:07:47 [INFO]  Mode 2: CHAT MODE (VAD + STT + Hermes Agent + Computer Use)
+2026-08-30 00:07:47 [INFO]  Activation: 'Hey Jarvis, I need your help' -> Chat Mode & Hermes
+2026-08-30 00:07:47 [INFO]  Deactivation: 'Jarvis, go to sleep' -> Return to Trigger Mode
+2026-08-30 00:07:47 [INFO]  Audio capture: Rate=16000 Hz, Block=80 ms
+2026-08-30 00:07:47 [INFO] ===============================================================
+2026-08-30 00:07:47 [INFO] Audio devices:
+   0 Microsoft Sound Mapper - Input, MME (2 in, 0 out)
+>  1 Microphone (MCHOSE K20), MME (1 in, 0 out)
+   2 Microsoft Sound Mapper - Output, MME (0 in, 2 out)
+<  3 Realtek HD Audio 2nd output (Re, MME (0 in, 2 out)
+   4 Speakers (Realtek(R) Audio), MME (0 in, 8 out)
+   5 SAMSUNG (NVIDIA High Definition, MME (0 in, 2 out)
+   6 Realtek Digital Output (Realtek, MME (0 in, 2 out)
+   7 Speakers (MCHOSE K20), MME (0 in, 8 out)
+   8 Primary Sound Capture Driver, Windows DirectSound (2 in, 0 out)
+   9 Microphone (MCHOSE K20), Windows DirectSound (1 in, 0 out)
+  10 Primary Sound Driver, Windows DirectSound (0 in, 2 out)
+  11 Realtek HD Audio 2nd output (Realtek(R) Audio), Windows DirectSound (0 in, 2 out)
+  12 Speakers (Realtek(R) Audio), Windows DirectSound (0 in, 8 out)
+  13 SAMSUNG (NVIDIA High Definition Audio), Windows DirectSound (0 in, 2 out)
+  14 Realtek Digital Output (Realtek(R) Audio), Windows DirectSound (0 in, 2 out)
+  15 Speakers (MCHOSE K20), Windows DirectSound (0 in, 8 out)
+  16 Speakers (Realtek(R) Audio), Windows WASAPI (0 in, 2 out)
+  17 SAMSUNG (NVIDIA High Definition Audio), Windows WASAPI (0 in, 2 out)
+  18 Realtek Digital Output (Realtek(R) Audio), Windows WASAPI (0 in, 2 out)
+  19 Speakers (MCHOSE K20), Windows WASAPI (0 in, 8 out)
+  20 Realtek HD Audio 2nd output (Realtek(R) Audio), Windows WASAPI (0 in, 2 out)
+  21 Microphone (MCHOSE K20), Windows WASAPI (1 in, 0 out)
+  22 Headphones (Realtek HD Audio 2nd output), Windows WDM-KS (0 in, 2 out)
+  23 Stereo Mix (Realtek HD Audio Stereo input), Windows WDM-KS (2 in, 0 out)
+  24 Line In (Realtek HD Audio Line input), Windows WDM-KS (2 in, 0 out)
+  25 Microphone (Realtek HD Audio Mic input), Windows WDM-KS (2 in, 0 out)
+  26 Speakers (Realtek HD Audio output), Windows WDM-KS (0 in, 8 out)
+  27 SPDIF Out (Realtek HDA SPDIF Out), Windows WDM-KS (0 in, 2 out)
+  28 Microphone (MicIn), Windows WDM-KS (1 in, 0 out)
+  29 Speakers (Speaker), Windows WDM-KS (0 in, 8 out)
+  30 Output (NVIDIA High Definition Audio), Windows WDM-KS (0 in, 2 out)
+2026-08-30 00:07:48 [INFO] Using default microphone [1]: Microphone (MCHOSE K20) (probe rms=0.00143)
+2026-08-30 00:08:02 [INFO] 🎙️ [WAKE DETECTED]: 'Hey Jarvis'! (confidence=0.78 >= 0.55) — Listening for commands / claps...
+2026-08-30 00:08:02 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\80f12fdf470d1e95bef56bda.wav
+2026-08-30 00:08:04 [INFO] 👏 Clap hit [1] (rms=0.0429). Waiting for next clap...
+2026-08-30 00:08:04 [INFO] 👏 Clap hit [1] (rms=0.0482). Waiting for next clap...
+2026-08-30 00:08:09 [INFO] 👏 Clap hit [1] (rms=0.1484). Waiting for next clap...
+2026-08-30 00:08:09 [INFO] 👏 Clap hit [1] (rms=0.0704). Waiting for next clap...
+2026-08-30 00:08:10 [INFO] 👏 Clap hit [2]! Waiting 0.42s to distinguish 2 vs 3 claps...
+2026-08-30 00:08:10 [INFO] ⏳ Wake window expired (8.0s). Returning to waiting mode...
+2026-08-30 00:08:44 [INFO] 🎙️ [WAKE DETECTED]: 'Hey Jarvis'! (confidence=0.68 >= 0.55) — Listening for commands / claps...
+2026-08-30 00:08:44 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\80f12fdf470d1e95bef56bda.wav
+2026-08-30 00:08:46 [INFO] 👏 Clap hit [1] (rms=0.1066). Waiting for next clap...
+2026-08-30 00:08:47 [INFO] 👏 Clap hit [1] (rms=0.0363). Waiting for next clap...
+2026-08-30 00:08:47 [INFO] 🌟 [INTENT: CONVERSATION] Dedicated phrase detected ('ave ave i need') -> Materializing Jarvis Orb...
+2026-08-30 00:08:47 [INFO] [JARVIS] Wake detected -> Conversation session acquired. ID: 208e4200
+2026-08-30 00:08:47 [INFO] [JARVIS] Conversation session acquired. ID: 208e4200
+2026-08-30 00:08:47 [INFO] [AUDIO] Ownership transfer: TRIGGER -> CHAT
+2026-08-30 00:08:47 [INFO] [HERMES_RUNTIME] Session started: 208e4200
+2026-08-30 00:08:47 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\d0ecfd35be7f28a737660d7a.wav
+2026-08-30 00:08:47 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:08:50 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:08:51 [INFO] [VAD] Speech started.
+2026-08-30 00:08:51 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:08:52 [INFO] [VAD] Speech ended (utterance bytes=58880).
+2026-08-30 00:08:52 [INFO] [AUDIO] duration=1.84s rms=0.09000 peak=0.8391 silence_ratio=0.62 is_valid=True
+2026-08-30 00:08:53 [INFO] [STT] Initializing Faster-Whisper (model='base', device='cpu', compute_type='int8')...
+2026-08-30 00:08:54 [INFO] [STT] Faster-Whisper model ready (threads=8).
+2026-08-30 00:08:54 [INFO] Processing audio with duration 00:01.840
+2026-08-30 00:08:55 [INFO] Detected language 'en' with probability 0.89
+2026-08-30 00:08:56 [INFO] [STT] Faster-Whisper: transcribed='Open browser.' | lang='en' (prob=0.89)
+2026-08-30 00:08:56 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Open browser.' (conf=0.90)
+2026-08-30 00:08:56 [INFO] [STT] model=base language_mode=auto text='Open browser.' avg_logprob=-0.594 no_speech_prob=0.279 compression_ratio=0.62
+2026-08-30 00:08:56 [INFO] [LANGUAGE] primary=en languages=['en'] mixed_language=False
+2026-08-30 00:08:56 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Open browser.' confidence=0.89 score=-1.173
+2026-08-30 00:08:56 [INFO] [APP_REGISTRY] Discovered 78 Windows Start Menu applications.
+2026-08-30 00:08:56 [INFO] [VOICE_MEMORY] Loaded 31 learned phrase mappings from user_voice_memory.json
+2026-08-30 00:08:56 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Open browser.'
+  [NORMALIZED]: 'Open Google Chrome.'
+  [INTENT]: OPEN_APPLICATION (confidence=0.98, compound=False)
+  [ENTITY]: Google Chrome (method=levenshtein, confidence=0.93)
+2026-08-30 00:08:56 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Open browser.' | Normalized: 'Open Google Chrome.'
+2026-08-30 00:08:56 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Open Google Chrome.' (Raw STT: 'Open browser.')
+2026-08-30 00:08:56 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Open browser.' (conf=0.90)
+2026-08-30 00:08:56 [INFO] 🎙️ [STT] raw = 'Open browser.'
+2026-08-30 00:08:56 [INFO] 🌐 [LANGUAGE] detected = 'en' (confidence=0.90, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:08:56 [INFO] ✨ [NORMALIZER] normalized = 'Open Google Chrome.'
+2026-08-30 00:08:56 [INFO] 🎯 [INTENT] type = OPEN_APPLICATION (confidence=0.98, compound=False)
+2026-08-30 00:08:56 [INFO] 🏷️ [ENTITY] candidate = 'Google Chrome' (alias='browser', method=levenshtein, confidence=0.93)
+2026-08-30 00:08:56 [INFO] [ROUTER] Fast-path routing to 'open_chrome' for 'Open browser.'
+2026-08-30 00:08:56 [INFO] [ROUTER] Command: 'Open Google Chrome.' -> Target: DETERMINISTIC_ACTION (Action: open_chrome)
+2026-08-30 00:08:56 [INFO] [JARVIS] State changed -> processing
+2026-08-30 00:08:56 [INFO] [ACTION] Fast-path executing deterministic action: open_chrome
+2026-08-30 00:08:56 [INFO] [TOOL] open_application('Google Chrome')
+2026-08-30 00:08:56 [INFO] Opened Google Chrome.
+2026-08-30 00:08:56 [INFO] [RESULT] success
+2026-08-30 00:08:56 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\bc7333bbf1455db5222b6a94.wav
+2026-08-30 00:08:56 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:08:58 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:08:58 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:08:58 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:08:58 [INFO] [VAD] Speech started.
+2026-08-30 00:08:58 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:09:00 [INFO] [VAD] Speech ended (utterance bytes=53760).
+2026-08-30 00:09:00 [INFO] [AUDIO] duration=1.68s rms=0.09000 peak=0.6270 silence_ratio=0.68 is_valid=True
+2026-08-30 00:09:00 [INFO] Processing audio with duration 00:01.680
+2026-08-30 00:09:00 [INFO] Detected language 'en' with probability 0.92
+2026-08-30 00:09:02 [INFO] [STT] Faster-Whisper: transcribed='Open YouTube.' | lang='en' (prob=0.92)
+2026-08-30 00:09:02 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Open YouTube.' (conf=0.90)
+2026-08-30 00:09:02 [INFO] [STT] model=base language_mode=auto text='Open YouTube.' avg_logprob=-0.256 no_speech_prob=0.076 compression_ratio=0.62
+2026-08-30 00:09:02 [INFO] [LANGUAGE] primary=en languages=['vi', 'en'] mixed_language=True
+2026-08-30 00:09:02 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Open YouTube.' confidence=0.92 score=-0.044
+2026-08-30 00:09:02 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Open YouTube.'
+  [NORMALIZED]: 'Open YouTube.'
+  [INTENT]: OPEN_APPLICATION (confidence=0.98, compound=False)
+  [ENTITY]: YouTube (method=levenshtein, confidence=0.93)
+2026-08-30 00:09:02 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Open YouTube.' | Normalized: 'Open YouTube.'
+2026-08-30 00:09:02 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Open YouTube.' (Raw STT: 'Open YouTube.')
+2026-08-30 00:09:02 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Open YouTube.' (conf=0.90)
+2026-08-30 00:09:02 [INFO] 🎙️ [STT] raw = 'Open YouTube.'
+2026-08-30 00:09:02 [INFO] 🌐 [LANGUAGE] detected = 'en' (confidence=0.90, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:09:02 [INFO] ✨ [NORMALIZER] normalized = 'Open YouTube.'
+2026-08-30 00:09:02 [INFO] 🎯 [INTENT] type = OPEN_APPLICATION (confidence=0.98, compound=False)
+2026-08-30 00:09:02 [INFO] 🏷️ [ENTITY] candidate = 'YouTube' (alias='YouTube', method=levenshtein, confidence=0.93)
+2026-08-30 00:09:02 [INFO] [ROUTER] Fast-path routing to 'open_app:youtube' for 'Open YouTube.'
+2026-08-30 00:09:02 [INFO] [ROUTER] Command: 'Open YouTube.' -> Target: DETERMINISTIC_ACTION (Action: open_app:youtube)
+2026-08-30 00:09:02 [INFO] [JARVIS] State changed -> processing
+2026-08-30 00:09:02 [INFO] [ACTION] Fast-path executing deterministic action: open_app:youtube
+2026-08-30 00:09:02 [INFO] [TOOL] open_application('YouTube')
+2026-08-30 00:09:02 [INFO] [TOOL_REGISTRY] Executing 'open_application' with params: {'app_name': 'YouTube'}
+2026-08-30 00:09:02 [INFO] [COMPUTER_USE] Opening web service 'YouTube' -> https://www.youtube.com
+2026-08-30 00:09:02 [INFO] [BROWSER] Opened URL in browser: https://www.youtube.com
+2026-08-30 00:09:02 [INFO] [RESULT] success
+2026-08-30 00:09:02 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\df453efcd9c6d4e03836a8a9.wav
+2026-08-30 00:09:02 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:09:04 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:09:04 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:09:04 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:09:06 [INFO] [VAD] Speech started.
+2026-08-30 00:09:06 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:09:07 [INFO] [VAD] Speech ended (utterance bytes=51200).
+2026-08-30 00:09:07 [INFO] [AUDIO] duration=1.60s rms=0.09000 peak=0.6497 silence_ratio=0.71 is_valid=True
+2026-08-30 00:09:07 [INFO] Processing audio with duration 00:01.600
+2026-08-30 00:09:08 [INFO] Detected language 'en' with probability 0.96
+2026-08-30 00:09:10 [INFO] [STT] Faster-Whisper: transcribed='Croy down.' | lang='en' (prob=0.96)
+2026-08-30 00:09:10 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Croy down.' (conf=0.80)
+2026-08-30 00:09:10 [INFO] [STT] model=base language_mode=auto text='Croy down.' avg_logprob=-0.549 no_speech_prob=0.090 compression_ratio=0.56
+2026-08-30 00:09:10 [INFO] [LANGUAGE] primary=en languages=['en'] mixed_language=False
+2026-08-30 00:09:10 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Croy down.' confidence=0.96 score=-0.819
+2026-08-30 00:09:10 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Croy down.'
+  [NORMALIZED]: 'Croy down.'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:09:10 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Croy down.' | Normalized: 'Croy down.'
+2026-08-30 00:09:10 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Croy down.' (Raw STT: 'Croy down.')
+2026-08-30 00:09:10 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Croy down.' (conf=0.80)
+2026-08-30 00:09:10 [INFO] 🎙️ [STT] raw = 'Croy down.'
+2026-08-30 00:09:10 [INFO] 🌐 [LANGUAGE] detected = 'en' (confidence=0.80, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:09:10 [INFO] ✨ [NORMALIZER] normalized = 'Croy down.'
+2026-08-30 00:09:10 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-30 00:09:10 [INFO] [ROUTER] Routing natural-language task 'Croy down.' to Hermes Agent
+2026-08-30 00:09:10 [INFO] [ROUTER] Command: 'Croy down.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:09:10 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 208e4200
+2026-08-30 00:09:10 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:09:10 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'Croy down.'...
+2026-08-30 00:09:10 [INFO] [CHAT -> HERMES] Dispatching instruction: 'Croy down.' (Intent: CONVERSATION)
+2026-08-30 00:09:10 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 208e4200: 'Croy down.'
+2026-08-30 00:09:10 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:09:10 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:09:14 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'croy down.' -> Silent recovery
+2026-08-30 00:09:14 [INFO] [HERMES_RUNTIME] Generated plan for 'Croy down.': []
+2026-08-30 00:09:14 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:09:14 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:09:14 [INFO] [HERMES EVENT] 🎯 Completed! Response: ''
+2026-08-30 00:09:14 [INFO] [HERMES_CLIENT] Received Hermes response: ''
+2026-08-30 00:09:14 [INFO] [HERMES -> CHAT] Final response synthesized: '' (success=True)
+2026-08-30 00:09:14 [INFO] [HERMES] Response is silent (no speech synthesis needed).
+2026-08-30 00:09:14 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:09:14 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:09:16 [INFO] [VAD] Speech started.
+2026-08-30 00:09:16 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:09:19 [INFO] [VAD] Speech ended (utterance bytes=99840).
+2026-08-30 00:09:19 [INFO] [AUDIO] duration=3.12s rms=0.09000 peak=0.6454 silence_ratio=0.56 is_valid=True
+2026-08-30 00:09:19 [INFO] Processing audio with duration 00:03.120
+2026-08-30 00:09:20 [INFO] Detected language 'vi' with probability 0.71
+2026-08-30 00:09:21 [INFO] [STT] Faster-Whisper: transcribed='Kể xuống ạ, kênh xuống ạ, kéo xuống' | lang='vi' (prob=0.71)
+2026-08-30 00:09:21 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Kể xuống ạ, kênh xuống ạ, kéo xuống' (conf=0.98)
+2026-08-30 00:09:21 [INFO] [STT] model=base language_mode=auto text='Kể xuống ạ, kênh xuống ạ, kéo xuống' avg_logprob=-0.570 no_speech_prob=0.046 compression_ratio=1.28
+2026-08-30 00:09:21 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-30 00:09:21 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Kể xuống ạ, kênh xuống ạ, kéo xuống' confidence=0.71 score=-0.463
+2026-08-30 00:09:22 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Kể xuống ạ, kênh'
+  [NORMALIZED]: 'Kể xuống ạ, kênh'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:09:22 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Kể xuống ạ, kênh' | Normalized: 'Kể xuống ạ, kênh'
+2026-08-30 00:09:22 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Kể xuống ạ, kênh' (Raw STT: 'Kể xuống ạ, kênh')
+2026-08-30 00:09:22 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Kể xuống ạ, kênh' (conf=0.95)
+2026-08-30 00:09:22 [INFO] 🎙️ [STT] raw = 'Kể xuống ạ, kênh'
+2026-08-30 00:09:22 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.95, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:09:22 [INFO] ✨ [NORMALIZER] normalized = 'Kể xuống ạ, kênh'
+2026-08-30 00:09:22 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-30 00:09:22 [INFO] [ROUTER] Routing natural-language task 'Kể xuống ạ, kênh' to Hermes Agent
+2026-08-30 00:09:22 [INFO] [ROUTER] Command: 'Kể xuống ạ, kênh' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:09:22 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 208e4200
+2026-08-30 00:09:22 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:09:22 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'Kể xuống ạ, kênh'...
+2026-08-30 00:09:22 [INFO] [CHAT -> HERMES] Dispatching instruction: 'Kể xuống ạ, kênh' (Intent: CONVERSATION)
+2026-08-30 00:09:22 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 208e4200: 'Kể xuống ạ, kênh'
+2026-08-30 00:09:22 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:09:22 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:09:27 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'kể xuống ạ'
+  [NORMALIZED]: 'kể xuống ạ'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:09:27 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'kể xuống ạ' -> Silent recovery
+2026-08-30 00:09:27 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'kênh'
+  [NORMALIZED]: 'kênh'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:09:27 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'kênh' -> Silent recovery
+2026-08-30 00:09:27 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'kể xuống ạ, kênh' -> Silent recovery
+2026-08-30 00:09:27 [INFO] [HERMES_RUNTIME] Generated plan for 'Kể xuống ạ, kênh': []
+2026-08-30 00:09:27 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:09:27 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:09:27 [INFO] [HERMES EVENT] 🎯 Completed! Response: ''
+2026-08-30 00:09:27 [INFO] [HERMES_CLIENT] Received Hermes response: ''
+2026-08-30 00:09:27 [INFO] [HERMES -> CHAT] Final response synthesized: '' (success=True)
+2026-08-30 00:09:27 [INFO] [HERMES] Response is silent (no speech synthesis needed).
+2026-08-30 00:09:27 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:09:27 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:09:34 [INFO] [VAD] Speech started.
+2026-08-30 00:09:34 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:09:35 [INFO] [VAD] Speech ended (utterance bytes=40960).
+2026-08-30 00:09:35 [INFO] [AUDIO] duration=1.28s rms=0.09000 peak=0.4145 silence_ratio=0.34 is_valid=True
+2026-08-30 00:09:35 [INFO] Processing audio with duration 00:01.280
+2026-08-30 00:09:35 [INFO] Detected language 'zh' with probability 0.21
+2026-08-30 00:09:37 [INFO] [STT] Language 'zh' (prob=0.21) uncertain/empty -> Re-transcribing with bilingual fallback...
+2026-08-30 00:09:37 [INFO] Processing audio with duration 00:01.280
+2026-08-30 00:09:38 [INFO] [STT] Faster-Whisper: transcribed='Đóng cửa sổ' | lang='en' (prob=1.00)
+2026-08-30 00:09:38 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Đóng cửa sổ' (conf=0.95)
+2026-08-30 00:09:38 [INFO] [STT] model=base language_mode=auto text='Đóng cửa sổ' avg_logprob=-0.878 no_speech_prob=0.402 compression_ratio=0.65
+2026-08-30 00:09:38 [INFO] [LANGUAGE] primary=en languages=['en'] mixed_language=False
+2026-08-30 00:09:38 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Đóng cửa sổ' confidence=1.00 score=-1.766
+2026-08-30 00:09:38 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Đóng cửa sổ'
+  [NORMALIZED]: 'close window'
+  [INTENT]: CLOSE_APPLICATION (confidence=0.88, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:09:38 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Đóng cửa sổ' | Normalized: 'close window'
+2026-08-30 00:09:38 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'close window' (Raw STT: 'Đóng cửa sổ')
+2026-08-30 00:09:38 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Đóng cửa sổ' (conf=0.95)
+2026-08-30 00:09:38 [INFO] 🎙️ [STT] raw = 'Đóng cửa sổ'
+2026-08-30 00:09:38 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.95, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:09:38 [INFO] ✨ [NORMALIZER] normalized = 'close window'
+2026-08-30 00:09:38 [INFO] 🎯 [INTENT] type = CLOSE_APPLICATION (confidence=0.88, compound=False)
+2026-08-30 00:09:38 [INFO] [ROUTER] Detected desktop window close request 'Đóng cửa sổ' -> Routing to Hermes Agent
+2026-08-30 00:09:38 [INFO] [ROUTER] Command: 'close window' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:09:38 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 208e4200
+2026-08-30 00:09:38 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:09:38 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'close window'...
+2026-08-30 00:09:38 [INFO] [CHAT -> HERMES] Dispatching instruction: 'close window' (Intent: CLOSE_APPLICATION)
+2026-08-30 00:09:38 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 208e4200: 'close window'
+2026-08-30 00:09:38 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:09:38 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:09:43 [INFO] [VOICE_MEMORY] Exact match in phonetic dictionary: 'close window' -> 'close_window'
+2026-08-30 00:09:43 [INFO] [HERMES_RUNTIME] Generated plan for 'close window': ['close_window']
+2026-08-30 00:09:43 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'close_window' (params: {'app_name': None})
+2026-08-30 00:09:43 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-30 00:09:43 [INFO] [HERMES_RUNTIME] Executing tool: close_window ({'app_name': None})
+2026-08-30 00:09:43 [INFO] [COMPUTER_USE] Closed active user window 'jarvis.log - jarvis-main - Visual Studio Code' (HWND: 1640976)
+2026-08-30 00:09:43 [INFO] [HERMES EVENT] ✅ Tool finished: 'close_window' (result: {'success': True, 'message': 'Closed jarvis.log - jarvis-main - Visual Studio Code.'})
+2026-08-30 00:09:43 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:09:43 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:09:43 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Closing window.'
+2026-08-30 00:09:43 [INFO] [HERMES_CLIENT] Received Hermes response: 'Closing window.'
+2026-08-30 00:09:43 [INFO] [HERMES -> CHAT] Final response synthesized: 'Closing window.' (success=True)
+2026-08-30 00:09:43 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\1ba94dd065161be05788c55a.wav
+2026-08-30 00:09:43 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:09:44 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:09:44 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:09:44 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:09:44 [INFO] [VAD] Speech started.
+2026-08-30 00:09:44 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:09:45 [INFO] [VAD] Speech ended (utterance bytes=35840).
+2026-08-30 00:09:45 [INFO] [AUDIO] duration=1.12s rms=0.09000 peak=0.5999 silence_ratio=0.60 is_valid=True
+2026-08-30 00:09:45 [INFO] Processing audio with duration 00:01.120
+2026-08-30 00:09:46 [INFO] Detected language 'en' with probability 0.70
+2026-08-30 00:09:47 [INFO] [STT] Faster-Whisper: transcribed='OK.' | lang='en' (prob=0.70)
+2026-08-30 00:09:47 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'OK.' (conf=0.80)
+2026-08-30 00:09:47 [INFO] [STT] model=base language_mode=auto text='OK.' avg_logprob=-0.894 no_speech_prob=0.767 compression_ratio=0.27
+2026-08-30 00:09:47 [INFO] [LANGUAGE] primary=en languages=['en'] mixed_language=False
+2026-08-30 00:09:47 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='OK.' confidence=0.70 score=-3.748
+2026-08-30 00:09:47 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'OK.'
+  [NORMALIZED]: 'OK.'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:09:47 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'OK.' | Normalized: 'OK.'
+2026-08-30 00:09:47 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'OK.' (Raw STT: 'OK.')
+2026-08-30 00:09:47 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'OK.' (conf=0.80)
+2026-08-30 00:09:47 [INFO] 🎙️ [STT] raw = 'OK.'
+2026-08-30 00:09:47 [INFO] 🌐 [LANGUAGE] detected = 'en' (confidence=0.80, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:09:47 [INFO] ✨ [NORMALIZER] normalized = 'OK.'
+2026-08-30 00:09:47 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-30 00:09:47 [INFO] [ROUTER] Routing natural-language task 'OK.' to Hermes Agent
+2026-08-30 00:09:47 [INFO] [ROUTER] Command: 'OK.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:09:47 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 208e4200
+2026-08-30 00:09:47 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:09:47 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'OK.'...
+2026-08-30 00:09:47 [INFO] [CHAT -> HERMES] Dispatching instruction: 'OK.' (Intent: CONVERSATION)
+2026-08-30 00:09:47 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 208e4200: 'OK.'
+2026-08-30 00:09:47 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:09:47 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:09:52 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'ok.' -> Silent recovery
+2026-08-30 00:09:52 [INFO] [HERMES_RUNTIME] Generated plan for 'OK.': []
+2026-08-30 00:09:52 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:09:52 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:09:52 [INFO] [HERMES EVENT] 🎯 Completed! Response: ''
+2026-08-30 00:09:52 [INFO] [HERMES_CLIENT] Received Hermes response: ''
+2026-08-30 00:09:52 [INFO] [HERMES -> CHAT] Final response synthesized: '' (success=True)
+2026-08-30 00:09:52 [INFO] [HERMES] Response is silent (no speech synthesis needed).
+2026-08-30 00:09:52 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:09:52 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:10:00 [INFO] [VAD] Speech started.
+2026-08-30 00:10:00 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:10:02 [INFO] [VAD] Speech ended (utterance bytes=71680).
+2026-08-30 00:10:02 [INFO] [AUDIO] duration=2.24s rms=0.09000 peak=0.6166 silence_ratio=0.54 is_valid=True
+2026-08-30 00:10:02 [INFO] Processing audio with duration 00:02.240
+2026-08-30 00:10:03 [INFO] Detected language 'vi' with probability 0.91
+2026-08-30 00:10:04 [INFO] [STT] Faster-Whisper: transcribed='Chào, video thứ ba' | lang='vi' (prob=0.91)
+2026-08-30 00:10:04 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Chào, video thứ ba' (conf=0.85)
+2026-08-30 00:10:04 [INFO] [STT] model=base language_mode=auto text='Chào, video thứ ba' avg_logprob=-0.744 no_speech_prob=0.047 compression_ratio=0.73
+2026-08-30 00:10:04 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-30 00:10:04 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Chào, video thứ ba' confidence=0.91 score=-0.913
+2026-08-30 00:10:05 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Chào, video thứ ba'
+  [NORMALIZED]: 'Chào, video thứ ba'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:10:05 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Chào, video thứ ba' | Normalized: 'Chào, video thứ ba'
+2026-08-30 00:10:05 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Chào, video thứ ba' (Raw STT: 'Chào, video thứ ba')
+2026-08-30 00:10:05 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Chào, video thứ ba' (conf=0.85)
+2026-08-30 00:10:05 [INFO] 🎙️ [STT] raw = 'Chào, video thứ ba'
+2026-08-30 00:10:05 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.85, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:10:05 [INFO] ✨ [NORMALIZER] normalized = 'Chào, video thứ ba'
+2026-08-30 00:10:05 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-30 00:10:05 [INFO] [ROUTER] Routing natural-language task 'Chào, video thứ ba' to Hermes Agent
+2026-08-30 00:10:05 [INFO] [ROUTER] Command: 'Chào, video thứ ba' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:10:05 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 208e4200
+2026-08-30 00:10:05 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:10:05 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'Chào, video thứ ba'...
+2026-08-30 00:10:05 [INFO] [CHAT -> HERMES] Dispatching instruction: 'Chào, video thứ ba' (Intent: CONVERSATION)
+2026-08-30 00:10:05 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 208e4200: 'Chào, video thứ ba'
+2026-08-30 00:10:05 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:10:05 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:10:10 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'chào'
+  [NORMALIZED]: 'chào'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:10:10 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'chào' -> Silent recovery
+2026-08-30 00:10:10 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'video thứ ba'
+  [NORMALIZED]: 'video thứ ba'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:10:10 [INFO] [HERMES_RUNTIME] Generated plan for 'Chào, video thứ ba': ['select_youtube_video']
+2026-08-30 00:10:10 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'select_youtube_video' (params: {'index': 3})
+2026-08-30 00:10:10 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-30 00:10:10 [INFO] [HERMES_RUNTIME] Executing tool: select_youtube_video ({'index': 3})
+2026-08-30 00:10:11 [INFO] [COMPUTER_USE] Waiting for YouTube page & video grid to settle...
+2026-08-30 00:10:13 [INFO] [HermesUI] Perceived window 'YouTube - Google Chrome' (Elements: 0, Composites: 0, Stability: 1.00)
+2026-08-30 00:10:14 [INFO] [COMPUTER_USE] Clicked at relative (0.35, 0.78) -> Screen (669, 809)
+2026-08-30 00:10:14 [INFO] [HERMES EVENT] ✅ Tool finished: 'select_youtube_video' (result: {'success': True, 'message': 'Clicked and played YouTube video 3.'})
+2026-08-30 00:10:14 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:10:14 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:10:14 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Playing video 3.'
+2026-08-30 00:10:14 [INFO] [HERMES_CLIENT] Received Hermes response: 'Playing video 3.'
+2026-08-30 00:10:14 [INFO] [HERMES -> CHAT] Final response synthesized: 'Playing video 3.' (success=True)
+2026-08-30 00:10:14 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\5c3f93556a064b0fcc6f6c34.wav
+2026-08-30 00:10:14 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:10:15 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:10:15 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:10:15 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:10:18 [INFO] [VAD] Speech started.
+2026-08-30 00:10:18 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:10:19 [INFO] [VAD] Speech ended (utterance bytes=40960).
+2026-08-30 00:10:19 [INFO] [AUDIO] duration=1.28s rms=0.06390 peak=0.2593 silence_ratio=0.46 is_valid=True
+2026-08-30 00:10:19 [INFO] Processing audio with duration 00:01.280
+2026-08-30 00:10:20 [INFO] Detected language 'en' with probability 0.54
+2026-08-30 00:10:21 [INFO] [STT] Faster-Whisper: transcribed='Đóng cửa sổ, mở' | lang='en' (prob=0.54)
+2026-08-30 00:10:21 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Đóng cửa sổ, mở' (conf=0.98)
+2026-08-30 00:10:21 [INFO] [STT] model=base language_mode=auto text='Đóng cửa sổ, mở' avg_logprob=-0.623 no_speech_prob=0.901 compression_ratio=0.72
+2026-08-30 00:10:21 [INFO] [LANGUAGE] primary=en languages=['en'] mixed_language=False
+2026-08-30 00:10:21 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Đóng cửa sổ, mở' confidence=0.54 score=-2.671
+2026-08-30 00:10:21 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Đóng cửa sổ, mở'
+  [NORMALIZED]: 'close window'
+  [INTENT]: CLOSE_APPLICATION (confidence=0.88, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:10:21 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Đóng cửa sổ, mở' | Normalized: 'close window'
+2026-08-30 00:10:21 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'close window' (Raw STT: 'Đóng cửa sổ, mở')
+2026-08-30 00:10:21 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Đóng cửa sổ, mở' (conf=0.98)
+2026-08-30 00:10:21 [INFO] 🎙️ [STT] raw = 'Đóng cửa sổ, mở'
+2026-08-30 00:10:21 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.98, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:10:21 [INFO] ✨ [NORMALIZER] normalized = 'close window'
+2026-08-30 00:10:21 [INFO] 🎯 [INTENT] type = CLOSE_APPLICATION (confidence=0.88, compound=False)
+2026-08-30 00:10:21 [INFO] [ROUTER] Detected desktop window close request 'Đóng cửa sổ, mở' -> Routing to Hermes Agent
+2026-08-30 00:10:21 [INFO] [ROUTER] Command: 'close window' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:10:21 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 208e4200
+2026-08-30 00:10:21 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:10:21 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'close window'...
+2026-08-30 00:10:21 [INFO] [CHAT -> HERMES] Dispatching instruction: 'close window' (Intent: CLOSE_APPLICATION)
+2026-08-30 00:10:21 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 208e4200: 'close window'
+2026-08-30 00:10:21 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:10:21 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:10:26 [INFO] [VOICE_MEMORY] Exact match in phonetic dictionary: 'close window' -> 'close_window'
+2026-08-30 00:10:26 [INFO] [HERMES_RUNTIME] Generated plan for 'close window': ['close_window']
+2026-08-30 00:10:26 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'close_window' (params: {'app_name': None})
+2026-08-30 00:10:26 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-30 00:10:26 [INFO] [HERMES_RUNTIME] Executing tool: close_window ({'app_name': None})
+2026-08-30 00:10:26 [WARNING] [COMPUTER_USE] Native close window error: (5, 'PostMessage', 'Access is denied.')
+2026-08-30 00:10:26 [INFO] [HERMES EVENT] ✅ Tool finished: 'close_window' (result: {'success': True, 'message': 'Closed current window.'})
+2026-08-30 00:10:26 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:10:26 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:10:26 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Closing window.'
+2026-08-30 00:10:26 [INFO] [HERMES_CLIENT] Received Hermes response: 'Closing window.'
+2026-08-30 00:10:26 [INFO] [HERMES -> CHAT] Final response synthesized: 'Closing window.' (success=True)
+2026-08-30 00:10:26 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\1ba94dd065161be05788c55a.wav
+2026-08-30 00:10:26 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:10:27 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:10:27 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:10:27 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:10:31 [INFO] [VAD] Speech started.
+2026-08-30 00:10:31 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:10:33 [INFO] [VAD] Speech ended (utterance bytes=74240).
+2026-08-30 00:10:33 [INFO] [AUDIO] duration=2.32s rms=0.09000 peak=0.5772 silence_ratio=0.51 is_valid=True
+2026-08-30 00:10:33 [INFO] Processing audio with duration 00:02.320
+2026-08-30 00:10:34 [INFO] Detected language 'vi' with probability 0.91
+2026-08-30 00:10:36 [INFO] [STT] Faster-Whisper: transcribed='Nó lại xa đi ngủ đi' | lang='vi' (prob=0.91)
+2026-08-30 00:10:36 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Nó lại xa đi ngủ đi' (conf=0.98)
+2026-08-30 00:10:36 [INFO] [STT] model=base language_mode=auto text='Nó lại xa đi ngủ đi' avg_logprob=-0.663 no_speech_prob=0.005 compression_ratio=0.89
+2026-08-30 00:10:36 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-30 00:10:36 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Nó lại xa đi ngủ đi' confidence=0.91 score=-0.476
+2026-08-30 00:10:37 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Nó lại xa đi ngủ đi'
+  [NORMALIZED]: 'Nó lại xa đi ngủ đi'
+  [INTENT]: SLEEP_DISMISS (confidence=0.99, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:10:37 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Nó lại xa đi ngủ đi' | Normalized: 'Nó lại xa đi ngủ đi'
+2026-08-30 00:10:37 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Nó lại xa đi ngủ đi' (Raw STT: 'Nó lại xa đi ngủ đi')
+2026-08-30 00:10:37 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Nó lại xa đi ngủ đi' (conf=0.98)
+2026-08-30 00:10:37 [INFO] 🎙️ [STT] raw = 'Nó lại xa đi ngủ đi'
+2026-08-30 00:10:37 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.98, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:10:37 [INFO] ✨ [NORMALIZER] normalized = 'Nó lại xa đi ngủ đi'
+2026-08-30 00:10:37 [INFO] 🎯 [INTENT] type = SLEEP_DISMISS (confidence=0.99, compound=False)
+2026-08-30 00:10:37 [INFO] [ROUTER] Detected sleep/close command in 'Nó lại xa đi ngủ đi'
+2026-08-30 00:10:37 [INFO] [ROUTER] Command: 'Nó lại xa đi ngủ đi' -> Target: SLEEP_DISMISS (Action: sleep)
+2026-08-30 00:10:37 [INFO] 🛑 [CONVERSATION CLOSE] User requested sleep ('Nó lại xa đi ngủ đi') -> Closing session...
+2026-08-30 00:10:37 [INFO] [JARVIS] Sleep/Close command detected -> Orb closing animation initiated.
+2026-08-30 00:10:37 [INFO] [AUDIO] Ownership transfer: CHAT -> TRIGGER
+2026-08-30 00:10:37 [INFO] [HERMES_RUNTIME] Session closed: 208e4200
+2026-08-30 00:10:37 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\133ac38c254194538895ff7e.wav
+2026-08-30 00:10:38 [INFO] [JARVIS] Session ended -> UI hidden. Background wake detector ready.
+2026-08-30 00:11:18 [INFO] 🎙️ [WAKE DETECTED]: 'Hey Jarvis'! (confidence=0.92 >= 0.55) — Listening for commands / claps...
+2026-08-30 00:11:18 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\80f12fdf470d1e95bef56bda.wav
+2026-08-30 00:11:20 [INFO] 👏 Clap hit [1] (rms=0.0598). Waiting for next clap...
+2026-08-30 00:11:20 [INFO] 👏 Clap hit [1] (rms=0.0494). Waiting for next clap...
+2026-08-30 00:11:21 [INFO] 🌟 [INTENT: CONVERSATION] Dedicated phrase detected ('a diverse i need') -> Materializing Jarvis Orb...
+2026-08-30 00:11:21 [INFO] [JARVIS] Wake detected -> Conversation session acquired. ID: 3bb9bf07
+2026-08-30 00:11:21 [INFO] [JARVIS] Conversation session acquired. ID: 3bb9bf07
+2026-08-30 00:11:21 [INFO] [AUDIO] Ownership transfer: TRIGGER -> CHAT
+2026-08-30 00:11:21 [INFO] [HERMES_RUNTIME] Session started: 3bb9bf07
+2026-08-30 00:11:21 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\d0ecfd35be7f28a737660d7a.wav
+2026-08-30 00:11:21 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:11:23 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:11:24 [INFO] [VAD] Speech started.
+2026-08-30 00:11:24 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:11:26 [INFO] [VAD] Speech ended (utterance bytes=76800).
+2026-08-30 00:11:26 [INFO] [AUDIO] duration=2.40s rms=0.09000 peak=0.8649 silence_ratio=0.74 is_valid=True
+2026-08-30 00:11:26 [INFO] Processing audio with duration 00:02.400
+2026-08-30 00:11:27 [INFO] Detected language 'en' with probability 0.68
+2026-08-30 00:11:28 [INFO] [STT] Faster-Whisper: transcribed='Open YouTube.' | lang='en' (prob=0.68)
+2026-08-30 00:11:28 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Open YouTube.' (conf=0.90)
+2026-08-30 00:11:28 [INFO] [STT] model=base language_mode=auto text='Open YouTube.' avg_logprob=-0.281 no_speech_prob=0.076 compression_ratio=0.62
+2026-08-30 00:11:28 [INFO] [LANGUAGE] primary=en languages=['vi', 'en'] mixed_language=True
+2026-08-30 00:11:28 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Open YouTube.' confidence=0.68 score=-0.065
+2026-08-30 00:11:28 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Open YouTube.'
+  [NORMALIZED]: 'Open YouTube.'
+  [INTENT]: OPEN_APPLICATION (confidence=0.98, compound=False)
+  [ENTITY]: YouTube (method=levenshtein, confidence=0.93)
+2026-08-30 00:11:28 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Open YouTube.' | Normalized: 'Open YouTube.'
+2026-08-30 00:11:28 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Open YouTube.' (Raw STT: 'Open YouTube.')
+2026-08-30 00:11:28 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Open YouTube.' (conf=0.90)
+2026-08-30 00:11:28 [INFO] 🎙️ [STT] raw = 'Open YouTube.'
+2026-08-30 00:11:28 [INFO] 🌐 [LANGUAGE] detected = 'en' (confidence=0.90, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:11:28 [INFO] ✨ [NORMALIZER] normalized = 'Open YouTube.'
+2026-08-30 00:11:28 [INFO] 🎯 [INTENT] type = OPEN_APPLICATION (confidence=0.98, compound=False)
+2026-08-30 00:11:28 [INFO] 🏷️ [ENTITY] candidate = 'YouTube' (alias='YouTube', method=levenshtein, confidence=0.93)
+2026-08-30 00:11:28 [INFO] [ROUTER] Fast-path routing to 'open_app:youtube' for 'Open YouTube.'
+2026-08-30 00:11:28 [INFO] [ROUTER] Command: 'Open YouTube.' -> Target: DETERMINISTIC_ACTION (Action: open_app:youtube)
+2026-08-30 00:11:28 [INFO] [JARVIS] State changed -> processing
+2026-08-30 00:11:28 [INFO] [ACTION] Fast-path executing deterministic action: open_app:youtube
+2026-08-30 00:11:28 [INFO] [TOOL] open_application('YouTube')
+2026-08-30 00:11:28 [INFO] [TOOL_REGISTRY] Executing 'open_application' with params: {'app_name': 'YouTube'}
+2026-08-30 00:11:28 [INFO] [COMPUTER_USE] Opening web service 'YouTube' -> https://www.youtube.com
+2026-08-30 00:11:28 [INFO] [BROWSER] Opened URL in browser: https://www.youtube.com
+2026-08-30 00:11:28 [INFO] [RESULT] success
+2026-08-30 00:11:28 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\df453efcd9c6d4e03836a8a9.wav
+2026-08-30 00:11:28 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:11:30 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:11:30 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:11:30 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:11:33 [INFO] [VAD] Speech started.
+2026-08-30 00:11:33 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:11:35 [INFO] [VAD] Speech ended (utterance bytes=79360).
+2026-08-30 00:11:35 [INFO] [AUDIO] duration=2.48s rms=0.09000 peak=0.6789 silence_ratio=0.59 is_valid=True
+2026-08-30 00:11:35 [INFO] Processing audio with duration 00:02.480
+2026-08-30 00:11:35 [INFO] Detected language 'vi' with probability 0.99
+2026-08-30 00:11:37 [INFO] [STT] Faster-Whisper: transcribed='Tìm gió tôi đại học tổng bức tháng.' | lang='vi' (prob=0.99)
+2026-08-30 00:11:37 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Tìm gió tôi đại học tổng bức tháng.' (conf=0.98)
+2026-08-30 00:11:37 [INFO] [STT] model=base language_mode=auto text='Tìm gió tôi đại học tổng bức tháng.' avg_logprob=-0.516 no_speech_prob=0.006 compression_ratio=0.84
+2026-08-30 00:11:37 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-30 00:11:37 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Tìm gió tôi đại học tổng bức tháng.' confidence=0.99 score=-0.300
+2026-08-30 00:11:38 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Tìm gió tôi đại học tổng bức tháng.'
+  [NORMALIZED]: 'search gió tôi đại học tổng bức tháng.'
+  [INTENT]: SEARCH_WEB (confidence=0.95, compound=False)
+  [ENTITY]: YouTube (method=metaphone, confidence=0.77)
+2026-08-30 00:11:38 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Tìm gió tôi đại học tổng bức tháng.' | Normalized: 'search gió tôi đại học tổng bức tháng.'
+2026-08-30 00:11:38 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'search gió tôi đại học tổng bức tháng.' (Raw STT: 'Tìm gió tôi đại học tổng bức tháng.')
+2026-08-30 00:11:38 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Tìm gió tôi đại học tổng bức tháng.' (conf=0.98)
+2026-08-30 00:11:38 [INFO] 🎙️ [STT] raw = 'Tìm gió tôi đại học tổng bức tháng.'
+2026-08-30 00:11:38 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.98, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:11:38 [INFO] ✨ [NORMALIZER] normalized = 'search gió tôi đại học tổng bức tháng.'
+2026-08-30 00:11:38 [INFO] 🎯 [INTENT] type = SEARCH_WEB (confidence=0.95, compound=False)
+2026-08-30 00:11:38 [INFO] 🏷️ [ENTITY] candidate = 'YouTube' (alias='du túp', method=metaphone, confidence=0.77)
+2026-08-30 00:11:38 [INFO] [ROUTER] Routing natural-language task 'Tìm gió tôi đại học tổng bức tháng.' to Hermes Agent
+2026-08-30 00:11:38 [INFO] [ROUTER] Command: 'search gió tôi đại học tổng bức tháng.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:11:38 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 3bb9bf07
+2026-08-30 00:11:38 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:11:38 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'search gió tôi đại học tổng bức tháng.'...
+2026-08-30 00:11:38 [INFO] [CHAT -> HERMES] Dispatching instruction: 'search gió tôi đại học tổng bức tháng.' (Intent: SEARCH_WEB)
+2026-08-30 00:11:38 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 3bb9bf07: 'search gió tôi đại học tổng bức tháng.'
+2026-08-30 00:11:38 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:11:38 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:11:43 [INFO] [HERMES_RUNTIME] Generated plan for 'search gió tôi đại học tổng bức tháng.': ['search_in_active_window']
+2026-08-30 00:11:43 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'search_in_active_window' (params: {'query': 'gió tôi đại học tổng bức tháng.'})
+2026-08-30 00:11:43 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-30 00:11:43 [INFO] [HERMES_RUNTIME] Executing tool: search_in_active_window ({'query': 'gió tôi đại học tổng bức tháng.'})
+2026-08-30 00:11:43 [INFO] [COMPUTER_USE] Active window context for search: app='youtube', title='YouTube - Google Chrome'
+2026-08-30 00:11:43 [INFO] [COMPUTER_USE] Clicked at relative (0.48, 0.16) -> Screen (921, 159)
+2026-08-30 00:11:43 [INFO] [COMPUTER_USE] Pressed hotkey: ctrl+a
+2026-08-30 00:11:44 [INFO] [COMPUTER_USE] Pasted text and pressed Enter: 'gió tôi đại học tổng bức tháng.'
+2026-08-30 00:11:44 [INFO] [HERMES EVENT] ✅ Tool finished: 'search_in_active_window' (result: {'success': True, 'message': "Pasted 'gió tôi đại học tổng bức tháng.' and pressed Enter."})
+2026-08-30 00:11:44 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:11:44 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:11:44 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Searching for gió tôi đại học tổng bức tháng. in current window.'
+2026-08-30 00:11:44 [INFO] [HERMES_CLIENT] Received Hermes response: 'Searching for gió tôi đại học tổng bức tháng. in current window.'
+2026-08-30 00:11:44 [INFO] [HERMES -> CHAT] Final response synthesized: 'Searching for gió tôi đại học tổng bức tháng. in current window.' (success=True)
+2026-08-30 00:11:44 [INFO] [TTS] Initializing TTS provider for mode 'hybrid'...
+2026-08-30 00:11:44 [INFO] [TTS] Initializing VieNeu local neural TTS engine (dataset=C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\voice_assets\jarvis)...
+2026-08-30 00:11:44 [INFO] [TTS] Hybrid Mode: Voice dataset ready (20 samples). Using local VieNeu runtime.
+2026-08-30 00:11:44 [INFO] [TTS] Synthesizing response: 'Searching for gió tôi đại học tổng bức tháng. in current window.'
+2026-08-30 00:11:44 [INFO] [TTS] Falling back to ElevenLabs runtime synthesis...
+2026-08-30 00:11:45 [INFO] [TTS] Requesting ElevenLabs synthesis: 'Searching for gió tôi đại học tổng bức t' (voice=IXXiMMkScyYf0VAI4AFp)...
+2026-08-30 00:11:46 [INFO] HTTP Request: POST https://api.elevenlabs.io/v1/text-to-speech/IXXiMMkScyYf0VAI4AFp?output_format=pcm_24000 "HTTP/1.1 200 OK"
+2026-08-30 00:11:47 [INFO] [TTS] Saved phrase audio to cache: cbc2be00f8413994dfaa70d3.wav
+2026-08-30 00:11:47 [INFO] [PLAYBACK] Playing audio (242974 bytes, 5.06s, 24000 Hz)
+2026-08-30 00:11:47 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:11:47 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:11:47 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:11:47 [INFO] [PLAYBACK] Playing 121487 samples (5.06s at 24000 Hz)...
+2026-08-30 00:11:52 [INFO] [PLAYBACK] Playback completed normally.
+2026-08-30 00:11:52 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:11:52 [INFO] [VAD] Speech started.
+2026-08-30 00:11:52 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:11:54 [INFO] [VAD] Speech ended (utterance bytes=53760).
+2026-08-30 00:11:54 [INFO] [AUDIO] duration=1.68s rms=0.09000 peak=0.6085 silence_ratio=0.66 is_valid=True
+2026-08-30 00:11:54 [INFO] Processing audio with duration 00:01.680
+2026-08-30 00:11:55 [INFO] Detected language 'th' with probability 0.68
+2026-08-30 00:11:56 [INFO] [STT] Language 'th' (prob=0.68) uncertain/empty -> Re-transcribing with bilingual fallback...
+2026-08-30 00:11:56 [INFO] Processing audio with duration 00:01.680
+2026-08-30 00:11:57 [INFO] [STT] Faster-Whisper: transcribed='Để vấn new tab.' | lang='en' (prob=1.00)
+2026-08-30 00:11:57 [INFO] [LANGUAGE] Detected MIXED Vietnamese + English utterance: 'Để vấn new tab.' (entities=[])
+2026-08-30 00:11:57 [INFO] [STT] model=base language_mode=auto text='Để vấn new tab.' avg_logprob=-0.992 no_speech_prob=0.025 compression_ratio=0.69
+2026-08-30 00:11:57 [INFO] [LANGUAGE] primary=en languages=['vi', 'en'] mixed_language=True
+2026-08-30 00:11:57 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Để vấn new tab.' confidence=1.00 score=-1.133
+2026-08-30 00:11:57 [INFO] [VOICE_MEMORY] Phonetic phrase substitution: 'để vấn new tab.' -> 'để vấn new_tab.'
+2026-08-30 00:11:58 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Để vấn new tab.'
+  [NORMALIZED]: 'để vấn new_tab.'
+  [INTENT]: TAB_MANAGEMENT (confidence=0.95, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:11:58 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Để vấn new tab.' | Normalized: 'để vấn new_tab.'
+2026-08-30 00:11:58 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'để vấn new_tab.' (Raw STT: 'Để vấn new tab.')
+2026-08-30 00:11:58 [INFO] [LANGUAGE] Detected MIXED Vietnamese + English utterance: 'Để vấn new tab.' (entities=[])
+2026-08-30 00:11:58 [INFO] 🎙️ [STT] raw = 'Để vấn new tab.'
+2026-08-30 00:11:58 [INFO] 🌐 [LANGUAGE] detected = 'mixed' (confidence=0.95, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:11:58 [INFO] ✨ [NORMALIZER] normalized = 'để vấn new_tab.'
+2026-08-30 00:11:58 [INFO] 🎯 [INTENT] type = TAB_MANAGEMENT (confidence=0.95, compound=False)
+2026-08-30 00:11:58 [INFO] [ROUTER] Routing natural-language task 'Để vấn new tab.' to Hermes Agent
+2026-08-30 00:11:58 [INFO] [ROUTER] Command: 'để vấn new_tab.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:11:58 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 3bb9bf07
+2026-08-30 00:11:58 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:11:58 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'để vấn new_tab.'...
+2026-08-30 00:11:58 [INFO] [CHAT -> HERMES] Dispatching instruction: 'để vấn new_tab.' (Intent: TAB_MANAGEMENT)
+2026-08-30 00:11:58 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 3bb9bf07: 'để vấn new_tab.'
+2026-08-30 00:11:58 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:11:58 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:12:02 [INFO] [HERMES_RUNTIME] Generated plan for 'để vấn new_tab.': ['manage_tab']
+2026-08-30 00:12:02 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'manage_tab' (params: {'action': 'new'})
+2026-08-30 00:12:02 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-30 00:12:02 [INFO] [HERMES_RUNTIME] Executing tool: manage_tab ({'action': 'new'})
+2026-08-30 00:12:02 [INFO] [TOOL_REGISTRY] Executing 'manage_tab' with params: {'action': 'new'}
+2026-08-30 00:12:02 [INFO] [COMPUTER_USE] Pressed hotkey: ctrl+t
+2026-08-30 00:12:02 [INFO] [HERMES EVENT] ✅ Tool finished: 'manage_tab' (result: {'success': True, 'message': 'Pressed hotkey ctrl+t'})
+2026-08-30 00:12:02 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:12:02 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:12:02 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Opened new tab.'
+2026-08-30 00:12:02 [INFO] [HERMES_CLIENT] Received Hermes response: 'Opened new tab.'
+2026-08-30 00:12:02 [INFO] [HERMES -> CHAT] Final response synthesized: 'Opened new tab.' (success=True)
+2026-08-30 00:12:02 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\ddf22726430dd844af34c47b.wav
+2026-08-30 00:12:02 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:12:04 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:12:04 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:12:04 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:12:06 [INFO] [VAD] Speech started.
+2026-08-30 00:12:06 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:12:07 [INFO] [VAD] Speech ended (utterance bytes=74240).
+2026-08-30 00:12:07 [INFO] [AUDIO] duration=2.32s rms=0.09000 peak=0.6654 silence_ratio=0.60 is_valid=True
+2026-08-30 00:12:07 [INFO] Processing audio with duration 00:02.320
+2026-08-30 00:12:08 [INFO] Detected language 'vi' with probability 0.99
+2026-08-30 00:12:10 [INFO] [STT] Faster-Whisper: transcribed='Tìm kiếp tôi đại học tổng bức thẳng.' | lang='vi' (prob=0.99)
+2026-08-30 00:12:10 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Tìm kiếp tôi đại học tổng bức thẳng.' (conf=0.98)
+2026-08-30 00:12:10 [INFO] [STT] model=base language_mode=auto text='Tìm kiếp tôi đại học tổng bức thẳng.' avg_logprob=-0.406 no_speech_prob=0.009 compression_ratio=0.85
+2026-08-30 00:12:10 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-30 00:12:10 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Tìm kiếp tôi đại học tổng bức thẳng.' confidence=0.99 score=-0.172
+2026-08-30 00:12:11 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Tìm kiếp tôi đại học tổng bức thẳng.'
+  [NORMALIZED]: 'search kiếp tôi đại học tổng bức thẳng.'
+  [INTENT]: SEARCH_WEB (confidence=0.95, compound=False)
+  [ENTITY]: YouTube (method=metaphone, confidence=0.77)
+2026-08-30 00:12:11 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Tìm kiếp tôi đại học tổng bức thẳng.' | Normalized: 'search kiếp tôi đại học tổng bức thẳng.'
+2026-08-30 00:12:11 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'search kiếp tôi đại học tổng bức thẳng.' (Raw STT: 'Tìm kiếp tôi đại học tổng bức thẳng.')
+2026-08-30 00:12:11 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Tìm kiếp tôi đại học tổng bức thẳng.' (conf=0.98)
+2026-08-30 00:12:11 [INFO] 🎙️ [STT] raw = 'Tìm kiếp tôi đại học tổng bức thẳng.'
+2026-08-30 00:12:11 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.98, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:12:11 [INFO] ✨ [NORMALIZER] normalized = 'search kiếp tôi đại học tổng bức thẳng.'
+2026-08-30 00:12:11 [INFO] 🎯 [INTENT] type = SEARCH_WEB (confidence=0.95, compound=False)
+2026-08-30 00:12:11 [INFO] 🏷️ [ENTITY] candidate = 'YouTube' (alias='gu túp', method=metaphone, confidence=0.77)
+2026-08-30 00:12:11 [INFO] [ROUTER] Routing natural-language task 'Tìm kiếp tôi đại học tổng bức thẳng.' to Hermes Agent
+2026-08-30 00:12:11 [INFO] [ROUTER] Command: 'search kiếp tôi đại học tổng bức thẳng.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:12:11 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 3bb9bf07
+2026-08-30 00:12:11 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:12:11 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'search kiếp tôi đại học tổng bức thẳng.'...
+2026-08-30 00:12:11 [INFO] [CHAT -> HERMES] Dispatching instruction: 'search kiếp tôi đại học tổng bức thẳng.' (Intent: SEARCH_WEB)
+2026-08-30 00:12:11 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 3bb9bf07: 'search kiếp tôi đại học tổng bức thẳng.'
+2026-08-30 00:12:11 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:12:11 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:12:15 [INFO] [HERMES_RUNTIME] Generated plan for 'search kiếp tôi đại học tổng bức thẳng.': ['search_in_active_window']
+2026-08-30 00:12:15 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'search_in_active_window' (params: {'query': 'kiếp tôi đại học tổng bức thẳng.'})
+2026-08-30 00:12:15 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-30 00:12:15 [INFO] [HERMES_RUNTIME] Executing tool: search_in_active_window ({'query': 'kiếp tôi đại học tổng bức thẳng.'})
+2026-08-30 00:12:15 [INFO] [COMPUTER_USE] Active window context for search: app='chrome', title='New Tab - Google Chrome'
+2026-08-30 00:12:16 [INFO] [COMPUTER_USE] Pressed hotkey: ctrl+l
+2026-08-30 00:12:16 [INFO] [COMPUTER_USE] Pasted text and pressed Enter: 'kiếp tôi đại học tổng bức thẳng.'
+2026-08-30 00:12:16 [INFO] [HERMES EVENT] ✅ Tool finished: 'search_in_active_window' (result: {'success': True, 'message': "Pasted 'kiếp tôi đại học tổng bức thẳng.' and pressed Enter."})
+2026-08-30 00:12:16 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:12:16 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:12:16 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Searching for kiếp tôi đại học tổng bức thẳng. in current window.'
+2026-08-30 00:12:16 [INFO] [HERMES_CLIENT] Received Hermes response: 'Searching for kiếp tôi đại học tổng bức thẳng. in current window.'
+2026-08-30 00:12:16 [INFO] [HERMES -> CHAT] Final response synthesized: 'Searching for kiếp tôi đại học tổng bức thẳng. in current window.' (success=True)
+2026-08-30 00:12:16 [INFO] [TTS] Initializing TTS provider for mode 'hybrid'...
+2026-08-30 00:12:16 [INFO] [TTS] Initializing VieNeu local neural TTS engine (dataset=C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\voice_assets\jarvis)...
+2026-08-30 00:12:16 [INFO] [TTS] Hybrid Mode: Voice dataset ready (20 samples). Using local VieNeu runtime.
+2026-08-30 00:12:16 [INFO] [TTS] Synthesizing response: 'Searching for kiếp tôi đại học tổng bức thẳng. in current window.'
+2026-08-30 00:12:16 [INFO] [TTS] Falling back to ElevenLabs runtime synthesis...
+2026-08-30 00:12:17 [INFO] [TTS] Requesting ElevenLabs synthesis: 'Searching for kiếp tôi đại học tổng bức ' (voice=IXXiMMkScyYf0VAI4AFp)...
+2026-08-30 00:12:18 [INFO] HTTP Request: POST https://api.elevenlabs.io/v1/text-to-speech/IXXiMMkScyYf0VAI4AFp?output_format=pcm_24000 "HTTP/1.1 200 OK"
+2026-08-30 00:12:18 [INFO] [TTS] Saved phrase audio to cache: ac2f45c3eb70467a265d706f.wav
+2026-08-30 00:12:18 [INFO] [PLAYBACK] Playing audio (229598 bytes, 4.78s, 24000 Hz)
+2026-08-30 00:12:18 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:12:18 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:12:18 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:12:18 [INFO] [PLAYBACK] Playing 114799 samples (4.78s at 24000 Hz)...
+2026-08-30 00:12:23 [INFO] [PLAYBACK] Playback completed normally.
+2026-08-30 00:12:23 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:12:24 [INFO] [VAD] Speech started.
+2026-08-30 00:12:24 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:12:25 [INFO] [VAD] Speech ended (utterance bytes=61440).
+2026-08-30 00:12:25 [INFO] [AUDIO] duration=1.92s rms=0.09000 peak=0.7981 silence_ratio=0.64 is_valid=True
+2026-08-30 00:12:25 [INFO] Processing audio with duration 00:01.920
+2026-08-30 00:12:26 [INFO] Detected language 'vi' with probability 0.88
+2026-08-30 00:12:28 [INFO] [STT] Faster-Whisper: transcribed='Đóng phát mở lại.' | lang='vi' (prob=0.88)
+2026-08-30 00:12:28 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Đóng phát mở lại.' (conf=0.98)
+2026-08-30 00:12:28 [INFO] [STT] model=base language_mode=auto text='Đóng phát mở lại.' avg_logprob=-0.282 no_speech_prob=0.145 compression_ratio=0.73
+2026-08-30 00:12:28 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-30 00:12:28 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Đóng phát mở lại.' confidence=0.88 score=-0.380
+2026-08-30 00:12:28 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Đóng phát mở lại.'
+  [NORMALIZED]: 'close phát open lại.'
+  [INTENT]: CLOSE_APPLICATION (confidence=0.88, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:12:28 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Đóng phát mở lại.' | Normalized: 'close phát open lại.'
+2026-08-30 00:12:28 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'close phát open lại.' (Raw STT: 'Đóng phát mở lại.')
+2026-08-30 00:12:28 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Đóng phát mở lại.' (conf=0.98)
+2026-08-30 00:12:28 [INFO] 🎙️ [STT] raw = 'Đóng phát mở lại.'
+2026-08-30 00:12:28 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.98, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:12:28 [INFO] ✨ [NORMALIZER] normalized = 'close phát open lại.'
+2026-08-30 00:12:28 [INFO] 🎯 [INTENT] type = CLOSE_APPLICATION (confidence=0.88, compound=False)
+2026-08-30 00:12:28 [INFO] [ROUTER] Detected desktop window close request 'Đóng phát mở lại.' -> Routing to Hermes Agent
+2026-08-30 00:12:28 [INFO] [ROUTER] Command: 'close phát open lại.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:12:28 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 3bb9bf07
+2026-08-30 00:12:28 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:12:28 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'close phát open lại.'...
+2026-08-30 00:12:28 [INFO] [CHAT -> HERMES] Dispatching instruction: 'close phát open lại.' (Intent: CLOSE_APPLICATION)
+2026-08-30 00:12:28 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 3bb9bf07: 'close phát open lại.'
+2026-08-30 00:12:28 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:12:28 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:12:33 [INFO] [HERMES_RUNTIME] Generated plan for 'close phát open lại.': ['close_window']
+2026-08-30 00:12:33 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'close_window' (params: {'app_name': None})
+2026-08-30 00:12:33 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-30 00:12:33 [INFO] [HERMES_RUNTIME] Executing tool: close_window ({'app_name': None})
+2026-08-30 00:12:33 [WARNING] [COMPUTER_USE] Native close window error: (5, 'PostMessage', 'Access is denied.')
+2026-08-30 00:12:33 [INFO] [HERMES EVENT] ✅ Tool finished: 'close_window' (result: {'success': True, 'message': 'Closed current window.'})
+2026-08-30 00:12:33 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:12:33 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:12:33 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Closing window.'
+2026-08-30 00:12:33 [INFO] [HERMES_CLIENT] Received Hermes response: 'Closing window.'
+2026-08-30 00:12:33 [INFO] [HERMES -> CHAT] Final response synthesized: 'Closing window.' (success=True)
+2026-08-30 00:12:33 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\1ba94dd065161be05788c55a.wav
+2026-08-30 00:12:33 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:12:34 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:12:34 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:12:34 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:12:52 [INFO] [VAD] Speech started.
+2026-08-30 00:12:52 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:12:53 [INFO] [VAD] Speech ended (utterance bytes=35840).
+2026-08-30 00:12:53 [INFO] [AUDIO] duration=1.12s rms=0.09000 peak=0.5363 silence_ratio=0.45 is_valid=True
+2026-08-30 00:12:53 [INFO] Processing audio with duration 00:01.120
+2026-08-30 00:12:54 [INFO] Detected language 'en' with probability 0.64
+2026-08-30 00:12:56 [INFO] [STT] Faster-Whisper: transcribed='Đóng cửa sổ, đi ngủ đi' | lang='en' (prob=0.64)
+2026-08-30 00:12:56 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Đóng cửa sổ, đi ngủ đi' (conf=0.98)
+2026-08-30 00:12:56 [INFO] [STT] model=base language_mode=auto text='Đóng cửa sổ, đi ngủ đi' avg_logprob=-0.677 no_speech_prob=0.663 compression_ratio=1.14
+2026-08-30 00:12:56 [INFO] [LANGUAGE] primary=en languages=['en'] mixed_language=False
+2026-08-30 00:12:56 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Đóng cửa sổ, đi ngủ đi' confidence=0.64 score=-2.131
+2026-08-30 00:12:56 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Đóng cửa sổ, đi ngủ đi'
+  [NORMALIZED]: 'close window, đi ngủ đi'
+  [INTENT]: SLEEP_DISMISS (confidence=0.99, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:12:56 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Đóng cửa sổ, đi ngủ đi' | Normalized: 'close window, đi ngủ đi'
+2026-08-30 00:12:56 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'close window, đi ngủ đi' (Raw STT: 'Đóng cửa sổ, đi ngủ đi')
+2026-08-30 00:12:56 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Đóng cửa sổ, đi ngủ đi' (conf=0.98)
+2026-08-30 00:12:56 [INFO] 🎙️ [STT] raw = 'Đóng cửa sổ, đi ngủ đi'
+2026-08-30 00:12:56 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.98, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:12:56 [INFO] ✨ [NORMALIZER] normalized = 'close window, đi ngủ đi'
+2026-08-30 00:12:56 [INFO] 🎯 [INTENT] type = SLEEP_DISMISS (confidence=0.99, compound=False)
+2026-08-30 00:12:56 [INFO] [ROUTER] Detected sleep/close command in 'Đóng cửa sổ, đi ngủ đi'
+2026-08-30 00:12:56 [INFO] [ROUTER] Command: 'close window, đi ngủ đi' -> Target: SLEEP_DISMISS (Action: sleep)
+2026-08-30 00:12:56 [INFO] 🛑 [CONVERSATION CLOSE] User requested sleep ('close window, đi ngủ đi') -> Closing session...
+2026-08-30 00:12:56 [INFO] [JARVIS] Sleep/Close command detected -> Orb closing animation initiated.
+2026-08-30 00:12:56 [INFO] [AUDIO] Ownership transfer: CHAT -> TRIGGER
+2026-08-30 00:12:56 [INFO] [HERMES_RUNTIME] Session closed: 3bb9bf07
+2026-08-30 00:12:56 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\133ac38c254194538895ff7e.wav
+2026-08-30 00:12:57 [INFO] [JARVIS] Session ended -> UI hidden. Background wake detector ready.
+2026-08-30 00:13:18 [INFO] 🎙️ [WAKE DETECTED]: 'Hey Jarvis'! (confidence=0.90 >= 0.55) — Listening for commands / claps...
+2026-08-30 00:13:18 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\80f12fdf470d1e95bef56bda.wav
+2026-08-30 00:13:20 [INFO] 👏 Clap hit [1] (rms=0.0536). Waiting for next clap...
+2026-08-30 00:13:22 [INFO] 👏 Clap hit [1] (rms=0.0534). Waiting for next clap...
+2026-08-30 00:13:23 [INFO] 👏 Clap hit [1] (rms=0.0462). Waiting for next clap...
+2026-08-30 00:13:26 [INFO] ⏳ Wake window expired (8.0s). Returning to waiting mode...
+2026-08-30 00:14:16 [INFO] 🎙️ [WAKE DETECTED]: 'Hey Jarvis'! (confidence=0.80 >= 0.55) — Listening for commands / claps...
+2026-08-30 00:14:17 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\80f12fdf470d1e95bef56bda.wav
+2026-08-30 00:14:19 [INFO] 👏 Clap hit [1] (rms=0.0367). Waiting for next clap...
+2026-08-30 00:14:20 [INFO] 👏 Clap hit [1] (rms=0.0375). Waiting for next clap...
+2026-08-30 00:14:20 [INFO] 👏 Clap hit [2]! Waiting 0.42s to distinguish 2 vs 3 claps...
+2026-08-30 00:14:21 [INFO] 🌟 [INTENT: CONVERSATION] Dedicated phrase detected ('average albert i need a') -> Materializing Jarvis Orb...
+2026-08-30 00:14:21 [INFO] [JARVIS] Wake detected -> Conversation session acquired. ID: 86a27244
+2026-08-30 00:14:21 [INFO] [JARVIS] Conversation session acquired. ID: 86a27244
+2026-08-30 00:14:21 [INFO] [AUDIO] Ownership transfer: TRIGGER -> CHAT
+2026-08-30 00:14:21 [INFO] [HERMES_RUNTIME] Session started: 86a27244
+2026-08-30 00:14:21 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\d0ecfd35be7f28a737660d7a.wav
+2026-08-30 00:14:21 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:14:23 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:14:27 [INFO] [VAD] Speech started.
+2026-08-30 00:14:27 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:14:30 [INFO] [VAD] Speech ended (utterance bytes=115200).
+2026-08-30 00:14:30 [INFO] [AUDIO] duration=3.60s rms=0.09000 peak=0.7033 silence_ratio=0.56 is_valid=True
+2026-08-30 00:14:30 [INFO] Processing audio with duration 00:03.600
+2026-08-30 00:14:31 [INFO] Detected language 'vi' with probability 0.99
+2026-08-30 00:14:33 [INFO] [STT] Faster-Whisper: transcribed='Tìm cho tôi hay học tổng nước thẳng.' | lang='vi' (prob=0.99)
+2026-08-30 00:14:33 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Tìm cho tôi hay học tổng nước thẳng.' (conf=0.98)
+2026-08-30 00:14:33 [INFO] [STT] model=base language_mode=auto text='Tìm cho tôi hay học tổng nước thẳng.' avg_logprob=-0.458 no_speech_prob=0.021 compression_ratio=0.84
+2026-08-30 00:14:33 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-30 00:14:33 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Tìm cho tôi hay học tổng nước thẳng.' confidence=0.99 score=-0.254
+2026-08-30 00:14:34 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Tìm cho tôi hay học tổng nước thẳng.'
+  [NORMALIZED]: 'search cho tôi hay học tổng nước thẳng.'
+  [INTENT]: SEARCH_WEB (confidence=0.95, compound=False)
+  [ENTITY]: Spotify (method=metaphone, confidence=0.90)
+2026-08-30 00:14:34 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Tìm cho tôi hay học tổng nước thẳng.' | Normalized: 'search cho tôi hay học tổng nước thẳng.'
+2026-08-30 00:14:34 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'search cho tôi hay học tổng nước thẳng.' (Raw STT: 'Tìm cho tôi hay học tổng nước thẳng.')
+2026-08-30 00:14:34 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Tìm cho tôi hay học tổng nước thẳng.' (conf=0.98)
+2026-08-30 00:14:34 [INFO] 🎙️ [STT] raw = 'Tìm cho tôi hay học tổng nước thẳng.'
+2026-08-30 00:14:34 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.98, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:14:34 [INFO] ✨ [NORMALIZER] normalized = 'search cho tôi hay học tổng nước thẳng.'
+2026-08-30 00:14:34 [INFO] 🎯 [INTENT] type = SEARCH_WEB (confidence=0.95, compound=False)
+2026-08-30 00:14:34 [INFO] 🏷️ [ENTITY] candidate = 'Spotify' (alias='nhạc', method=metaphone, confidence=0.90)
+2026-08-30 00:14:34 [INFO] [ROUTER] Routing natural-language task 'Tìm cho tôi hay học tổng nước thẳng.' to Hermes Agent
+2026-08-30 00:14:34 [INFO] [ROUTER] Command: 'search cho tôi hay học tổng nước thẳng.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:14:34 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 86a27244
+2026-08-30 00:14:34 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:14:34 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'search cho tôi hay học tổng nước thẳng.'...
+2026-08-30 00:14:34 [INFO] [CHAT -> HERMES] Dispatching instruction: 'search cho tôi hay học tổng nước thẳng.' (Intent: SEARCH_WEB)
+2026-08-30 00:14:34 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 86a27244: 'search cho tôi hay học tổng nước thẳng.'
+2026-08-30 00:14:34 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:14:34 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:14:38 [INFO] [HERMES_RUNTIME] Generated plan for 'search cho tôi hay học tổng nước thẳng.': ['search_web']
+2026-08-30 00:14:38 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'search_web' (params: {'query': 'cho tôi hay học tổng nước thẳng.', 'engine': 'google'})
+2026-08-30 00:14:38 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-30 00:14:38 [INFO] [HERMES_RUNTIME] Executing tool: search_web ({'query': 'cho tôi hay học tổng nước thẳng.', 'engine': 'google'})
+2026-08-30 00:14:38 [INFO] [TOOL_REGISTRY] Executing 'search_web' with params: {'query': 'cho tôi hay học tổng nước thẳng.', 'engine': 'google'}
+2026-08-30 00:14:38 [INFO] [BROWSER] Searching google for 'cho tôi hay học tổng nước thẳng.' -> https://www.google.com/search?q=cho+t%C3%B4i+hay+h%E1%BB%8Dc+t%E1%BB%95ng+n%C6%B0%E1%BB%9Bc+th%E1%BA%B3ng.
+2026-08-30 00:14:38 [INFO] [BROWSER] Opened URL in browser: https://www.google.com/search?q=cho+t%C3%B4i+hay+h%E1%BB%8Dc+t%E1%BB%95ng+n%C6%B0%E1%BB%9Bc+th%E1%BA%B3ng.
+2026-08-30 00:14:38 [INFO] [HERMES EVENT] ✅ Tool finished: 'search_web' (result: {'success': True, 'message': 'Opened https://www.google.com/search?q=cho+t%C3%B4i+hay+h%E1%BB%8Dc+t%E1%BB%95ng+n%C6%B0%E1%BB%9Bc+th%E1%BA%B3ng. in browser.'})
+2026-08-30 00:14:38 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:14:38 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:14:38 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Opening browser and searching for cho tôi hay học tổng nước thẳng..'
+2026-08-30 00:14:38 [INFO] [HERMES_CLIENT] Received Hermes response: 'Opening browser and searching for cho tôi hay học tổng nước thẳng..'
+2026-08-30 00:14:38 [INFO] [HERMES -> CHAT] Final response synthesized: 'Opening browser and searching for cho tôi hay học tổng nước thẳng..' (success=True)
+2026-08-30 00:14:38 [INFO] [TTS] Initializing TTS provider for mode 'hybrid'...
+2026-08-30 00:14:38 [INFO] [TTS] Initializing VieNeu local neural TTS engine (dataset=C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\voice_assets\jarvis)...
+2026-08-30 00:14:38 [INFO] [TTS] Hybrid Mode: Voice dataset ready (20 samples). Using local VieNeu runtime.
+2026-08-30 00:14:38 [INFO] [TTS] Synthesizing response: 'Opening browser and searching for cho tôi hay học tổng nước thẳng..'
+2026-08-30 00:14:38 [INFO] [TTS] Falling back to ElevenLabs runtime synthesis...
+2026-08-30 00:14:39 [INFO] [TTS] Requesting ElevenLabs synthesis: 'Opening browser and searching for cho tô' (voice=IXXiMMkScyYf0VAI4AFp)...
+2026-08-30 00:14:39 [INFO] HTTP Request: POST https://api.elevenlabs.io/v1/text-to-speech/IXXiMMkScyYf0VAI4AFp?output_format=pcm_24000 "HTTP/1.1 200 OK"
+2026-08-30 00:14:40 [INFO] [TTS] Saved phrase audio to cache: 7978916999145393472edddd.wav
+2026-08-30 00:14:40 [INFO] [PLAYBACK] Playing audio (178330 bytes, 3.72s, 24000 Hz)
+2026-08-30 00:14:40 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:14:40 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:14:40 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:14:40 [INFO] [PLAYBACK] Playing 89165 samples (3.72s at 24000 Hz)...
+2026-08-30 00:14:44 [INFO] [PLAYBACK] Playback completed normally.
+2026-08-30 00:14:44 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:14:50 [INFO] [VAD] Speech started.
+2026-08-30 00:14:50 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:14:51 [INFO] [VAD] Speech ended (utterance bytes=66560).
+2026-08-30 00:14:51 [INFO] [AUDIO] duration=2.08s rms=0.09000 peak=0.6421 silence_ratio=0.62 is_valid=True
+2026-08-30 00:14:51 [INFO] Processing audio with duration 00:02.080
+2026-08-30 00:14:52 [INFO] Detected language 'vi' with probability 0.91
+2026-08-30 00:14:54 [INFO] [STT] Faster-Whisper: transcribed='Chuyện táp mọi YouTube.' | lang='vi' (prob=0.91)
+2026-08-30 00:14:54 [INFO] [LANGUAGE] Detected MIXED Vietnamese + English utterance: 'Chuyện táp mọi YouTube.' (entities=['youtube'])
+2026-08-30 00:14:54 [INFO] [STT] model=base language_mode=auto text='Chuyện táp mọi YouTube.' avg_logprob=-0.723 no_speech_prob=0.021 compression_ratio=0.78
+2026-08-30 00:14:54 [INFO] [LANGUAGE] primary=vi languages=['vi', 'en'] mixed_language=True
+2026-08-30 00:14:54 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Chuyện táp mọi YouTube.' confidence=0.91 score=-0.590
+2026-08-30 00:14:54 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Chuyện táp mọi YouTube.'
+  [NORMALIZED]: 'Chuyện táp mọi YouTube.'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: Google Chrome (method=metaphone, confidence=0.77)
+2026-08-30 00:14:54 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Chuyện táp mọi YouTube.' | Normalized: 'Chuyện táp mọi YouTube.'
+2026-08-30 00:14:54 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Chuyện táp mọi YouTube.' (Raw STT: 'Chuyện táp mọi YouTube.')
+2026-08-30 00:14:54 [INFO] [LANGUAGE] Detected MIXED Vietnamese + English utterance: 'Chuyện táp mọi YouTube.' (entities=['youtube'])
+2026-08-30 00:14:54 [INFO] 🎙️ [STT] raw = 'Chuyện táp mọi YouTube.'
+2026-08-30 00:14:54 [INFO] 🌐 [LANGUAGE] detected = 'mixed' (confidence=0.95, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:14:54 [INFO] ✨ [NORMALIZER] normalized = 'Chuyện táp mọi YouTube.'
+2026-08-30 00:14:54 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-30 00:14:54 [INFO] 🏷️ [ENTITY] candidate = 'Google Chrome' (alias='chình duyệt', method=metaphone, confidence=0.77)
+2026-08-30 00:14:54 [INFO] [ROUTER] Routing natural-language task 'Chuyện táp mọi YouTube.' to Hermes Agent
+2026-08-30 00:14:54 [INFO] [ROUTER] Command: 'Chuyện táp mọi YouTube.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:14:54 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 86a27244
+2026-08-30 00:14:54 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:14:54 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'Chuyện táp mọi YouTube.'...
+2026-08-30 00:14:54 [INFO] [CHAT -> HERMES] Dispatching instruction: 'Chuyện táp mọi YouTube.' (Intent: CONVERSATION)
+2026-08-30 00:14:54 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 86a27244: 'Chuyện táp mọi YouTube.'
+2026-08-30 00:14:54 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:14:54 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:14:59 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'chuyện táp mọi youtube.' -> Silent recovery
+2026-08-30 00:14:59 [INFO] [HERMES_RUNTIME] Generated plan for 'Chuyện táp mọi YouTube.': []
+2026-08-30 00:14:59 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:14:59 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:14:59 [INFO] [HERMES EVENT] 🎯 Completed! Response: ''
+2026-08-30 00:14:59 [INFO] [HERMES_CLIENT] Received Hermes response: ''
+2026-08-30 00:14:59 [INFO] [HERMES -> CHAT] Final response synthesized: '' (success=True)
+2026-08-30 00:14:59 [INFO] [HERMES] Response is silent (no speech synthesis needed).
+2026-08-30 00:14:59 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:14:59 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:15:15 [INFO] [VAD] Speech started.
+2026-08-30 00:15:15 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:15:17 [INFO] [VAD] Speech ended (utterance bytes=102400).
+2026-08-30 00:15:17 [INFO] [AUDIO] duration=3.20s rms=0.09000 peak=0.8817 silence_ratio=0.67 is_valid=True
+2026-08-30 00:15:17 [INFO] Processing audio with duration 00:03.200
+2026-08-30 00:15:19 [INFO] Detected language 'vi' with probability 0.82
+2026-08-30 00:15:20 [INFO] [STT] Faster-Whisper: transcribed='chuyển tab, quà dùng tự' | lang='vi' (prob=0.82)
+2026-08-30 00:15:20 [INFO] [LANGUAGE] Detected MIXED Vietnamese + English utterance: 'chuyển tab, quà dùng tự' (entities=[])
+2026-08-30 00:15:20 [INFO] [STT] model=base language_mode=auto text='chuyển tab, quà dùng tự' avg_logprob=-0.628 no_speech_prob=0.057 compression_ratio=0.77
+2026-08-30 00:15:20 [INFO] [LANGUAGE] primary=vi languages=['vi', 'en'] mixed_language=True
+2026-08-30 00:15:20 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='chuyển tab, quà dùng tự' confidence=0.82 score=-0.525
+2026-08-30 00:15:21 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'chuyển tab, quà dùng tự'
+  [NORMALIZED]: 'next tab, quà dùng tự'
+  [INTENT]: TAB_MANAGEMENT (confidence=0.95, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:15:21 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'chuyển tab, quà dùng tự' | Normalized: 'next tab, quà dùng tự'
+2026-08-30 00:15:21 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'next tab, quà dùng tự' (Raw STT: 'chuyển tab, quà dùng tự')
+2026-08-30 00:15:21 [INFO] [LANGUAGE] Detected MIXED Vietnamese + English utterance: 'chuyển tab, quà dùng tự' (entities=[])
+2026-08-30 00:15:21 [INFO] 🎙️ [STT] raw = 'chuyển tab, quà dùng tự'
+2026-08-30 00:15:21 [INFO] 🌐 [LANGUAGE] detected = 'mixed' (confidence=0.95, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:15:21 [INFO] ✨ [NORMALIZER] normalized = 'next tab, quà dùng tự'
+2026-08-30 00:15:21 [INFO] 🎯 [INTENT] type = TAB_MANAGEMENT (confidence=0.95, compound=False)
+2026-08-30 00:15:21 [INFO] [ROUTER] Routing natural-language task 'chuyển tab, quà dùng tự' to Hermes Agent
+2026-08-30 00:15:21 [INFO] [ROUTER] Command: 'next tab, quà dùng tự' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:15:21 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 86a27244
+2026-08-30 00:15:21 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:15:21 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'next tab, quà dùng tự'...
+2026-08-30 00:15:21 [INFO] [CHAT -> HERMES] Dispatching instruction: 'next tab, quà dùng tự' (Intent: TAB_MANAGEMENT)
+2026-08-30 00:15:21 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 86a27244: 'next tab, quà dùng tự'
+2026-08-30 00:15:21 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:15:21 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:15:25 [INFO] [VOICE_MEMORY] Phonetic phrase substitution: 'next tab, quà dùng tự' -> 'next_tab, quà dùng tự'
+2026-08-30 00:15:25 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'next_tab'
+  [NORMALIZED]: 'next_tab'
+  [INTENT]: TAB_MANAGEMENT (confidence=0.95, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:15:25 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'quà dùng tự'
+  [NORMALIZED]: 'quà dùng tự'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: Discord (method=metaphone, confidence=0.82)
+2026-08-30 00:15:25 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'quà dùng tự' -> Silent recovery
+2026-08-30 00:15:25 [INFO] [HERMES_RUNTIME] Generated plan for 'next tab, quà dùng tự': ['manage_tab']
+2026-08-30 00:15:25 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'manage_tab' (params: {'action': 'next'})
+2026-08-30 00:15:25 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-30 00:15:25 [INFO] [HERMES_RUNTIME] Executing tool: manage_tab ({'action': 'next'})
+2026-08-30 00:15:25 [INFO] [TOOL_REGISTRY] Executing 'manage_tab' with params: {'action': 'next'}
+2026-08-30 00:15:26 [INFO] [COMPUTER_USE] Pressed hotkey: ctrl+tab
+2026-08-30 00:15:26 [INFO] [HERMES EVENT] ✅ Tool finished: 'manage_tab' (result: {'success': True, 'message': 'Pressed hotkey ctrl+tab'})
+2026-08-30 00:15:26 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:15:26 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:15:26 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Switched to next tab.'
+2026-08-30 00:15:26 [INFO] [HERMES_CLIENT] Received Hermes response: 'Switched to next tab.'
+2026-08-30 00:15:26 [INFO] [HERMES -> CHAT] Final response synthesized: 'Switched to next tab.' (success=True)
+2026-08-30 00:15:26 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\a278ea871e7943b00df49117.wav
+2026-08-30 00:15:26 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:15:27 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:15:27 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:15:27 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:15:30 [INFO] [VAD] Speech started.
+2026-08-30 00:15:30 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:15:31 [INFO] [VAD] Speech ended (utterance bytes=48640).
+2026-08-30 00:15:31 [INFO] [AUDIO] duration=1.52s rms=0.09000 peak=0.7269 silence_ratio=0.73 is_valid=True
+2026-08-30 00:15:31 [INFO] Processing audio with duration 00:01.520
+2026-08-30 00:15:32 [INFO] Detected language 'en' with probability 0.19
+2026-08-30 00:15:33 [INFO] [STT] Language 'en' (prob=0.19) uncertain/empty -> Re-transcribing with bilingual fallback...
+2026-08-30 00:15:33 [INFO] Processing audio with duration 00:01.520
+2026-08-30 00:15:34 [INFO] [STT] Faster-Whisper: transcribed='Kéu sổ.' | lang='en' (prob=1.00)
+2026-08-30 00:15:34 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Kéu sổ.' (conf=0.85)
+2026-08-30 00:15:34 [INFO] [STT] model=base language_mode=auto text='Kéu sổ.' avg_logprob=-0.985 no_speech_prob=0.075 compression_ratio=0.56
+2026-08-30 00:15:34 [INFO] [LANGUAGE] primary=en languages=['en'] mixed_language=False
+2026-08-30 00:15:34 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Kéu sổ.' confidence=1.00 score=-1.337
+2026-08-30 00:15:34 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Kéu sổ.'
+  [NORMALIZED]: 'Kéu sổ.'
+  [INTENT]: OPEN_APPLICATION (confidence=0.83, compound=False)
+  [ENTITY]: Cursor (method=metaphone, confidence=0.90)
+2026-08-30 00:15:34 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Kéu sổ.' | Normalized: 'Kéu sổ.'
+2026-08-30 00:15:34 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Kéu sổ.' (Raw STT: 'Kéu sổ.')
+2026-08-30 00:15:34 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Kéu sổ.' (conf=0.85)
+2026-08-30 00:15:34 [INFO] 🎙️ [STT] raw = 'Kéu sổ.'
+2026-08-30 00:15:34 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.85, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:15:34 [INFO] ✨ [NORMALIZER] normalized = 'Kéu sổ.'
+2026-08-30 00:15:34 [INFO] 🎯 [INTENT] type = OPEN_APPLICATION (confidence=0.83, compound=False)
+2026-08-30 00:15:34 [INFO] 🏷️ [ENTITY] candidate = 'Cursor' (alias='cơ xơ', method=metaphone, confidence=0.90)
+2026-08-30 00:15:34 [INFO] [ROUTER] Fast-path routing to 'open_cursor' for 'Kéu sổ.'
+2026-08-30 00:15:34 [INFO] [ROUTER] Command: 'Kéu sổ.' -> Target: DETERMINISTIC_ACTION (Action: open_cursor)
+2026-08-30 00:15:34 [INFO] [JARVIS] State changed -> processing
+2026-08-30 00:15:34 [INFO] [ACTION] Fast-path executing deterministic action: open_cursor
+2026-08-30 00:15:34 [INFO] [TOOL] open_application('Cursor')
+2026-08-30 00:15:34 [INFO] [RESULT] success
+2026-08-30 00:15:34 [INFO] [TTS] Initializing TTS provider for mode 'hybrid'...
+2026-08-30 00:15:34 [INFO] [TTS] Initializing VieNeu local neural TTS engine (dataset=C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\voice_assets\jarvis)...
+2026-08-30 00:15:34 [INFO] [TTS] Hybrid Mode: Voice dataset ready (20 samples). Using local VieNeu runtime.
+2026-08-30 00:15:34 [INFO] [TTS] Synthesizing response: 'Cursor editor opened.'
+2026-08-30 00:15:34 [INFO] [TTS] Falling back to ElevenLabs runtime synthesis...
+2026-08-30 00:15:35 [INFO] [TTS] Requesting ElevenLabs synthesis: 'Cursor editor opened.' (voice=IXXiMMkScyYf0VAI4AFp)...
+2026-08-30 00:15:36 [INFO] HTTP Request: POST https://api.elevenlabs.io/v1/text-to-speech/IXXiMMkScyYf0VAI4AFp?output_format=pcm_24000 "HTTP/1.1 200 OK"
+2026-08-30 00:15:36 [INFO] [TTS] Saved phrase audio to cache: e527c34a50dad8b23b82cbd8.wav
+2026-08-30 00:15:36 [INFO] [PLAYBACK] Playing audio (75790 bytes, 1.58s, 24000 Hz)
+2026-08-30 00:15:36 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:15:36 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:15:36 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:15:36 [INFO] [PLAYBACK] Playing 37895 samples (1.58s at 24000 Hz)...
+2026-08-30 00:15:38 [INFO] [PLAYBACK] Playback completed normally.
+2026-08-30 00:15:38 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:15:40 [INFO] [VAD] Speech started.
+2026-08-30 00:15:40 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:15:42 [INFO] [VAD] Speech ended (utterance bytes=64000).
+2026-08-30 00:15:42 [INFO] [AUDIO] duration=2.00s rms=0.09000 peak=0.5813 silence_ratio=0.65 is_valid=True
+2026-08-30 00:15:42 [INFO] Processing audio with duration 00:02.000
+2026-08-30 00:15:43 [INFO] Detected language 'en' with probability 0.36
+2026-08-30 00:15:44 [INFO] [STT] Language 'en' (prob=0.36) uncertain/empty -> Re-transcribing with bilingual fallback...
+2026-08-30 00:15:44 [INFO] Processing audio with duration 00:02.000
+2026-08-30 00:15:45 [INFO] [STT] Faster-Whisper: transcribed='Đéu sổ.' | lang='en' (prob=1.00)
+2026-08-30 00:15:45 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Đéu sổ.' (conf=0.90)
+2026-08-30 00:15:45 [INFO] [STT] model=base language_mode=auto text='Đéu sổ.' avg_logprob=-0.983 no_speech_prob=0.129 compression_ratio=0.55
+2026-08-30 00:15:45 [INFO] [LANGUAGE] primary=en languages=['en'] mixed_language=False
+2026-08-30 00:15:45 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Đéu sổ.' confidence=1.00 score=-1.456
+2026-08-30 00:15:45 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Đéu sổ.'
+  [NORMALIZED]: 'Đéu sổ.'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:15:45 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Đéu sổ.' | Normalized: 'Đéu sổ.'
+2026-08-30 00:15:45 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Đéu sổ.' (Raw STT: 'Đéu sổ.')
+2026-08-30 00:15:45 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Đéu sổ.' (conf=0.90)
+2026-08-30 00:15:45 [INFO] 🎙️ [STT] raw = 'Đéu sổ.'
+2026-08-30 00:15:45 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.90, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:15:45 [INFO] ✨ [NORMALIZER] normalized = 'Đéu sổ.'
+2026-08-30 00:15:45 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-30 00:15:45 [INFO] [ROUTER] Routing natural-language task 'Đéu sổ.' to Hermes Agent
+2026-08-30 00:15:45 [INFO] [ROUTER] Command: 'Đéu sổ.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:15:45 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 86a27244
+2026-08-30 00:15:45 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:15:45 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'Đéu sổ.'...
+2026-08-30 00:15:45 [INFO] [CHAT -> HERMES] Dispatching instruction: 'Đéu sổ.' (Intent: CONVERSATION)
+2026-08-30 00:15:45 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 86a27244: 'Đéu sổ.'
+2026-08-30 00:15:45 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:15:45 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:15:50 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'đéu sổ.' -> Silent recovery
+2026-08-30 00:15:50 [INFO] [HERMES_RUNTIME] Generated plan for 'Đéu sổ.': []
+2026-08-30 00:15:50 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:15:50 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:15:50 [INFO] [HERMES EVENT] 🎯 Completed! Response: ''
+2026-08-30 00:15:50 [INFO] [HERMES_CLIENT] Received Hermes response: ''
+2026-08-30 00:15:50 [INFO] [HERMES -> CHAT] Final response synthesized: '' (success=True)
+2026-08-30 00:15:50 [INFO] [HERMES] Response is silent (no speech synthesis needed).
+2026-08-30 00:15:50 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:15:50 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:15:56 [INFO] [VAD] Speech started.
+2026-08-30 00:15:56 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:15:57 [INFO] [VAD] Speech ended (utterance bytes=46080).
+2026-08-30 00:15:57 [INFO] [AUDIO] duration=1.44s rms=0.09000 peak=0.5131 silence_ratio=0.68 is_valid=True
+2026-08-30 00:15:57 [INFO] Processing audio with duration 00:01.440
+2026-08-30 00:15:58 [INFO] Detected language 'vi' with probability 0.83
+2026-08-30 00:15:59 [INFO] [STT] Faster-Whisper: transcribed='Sổng nhưỡi.' | lang='vi' (prob=0.83)
+2026-08-30 00:15:59 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Sổng nhưỡi.' (conf=0.90)
+2026-08-30 00:15:59 [INFO] [STT] model=base language_mode=auto text='Sổng nhưỡi.' avg_logprob=-0.596 no_speech_prob=0.271 compression_ratio=0.64
+2026-08-30 00:15:59 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-30 00:15:59 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Sổng nhưỡi.' confidence=0.83 score=-1.332
+2026-08-30 00:16:00 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Sổng nhưỡi.'
+  [NORMALIZED]: 'Sổng nhưỡi.'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:16:00 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Sổng nhưỡi.' | Normalized: 'Sổng nhưỡi.'
+2026-08-30 00:16:00 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Sổng nhưỡi.' (Raw STT: 'Sổng nhưỡi.')
+2026-08-30 00:16:00 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Sổng nhưỡi.' (conf=0.90)
+2026-08-30 00:16:00 [INFO] 🎙️ [STT] raw = 'Sổng nhưỡi.'
+2026-08-30 00:16:00 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.90, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:16:00 [INFO] ✨ [NORMALIZER] normalized = 'Sổng nhưỡi.'
+2026-08-30 00:16:00 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-30 00:16:00 [INFO] [ROUTER] Routing natural-language task 'Sổng nhưỡi.' to Hermes Agent
+2026-08-30 00:16:00 [INFO] [ROUTER] Command: 'Sổng nhưỡi.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:16:00 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 86a27244
+2026-08-30 00:16:00 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:16:00 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'Sổng nhưỡi.'...
+2026-08-30 00:16:00 [INFO] [CHAT -> HERMES] Dispatching instruction: 'Sổng nhưỡi.' (Intent: CONVERSATION)
+2026-08-30 00:16:00 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 86a27244: 'Sổng nhưỡi.'
+2026-08-30 00:16:00 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:16:00 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:16:04 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'sổng nhưỡi.' -> Silent recovery
+2026-08-30 00:16:04 [INFO] [HERMES_RUNTIME] Generated plan for 'Sổng nhưỡi.': []
+2026-08-30 00:16:04 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:16:04 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:16:04 [INFO] [HERMES EVENT] 🎯 Completed! Response: ''
+2026-08-30 00:16:04 [INFO] [HERMES_CLIENT] Received Hermes response: ''
+2026-08-30 00:16:04 [INFO] [HERMES -> CHAT] Final response synthesized: '' (success=True)
+2026-08-30 00:16:04 [INFO] [HERMES] Response is silent (no speech synthesis needed).
+2026-08-30 00:16:04 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:16:04 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:16:09 [INFO] [VAD] Speech started.
+2026-08-30 00:16:09 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:16:10 [INFO] [VAD] Speech ended (utterance bytes=51200).
+2026-08-30 00:16:10 [INFO] [AUDIO] duration=1.60s rms=0.09000 peak=0.7575 silence_ratio=0.70 is_valid=True
+2026-08-30 00:16:10 [INFO] Processing audio with duration 00:01.600
+2026-08-30 00:16:11 [INFO] Detected language 'en' with probability 0.93
+2026-08-30 00:16:12 [INFO] [STT] Faster-Whisper: transcribed='Brow down.' | lang='en' (prob=0.93)
+2026-08-30 00:16:12 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Brow down.' (conf=0.80)
+2026-08-30 00:16:12 [INFO] [STT] model=base language_mode=auto text='Brow down.' avg_logprob=-0.429 no_speech_prob=0.096 compression_ratio=0.56
+2026-08-30 00:16:12 [INFO] [LANGUAGE] primary=en languages=['en'] mixed_language=False
+2026-08-30 00:16:12 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Brow down.' confidence=0.93 score=-0.706
+2026-08-30 00:16:12 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Brow down.'
+  [NORMALIZED]: 'Brow down.'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:16:12 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Brow down.' | Normalized: 'Brow down.'
+2026-08-30 00:16:12 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Brow down.' (Raw STT: 'Brow down.')
+2026-08-30 00:16:12 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Brow down.' (conf=0.80)
+2026-08-30 00:16:12 [INFO] 🎙️ [STT] raw = 'Brow down.'
+2026-08-30 00:16:12 [INFO] 🌐 [LANGUAGE] detected = 'en' (confidence=0.80, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:16:12 [INFO] ✨ [NORMALIZER] normalized = 'Brow down.'
+2026-08-30 00:16:12 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-30 00:16:12 [INFO] [ROUTER] Routing natural-language task 'Brow down.' to Hermes Agent
+2026-08-30 00:16:12 [INFO] [ROUTER] Command: 'Brow down.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:16:12 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 86a27244
+2026-08-30 00:16:12 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:16:12 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'Brow down.'...
+2026-08-30 00:16:12 [INFO] [CHAT -> HERMES] Dispatching instruction: 'Brow down.' (Intent: CONVERSATION)
+2026-08-30 00:16:12 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 86a27244: 'Brow down.'
+2026-08-30 00:16:12 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:16:12 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:16:17 [INFO] [HERMES_RUNTIME] Generated plan for 'Brow down.': ['scroll_page']
+2026-08-30 00:16:17 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'scroll_page' (params: {'direction': 'down', 'amount': 6})
+2026-08-30 00:16:17 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-30 00:16:17 [INFO] [HERMES_RUNTIME] Executing tool: scroll_page ({'direction': 'down', 'amount': 6})
+2026-08-30 00:16:17 [INFO] [TOOL_REGISTRY] Executing 'scroll_page' with params: {'direction': 'down', 'amount': 6}
+2026-08-30 00:16:17 [INFO] [COMPUTER_USE] Scrolled down (6 notches)
+2026-08-30 00:16:17 [INFO] [HERMES EVENT] ✅ Tool finished: 'scroll_page' (result: {'success': True, 'message': 'Scrolled down.'})
+2026-08-30 00:16:17 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:16:17 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:16:17 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Scrolling down.'
+2026-08-30 00:16:17 [INFO] [HERMES_CLIENT] Received Hermes response: 'Scrolling down.'
+2026-08-30 00:16:17 [INFO] [HERMES -> CHAT] Final response synthesized: 'Scrolling down.' (success=True)
+2026-08-30 00:16:17 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\a9c9fb6c76764bc883f63a19.wav
+2026-08-30 00:16:17 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:16:18 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:16:18 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:16:18 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:16:21 [INFO] [VAD] Speech started.
+2026-08-30 00:16:21 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:16:22 [INFO] [VAD] Speech ended (utterance bytes=48640).
+2026-08-30 00:16:22 [INFO] [AUDIO] duration=1.52s rms=0.09000 peak=0.7711 silence_ratio=0.69 is_valid=True
+2026-08-30 00:16:22 [INFO] Processing audio with duration 00:01.520
+2026-08-30 00:16:23 [INFO] Detected language 'en' with probability 0.98
+2026-08-30 00:16:24 [INFO] [STT] Faster-Whisper: transcribed='Scroll down.' | lang='en' (prob=0.98)
+2026-08-30 00:16:24 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Scroll down.' (conf=0.80)
+2026-08-30 00:16:24 [INFO] [STT] model=base language_mode=auto text='Scroll down.' avg_logprob=-0.307 no_speech_prob=0.057 compression_ratio=0.60
+2026-08-30 00:16:24 [INFO] [LANGUAGE] primary=en languages=['en'] mixed_language=False
+2026-08-30 00:16:24 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Scroll down.' confidence=0.98 score=-0.250
+2026-08-30 00:16:24 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Scroll down.'
+  [NORMALIZED]: 'Scroll down.'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:16:24 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Scroll down.' | Normalized: 'Scroll down.'
+2026-08-30 00:16:24 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Scroll down.' (Raw STT: 'Scroll down.')
+2026-08-30 00:16:24 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Scroll down.' (conf=0.80)
+2026-08-30 00:16:24 [INFO] 🎙️ [STT] raw = 'Scroll down.'
+2026-08-30 00:16:24 [INFO] 🌐 [LANGUAGE] detected = 'en' (confidence=0.80, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:16:24 [INFO] ✨ [NORMALIZER] normalized = 'Scroll down.'
+2026-08-30 00:16:24 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-30 00:16:24 [INFO] [ROUTER] Routing natural-language task 'Scroll down.' to Hermes Agent
+2026-08-30 00:16:24 [INFO] [ROUTER] Command: 'Scroll down.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:16:24 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 86a27244
+2026-08-30 00:16:24 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:16:24 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'Scroll down.'...
+2026-08-30 00:16:24 [INFO] [CHAT -> HERMES] Dispatching instruction: 'Scroll down.' (Intent: CONVERSATION)
+2026-08-30 00:16:24 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 86a27244: 'Scroll down.'
+2026-08-30 00:16:24 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:16:24 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:16:29 [INFO] [HERMES_RUNTIME] Generated plan for 'Scroll down.': ['scroll_page']
+2026-08-30 00:16:29 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'scroll_page' (params: {'direction': 'down', 'amount': 6})
+2026-08-30 00:16:29 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-30 00:16:29 [INFO] [HERMES_RUNTIME] Executing tool: scroll_page ({'direction': 'down', 'amount': 6})
+2026-08-30 00:16:29 [INFO] [TOOL_REGISTRY] Executing 'scroll_page' with params: {'direction': 'down', 'amount': 6}
+2026-08-30 00:16:29 [INFO] [COMPUTER_USE] Scrolled down (6 notches)
+2026-08-30 00:16:29 [INFO] [HERMES EVENT] ✅ Tool finished: 'scroll_page' (result: {'success': True, 'message': 'Scrolled down.'})
+2026-08-30 00:16:29 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:16:29 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:16:29 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Scrolling down.'
+2026-08-30 00:16:29 [INFO] [HERMES_CLIENT] Received Hermes response: 'Scrolling down.'
+2026-08-30 00:16:29 [INFO] [HERMES -> CHAT] Final response synthesized: 'Scrolling down.' (success=True)
+2026-08-30 00:16:29 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\a9c9fb6c76764bc883f63a19.wav
+2026-08-30 00:16:29 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:16:30 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:16:30 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:16:30 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:16:32 [INFO] [VAD] Speech started.
+2026-08-30 00:16:32 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:16:33 [INFO] [VAD] Speech ended (utterance bytes=66560).
+2026-08-30 00:16:33 [INFO] [AUDIO] duration=2.08s rms=0.09000 peak=0.7101 silence_ratio=0.50 is_valid=True
+2026-08-30 00:16:33 [INFO] Processing audio with duration 00:02.080
+2026-08-30 00:16:34 [INFO] Detected language 'vi' with probability 0.98
+2026-08-30 00:16:36 [INFO] [STT] Faster-Whisper: transcribed='Trọng video cứu hẹn.' | lang='vi' (prob=0.98)
+2026-08-30 00:16:36 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Trọng video cứu hẹn.' (conf=0.90)
+2026-08-30 00:16:36 [INFO] [STT] model=base language_mode=auto text='Trọng video cứu hẹn.' avg_logprob=-0.688 no_speech_prob=0.034 compression_ratio=0.74
+2026-08-30 00:16:36 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-30 00:16:36 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Trọng video cứu hẹn.' confidence=0.98 score=-0.803
+2026-08-30 00:16:36 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Trọng video cứu hẹn.'
+  [NORMALIZED]: 'chọn video cứu hẹn.'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: Visual Studio Code (method=metaphone, confidence=0.80)
+2026-08-30 00:16:36 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Trọng video cứu hẹn.' | Normalized: 'chọn video cứu hẹn.'
+2026-08-30 00:16:36 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'chọn video cứu hẹn.' (Raw STT: 'Trọng video cứu hẹn.')
+2026-08-30 00:16:36 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Trọng video cứu hẹn.' (conf=0.90)
+2026-08-30 00:16:36 [INFO] 🎙️ [STT] raw = 'Trọng video cứu hẹn.'
+2026-08-30 00:16:36 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.90, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:16:36 [INFO] ✨ [NORMALIZER] normalized = 'chọn video cứu hẹn.'
+2026-08-30 00:16:36 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-30 00:16:36 [INFO] 🏷️ [ENTITY] candidate = 'Visual Studio Code' (alias='viet code', method=metaphone, confidence=0.80)
+2026-08-30 00:16:36 [INFO] [ROUTER] Routing natural-language task 'Trọng video cứu hẹn.' to Hermes Agent
+2026-08-30 00:16:36 [INFO] [ROUTER] Command: 'chọn video cứu hẹn.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:16:36 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 86a27244
+2026-08-30 00:16:36 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:16:36 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'chọn video cứu hẹn.'...
+2026-08-30 00:16:36 [INFO] [CHAT -> HERMES] Dispatching instruction: 'chọn video cứu hẹn.' (Intent: CONVERSATION)
+2026-08-30 00:16:36 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 86a27244: 'chọn video cứu hẹn.'
+2026-08-30 00:16:36 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:16:36 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:16:41 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'chọn video cứu hẹn.' -> Silent recovery
+2026-08-30 00:16:41 [INFO] [HERMES_RUNTIME] Generated plan for 'chọn video cứu hẹn.': []
+2026-08-30 00:16:41 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:16:41 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:16:41 [INFO] [HERMES EVENT] 🎯 Completed! Response: ''
+2026-08-30 00:16:41 [INFO] [HERMES_CLIENT] Received Hermes response: ''
+2026-08-30 00:16:41 [INFO] [HERMES -> CHAT] Final response synthesized: '' (success=True)
+2026-08-30 00:16:41 [INFO] [HERMES] Response is silent (no speech synthesis needed).
+2026-08-30 00:16:41 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:16:41 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:16:54 [INFO] connection closed
+2026-08-30 00:16:54 [INFO] [BRIDGE] UI client disconnected: ('127.0.0.1', 62931)
+2026-08-30 00:17:00 [INFO] [VAD] Speech started.
+2026-08-30 00:17:00 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:17:03 [INFO] [VAD] Speech ended (utterance bytes=87040).
+2026-08-30 00:17:03 [INFO] [AUDIO] duration=2.72s rms=0.09000 peak=0.6247 silence_ratio=0.49 is_valid=True
+2026-08-30 00:17:03 [INFO] Processing audio with duration 00:02.720
+2026-08-30 00:17:04 [INFO] Detected language 'la' with probability 0.21
+2026-08-30 00:17:05 [INFO] [STT] Language 'la' (prob=0.21) uncertain/empty -> Re-transcribing with bilingual fallback...
+2026-08-30 00:17:05 [INFO] Processing audio with duration 00:02.720
+2026-08-30 00:17:07 [INFO] [STT] Faster-Whisper: transcribed='Giao ng video, tu hay' | lang='en' (prob=1.00)
+2026-08-30 00:17:07 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Giao ng video, tu hay' (conf=0.80)
+2026-08-30 00:17:07 [INFO] [STT] model=base language_mode=auto text='Giao ng video, tu hay' avg_logprob=-1.025 no_speech_prob=0.053 compression_ratio=0.73
+2026-08-30 00:17:07 [INFO] [LANGUAGE] primary=en languages=['en'] mixed_language=False
+2026-08-30 00:17:07 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Giao ng video, tu hay' confidence=1.00 score=-1.212
+2026-08-30 00:17:07 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Giao ng video, tu hay'
+  [NORMALIZED]: 'Giao ng video, tu hay'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: Visual Studio Code (method=metaphone, confidence=0.80)
+2026-08-30 00:17:07 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Giao ng video, tu hay' | Normalized: 'Giao ng video, tu hay'
+2026-08-30 00:17:07 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'Giao ng video, tu hay' (Raw STT: 'Giao ng video, tu hay')
+2026-08-30 00:17:07 [INFO] [LANGUAGE] Detected ENGLISH utterance: 'Giao ng video, tu hay' (conf=0.80)
+2026-08-30 00:17:07 [INFO] 🎙️ [STT] raw = 'Giao ng video, tu hay'
+2026-08-30 00:17:07 [INFO] 🌐 [LANGUAGE] detected = 'en' (confidence=0.80, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:17:07 [INFO] ✨ [NORMALIZER] normalized = 'Giao ng video, tu hay'
+2026-08-30 00:17:07 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-30 00:17:07 [INFO] 🏷️ [ENTITY] candidate = 'Visual Studio Code' (alias='viet code', method=metaphone, confidence=0.80)
+2026-08-30 00:17:07 [INFO] [ROUTER] Routing natural-language task 'Giao ng video, tu hay' to Hermes Agent
+2026-08-30 00:17:07 [INFO] [ROUTER] Command: 'Giao ng video, tu hay' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:17:07 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 86a27244
+2026-08-30 00:17:07 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:17:07 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'Giao ng video, tu hay'...
+2026-08-30 00:17:07 [INFO] [CHAT -> HERMES] Dispatching instruction: 'Giao ng video, tu hay' (Intent: CONVERSATION)
+2026-08-30 00:17:07 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 86a27244: 'Giao ng video, tu hay'
+2026-08-30 00:17:07 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:17:07 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:17:12 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'giao ng video'
+  [NORMALIZED]: 'giao ng video'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:17:12 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'giao ng video' -> Silent recovery
+2026-08-30 00:17:12 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'tu hay'
+  [NORMALIZED]: 'tu hay'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:17:12 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'tu hay' -> Silent recovery
+2026-08-30 00:17:12 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'giao ng video, tu hay' -> Silent recovery
+2026-08-30 00:17:12 [INFO] [HERMES_RUNTIME] Generated plan for 'Giao ng video, tu hay': []
+2026-08-30 00:17:12 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:17:12 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:17:12 [INFO] [HERMES EVENT] 🎯 Completed! Response: ''
+2026-08-30 00:17:12 [INFO] [HERMES_CLIENT] Received Hermes response: ''
+2026-08-30 00:17:12 [INFO] [HERMES -> CHAT] Final response synthesized: '' (success=True)
+2026-08-30 00:17:12 [INFO] [HERMES] Response is silent (no speech synthesis needed).
+2026-08-30 00:17:12 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:17:12 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:17:50 [INFO] [VAD] Speech started.
+2026-08-30 00:17:50 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:17:53 [INFO] [VAD] Speech ended (utterance bytes=99840).
+2026-08-30 00:17:53 [INFO] [AUDIO] duration=3.12s rms=0.09000 peak=0.5917 silence_ratio=0.59 is_valid=True
+2026-08-30 00:17:53 [INFO] Processing audio with duration 00:03.120
+2026-08-30 00:17:54 [INFO] Detected language 'vi' with probability 0.63
+2026-08-30 00:17:55 [INFO] [STT] Faster-Whisper: transcribed='Chào, video 2 hay' | lang='vi' (prob=0.63)
+2026-08-30 00:17:55 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Chào, video 2 hay' (conf=0.80)
+2026-08-30 00:17:55 [INFO] [STT] model=base language_mode=auto text='Chào, video 2 hay' avg_logprob=-0.846 no_speech_prob=0.032 compression_ratio=0.70
+2026-08-30 00:17:55 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-30 00:17:55 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Chào, video 2 hay' confidence=0.63 score=-0.987
+2026-08-30 00:17:55 [INFO] [VOICE_MEMORY] Phonetic phrase substitution: 'chào, video 2 hay' -> 'chào, click second video hay'
+2026-08-30 00:17:56 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Chào, video 2 hay'
+  [NORMALIZED]: 'chào, click second video hay'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:17:56 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Chào, video 2 hay' | Normalized: 'chào, click second video hay'
+2026-08-30 00:17:56 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'chào, click second video hay' (Raw STT: 'Chào, video 2 hay')
+2026-08-30 00:17:56 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Chào, video 2 hay' (conf=0.80)
+2026-08-30 00:17:56 [INFO] 🎙️ [STT] raw = 'Chào, video 2 hay'
+2026-08-30 00:17:56 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.80, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:17:56 [INFO] ✨ [NORMALIZER] normalized = 'chào, click second video hay'
+2026-08-30 00:17:56 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-30 00:17:56 [INFO] [ROUTER] Routing natural-language task 'Chào, video 2 hay' to Hermes Agent
+2026-08-30 00:17:56 [INFO] [ROUTER] Command: 'chào, click second video hay' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:17:56 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 86a27244
+2026-08-30 00:17:56 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:17:56 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'chào, click second video hay'...
+2026-08-30 00:17:56 [INFO] [CHAT -> HERMES] Dispatching instruction: 'chào, click second video hay' (Intent: CONVERSATION)
+2026-08-30 00:17:56 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 86a27244: 'chào, click second video hay'
+2026-08-30 00:17:56 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:17:56 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:18:00 [INFO] [VOICE_MEMORY] Phonetic phrase substitution: 'chào, click second video hay' -> 'chào, click click second video hay'
+2026-08-30 00:18:00 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'chào'
+  [NORMALIZED]: 'chào'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:18:00 [INFO] [HERMES_RUNTIME] Non-actionable utterance 'chào' -> Silent recovery
+2026-08-30 00:18:00 [INFO] [VOICE_MEMORY] Phonetic phrase substitution: 'click click second video hay' -> 'click click click second video hay'
+2026-08-30 00:18:01 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'click click second video hay'
+  [NORMALIZED]: 'click click click second video hay'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: None (method=None, confidence=0.00)
+2026-08-30 00:18:01 [INFO] [HERMES_RUNTIME] Generated plan for 'chào, click second video hay': ['select_youtube_video']
+2026-08-30 00:18:01 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'select_youtube_video' (params: {'index': 2})
+2026-08-30 00:18:01 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-30 00:18:01 [INFO] [HERMES_RUNTIME] Executing tool: select_youtube_video ({'index': 2})
+2026-08-30 00:18:02 [INFO] [COMPUTER_USE] Waiting for YouTube page & video grid to settle...
+2026-08-30 00:18:05 [INFO] [HermesUI] Perceived window 'YouTube - Google Chrome' (Elements: 0, Composites: 0, Stability: 0.00)
+2026-08-30 00:18:05 [INFO] [COMPUTER_USE] Clicked at relative (0.72, 0.45) -> Screen (1385, 463)
+2026-08-30 00:18:05 [INFO] [HERMES EVENT] ✅ Tool finished: 'select_youtube_video' (result: {'success': True, 'message': 'Clicked and played YouTube video 2.'})
+2026-08-30 00:18:05 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:18:05 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:18:05 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Playing video 2.'
+2026-08-30 00:18:05 [INFO] [HERMES_CLIENT] Received Hermes response: 'Playing video 2.'
+2026-08-30 00:18:05 [INFO] [HERMES -> CHAT] Final response synthesized: 'Playing video 2.' (success=True)
+2026-08-30 00:18:05 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\ef803ccc89d907373d7adec3.wav
+2026-08-30 00:18:05 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:18:07 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:18:07 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:18:07 [INFO] [CHAT] Returned to listening state. Ready for next voice command.
+2026-08-30 00:18:18 [INFO] [VAD] Speech started.
+2026-08-30 00:18:18 [INFO] 🎙️ [VAD] User started speaking turn...
+2026-08-30 00:18:20 [INFO] [VAD] Speech ended (utterance bytes=79360).
+2026-08-30 00:18:20 [INFO] [AUDIO] duration=2.48s rms=0.09000 peak=0.6139 silence_ratio=0.51 is_valid=True
+2026-08-30 00:18:20 [INFO] Processing audio with duration 00:02.480
+2026-08-30 00:18:21 [INFO] Detected language 'vi' with probability 0.97
+2026-08-30 00:18:23 [INFO] [STT] Faster-Whisper: transcribed='Trọng video đầu tiên.' | lang='vi' (prob=0.97)
+2026-08-30 00:18:23 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Trọng video đầu tiên.' (conf=0.95)
+2026-08-30 00:18:23 [INFO] [STT] model=base language_mode=auto text='Trọng video đầu tiên.' avg_logprob=-0.375 no_speech_prob=0.020 compression_ratio=0.75
+2026-08-30 00:18:23 [INFO] [LANGUAGE] primary=vi languages=['vi'] mixed_language=False
+2026-08-30 00:18:23 [INFO] [STT_RESOLVER] candidate_count=1 selected_candidate='Trọng video đầu tiên.' confidence=0.97 score=-0.378
+2026-08-30 00:18:23 [INFO] [STT -> INTERPRETATION]
+  [STT RAW]: 'Trọng video đầu tiên.'
+  [NORMALIZED]: 'chọn video đầu tiên.'
+  [INTENT]: CONVERSATION (confidence=0.85, compound=False)
+  [ENTITY]: Visual Studio Code (method=metaphone, confidence=0.80)
+2026-08-30 00:18:23 [INFO] 🎙️ [SMART TURN COMPLETED] Raw: 'Trọng video đầu tiên.' | Normalized: 'chọn video đầu tiên.'
+2026-08-30 00:18:23 [INFO] 💬 [CONVERSATION MODE] Processing user command: 'chọn video đầu tiên.' (Raw STT: 'Trọng video đầu tiên.')
+2026-08-30 00:18:23 [INFO] [LANGUAGE] Detected VIETNAMESE utterance: 'Trọng video đầu tiên.' (conf=0.95)
+2026-08-30 00:18:23 [INFO] 🎙️ [STT] raw = 'Trọng video đầu tiên.'
+2026-08-30 00:18:23 [INFO] 🌐 [LANGUAGE] detected = 'vi' (confidence=0.95, response_rule='ALWAYS_ENGLISH')
+2026-08-30 00:18:23 [INFO] ✨ [NORMALIZER] normalized = 'chọn video đầu tiên.'
+2026-08-30 00:18:23 [INFO] 🎯 [INTENT] type = CONVERSATION (confidence=0.85, compound=False)
+2026-08-30 00:18:23 [INFO] 🏷️ [ENTITY] candidate = 'Visual Studio Code' (alias='viet code', method=metaphone, confidence=0.80)
+2026-08-30 00:18:23 [INFO] [ROUTER] Routing natural-language task 'Trọng video đầu tiên.' to Hermes Agent
+2026-08-30 00:18:23 [INFO] [ROUTER] Command: 'chọn video đầu tiên.' -> Target: HERMES_AGENT (Action: agent_task)
+2026-08-30 00:18:23 [INFO] 🧠 [HERMES] Starting task delegation to Hermes Agent loop for session: 86a27244
+2026-08-30 00:18:23 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:18:23 [INFO] [HERMES] Step 1: Agent thinking & reasoning about instruction 'chọn video đầu tiên.'...
+2026-08-30 00:18:23 [INFO] [CHAT -> HERMES] Dispatching instruction: 'chọn video đầu tiên.' (Intent: CONVERSATION)
+2026-08-30 00:18:23 [INFO] [HERMES_CLIENT] Sending message to Hermes for session 86a27244: 'chọn video đầu tiên.'
+2026-08-30 00:18:23 [INFO] [HERMES EVENT] 💭 Thinking: Analyzing request with Qwen reasoning...
+2026-08-30 00:18:23 [INFO] [JARVIS] State changed -> agent_thinking
+2026-08-30 00:18:28 [INFO] [HERMES_RUNTIME] Generated plan for 'chọn video đầu tiên.': ['select_youtube_video']
+2026-08-30 00:18:28 [INFO] [HERMES EVENT] ⚙️ Executing tool: 'select_youtube_video' (params: {'index': 1})
+2026-08-30 00:18:28 [INFO] [JARVIS] State changed -> agent_acting
+2026-08-30 00:18:28 [INFO] [HERMES_RUNTIME] Executing tool: select_youtube_video ({'index': 1})
+2026-08-30 00:18:28 [INFO] [COMPUTER_USE] Waiting for YouTube page & video grid to settle...
+2026-08-30 00:18:31 [INFO] [HermesUI] Perceived window 'YouTube - Google Chrome' (Elements: 0, Composites: 0, Stability: 0.94)
+2026-08-30 00:18:31 [INFO] [COMPUTER_USE] Clicked at relative (0.35, 0.45) -> Screen (669, 463)
+2026-08-30 00:18:32 [INFO] [HERMES EVENT] ✅ Tool finished: 'select_youtube_video' (result: {'success': True, 'message': 'Clicked and played YouTube video 1.'})
+2026-08-30 00:18:32 [INFO] [HERMES EVENT] 🔍 Verifying results: Verifying execution results...
+2026-08-30 00:18:32 [INFO] [JARVIS] State changed -> agent_verifying
+2026-08-30 00:18:32 [INFO] [HERMES EVENT] 🎯 Completed! Response: 'Playing video 1.'
+2026-08-30 00:18:32 [INFO] [HERMES_CLIENT] Received Hermes response: 'Playing video 1.'
+2026-08-30 00:18:32 [INFO] [HERMES -> CHAT] Final response synthesized: 'Playing video 1.' (success=True)
+2026-08-30 00:18:32 [INFO] Playing phrase from cache: C:\Users\ADMIN\Downloads\jarvis-main\jarvis-main\.cache\jarvis_welcome\b8116be7ec171d15a95ca712.wav
+2026-08-30 00:18:32 [INFO] [JARVIS] State changed -> speaking
+2026-08-30 00:18:33 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:18:33 [INFO] [JARVIS] State changed -> listening
+2026-08-30 00:18:33 [INFO] [CHAT] Returned to listening state. Ready for next voice command.

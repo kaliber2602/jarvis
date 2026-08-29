@@ -94,6 +94,16 @@ class TranscriptNormalizer:
         return t
 
     @classmethod
+    def strip_dangling_trailing_verbs(cls, text: str) -> str:
+        """Strip incomplete trailing verbs or conjunctions caused by speech cutoffs."""
+        if not text:
+            return ""
+        t = text.strip()
+        dangling_pattern = r"(?:[\s,;.!?]+(?:mở|open|bật|đóng|close|tắt|chạy|run|search|tìm|và|and|then|rồi|sau đó|nhưng|hoặc|or))+$"
+        t_cleaned = re.sub(dangling_pattern, "", t, flags=re.IGNORECASE).strip()
+        return t_cleaned if t_cleaned else t
+
+    @classmethod
     def transliterate_phonetics(cls, text: str) -> str:
         """Transliterate phonetic Vietnamese approximations to English."""
         return transliterate_vietnamese_phonetics(text)
@@ -113,14 +123,38 @@ class EntityResolver:
         if not p or len(p) < 2:
             return None
 
-        # Ignore generic window/tab keywords so they are never resolved as application names (e.g. Cursor, Steam)
-        window_keywords = (
-            "cửa sổ", "cua so", "cửa sổ này", "cua so nay", "cửa sổ hiện tại",
-            "tab này", "cửa sổ đang mở", "cửa sổ khác", "window", "tab",
-            "sổ", "so", "mở sổ", "mo so", "đóng sổ", "dong so", "đổi sổ", "doi so",
-            "mở cửa sổ", "mo cua so", "đóng cửa sổ", "dong cua so", "chuyển sổ", "chuyen so"
+        # Ignore generic verbs, window/tab keywords and specifiers so they are never resolved as application names
+        generic_excluded_keywords = (
+            "cửa sổ", "cua so", "cửa sổ này", "cua so nay", "cửa sổ hiện tại", "cua so hien tai",
+            "tab này", "cửa sổ đang mở", "cửa sổ khác", "window", "windows", "tab", "tabs",
+            "cửa", "cua", "sổ", "so", "mở sổ", "mo so", "đóng sổ", "dong so", "đổi sổ", "doi so",
+            "mở cửa sổ", "mo cua so", "đóng cửa sổ", "dong cua so", "chuyển sổ", "chuyen so",
+            "đóng cửa", "dong cua", "mở cửa", "mo cua", "tắt cửa", "tat cua", "bật cửa", "bat cua",
+            "đóng", "dong", "mở", "mo", "tắt", "tat", "bật", "bat", "chạy", "chay", "tìm", "tim",
+            "xem", "chuyển", "chuyen", "đổi", "doi", "thoát", "thoat", "hạ", "ha", "phóng", "phong",
+            "hiện tại", "hien tai", "này", "nay", "đó", "do", "kia", "ở", "o", "trong", "trên", "tren",
+            "dưới", "duoi", "cái", "cai", "con", "thứ", "thu", "số", "so", "ứng dụng", "ung dung",
+            "tiến trình", "tien trinh", "phần mềm", "phan mem", "trang", "web", "current window", "this window"
         )
-        if p in window_keywords:
+        if (p in generic_excluded_keywords
+            or any(kw == p or p.startswith(kw + " ") or p.endswith(" " + kw) for kw in ("cửa sổ", "cua so", "window", "windows", "tab", "tabs"))
+            or p.startswith("đóng") or p.startswith("dong")
+            or p.startswith("mở") or p.startswith("mo")
+            or p.startswith("tắt") or p.startswith("tat")
+            or p.startswith("bật") or p.startswith("bat")):
+            # Check exact match only if not in generic exclusions
+            if p not in generic_excluded_keywords:
+                exact_app = self.registry.find_by_exact_alias(p)
+                if exact_app:
+                    return EntityCandidate(
+                        name=exact_app.display_name,
+                        canonical_id=exact_app.canonical_id,
+                        entity_type="application",
+                        confidence=0.98,
+                        app_info=exact_app,
+                        matched_alias=p,
+                        match_method="exact_alias",
+                    )
             return None
 
         # 1. Exact alias lookup in AppRegistry
@@ -291,7 +325,14 @@ class IntentResolver:
         Determine intent, target entity, confidence, is_compound, and clarification.
         """
         cleaned = normalized_text.strip().lower()
-        is_compound = any(c in f" {cleaned} " for c in self.COMPOUND_CONJUNCTIONS)
+
+        # Determine compound command state
+        conjunction_compound = any(c in f" {cleaned} " for c in self.COMPOUND_CONJUNCTIONS)
+        app_entities = [e for e in entities if e.entity_type == "application"]
+        split_pattern = r"[,;]|\s+và\s+|\s+then\s+|\s+rồi\s+|\s+sau đó\s+|\s+and\s+"
+        raw_clauses = [c.strip() for c in re.split(split_pattern, cleaned) if c.strip()]
+        actionable_clauses = [c for c in raw_clauses if len(c.split()) >= 2]
+        is_compound = conjunction_compound or (len(app_entities) >= 2 and len(actionable_clauses) >= 2)
 
         # 0. Sleep / Dismiss
         if any(sv in cleaned for sv in self.INTENT_SLEEP_VERBS):
@@ -318,11 +359,14 @@ class IntentResolver:
         has_open_verb = any(ov in f" {cleaned} " or cleaned.startswith(f"{ov} ") for ov in self.INTENT_OPEN_VERBS)
         has_close_verb = any(cv in f" {cleaned} " or cleaned.startswith(f"{cv} ") for cv in self.INTENT_CLOSE_VERBS)
         has_focus_verb = any(fv in cleaned for fv in self.INTENT_FOCUS_VERBS)
-        has_search_verb = any(sv in f" {cleaned} " or cleaned.startswith(f"{sv} ") for sv in self.INTENT_SEARCH_VERBS)
+        has_search_verb = any(
+            sv in f" {cleaned} " or cleaned.startswith(f"{sv} ")
+            for sv in self.INTENT_SEARCH_VERBS
+            if not (sv in ("google", "shut") and (has_close_verb or has_focus_verb or has_open_verb))
+        )
 
-        # Find primary application entity (highest confidence)
-        app_entities = [e for e in entities if e.entity_type == "application"]
-        primary_app = max(app_entities, key=lambda e: e.confidence) if app_entities else None
+        # Find primary application entity (first in sentence order, or highest confidence)
+        primary_app = app_entities[0] if app_entities else None
 
         # 5. Application Launching (OPEN_APPLICATION) - prioritized when open verb and primary app exist
         if has_open_verb and primary_app:
@@ -331,17 +375,19 @@ class IntentResolver:
                 return ("OPEN_APPLICATION", primary_app, conf, is_compound, True, f"Did you mean {primary_app.name}?")
             return ("OPEN_APPLICATION", primary_app, conf, is_compound, False, None)
 
-        # 6. Web Search (evaluated after open app when open verb and primary app exist)
-        if has_search_verb:
-            return ("SEARCH_WEB", primary_app, 0.95, is_compound, False, None)
-
+        # 6. Application Closing (CLOSE_APPLICATION)
         if has_close_verb:
             conf = 0.94 if primary_app else 0.88
             return ("CLOSE_APPLICATION", primary_app, conf, is_compound, False, None)
 
+        # 7. Application Focusing (FOCUS_APPLICATION)
         if has_focus_verb:
             conf = 0.94 if primary_app else 0.88
             return ("FOCUS_APPLICATION", primary_app, conf, is_compound, False, None)
+
+        # 8. Web Search (evaluated after open/close/focus app commands)
+        if has_search_verb:
+            return ("SEARCH_WEB", primary_app, 0.95, is_compound, False, None)
 
         # 7. Short implicit app command (e.g. user just said "VS Code" or "Chrome")
         if primary_app and len(cleaned.split()) <= 3 and primary_app.confidence >= 0.88:
@@ -389,19 +435,16 @@ class VoiceNormalizationPipeline:
                 confidence=0.0,
             )
 
-        # 1. Clean, apply VoiceMemory phonetic mappings, and transliterate phonetics
+        # 1. Clean, strip dangling verbs, apply VoiceMemory phonetic mappings, and transliterate phonetics
         cleaned = TranscriptNormalizer.clean_text(raw)
+        cleaned = TranscriptNormalizer.strip_dangling_trailing_verbs(cleaned)
         from .voice_memory import VoiceMemory
         vm_text, _ = VoiceMemory.get_instance().normalize(cleaned)
         transliterated = TranscriptNormalizer.transliterate_phonetics(vm_text)
 
-        # 2. Extract Entities
+        # 2. Extract Entities from canonical transliterated transcript
         entities = self.entity_resolver.extract_all_entities(transliterated)
-
-        # If transliteration did not find entities, try vm_text or raw cleaned
-        if not entities:
-            entities = self.entity_resolver.extract_all_entities(vm_text)
-        if not entities and cleaned != transliterated:
+        if not entities and cleaned == transliterated:
             entities = self.entity_resolver.extract_all_entities(cleaned)
 
         # 3. Resolve Intent & Target

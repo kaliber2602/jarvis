@@ -116,7 +116,7 @@ class AppRegistry:
                 canonical_id="cursor",
                 executable="Cursor.exe",
                 aliases=[
-                    "cursor", "cursor editor", "cursor ai", "con trỏ", "cưa sờ", "cớ sơ", "cơ sơ"
+                    "cursor", "cursor editor", "cursor ai", "con trỏ", "con tro", "cơ xơ", "cơ xor"
                 ],
                 source="curated",
                 description="AI Code Editor",

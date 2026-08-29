@@ -23,22 +23,36 @@ log = logging.getLogger("stt_provider")
 
 @dataclass
 class STTResult:
-    """Standardized Speech-to-Text Transcription Result."""
+    """Standardized Speech-to-Text Transcription Result with Bilingual & Acoustic Metadata."""
     text: str
     raw_text: str
     language: str = "en"
+    languages: list[str] = field(default_factory=lambda: ["en"])
+    mixed_language: bool = False
     confidence: float = 1.0
+    avg_logprob: float = 0.0
+    no_speech_prob: float = 0.0
+    compression_ratio: float = 1.0
     segments: list[dict[str, Any]] = field(default_factory=list)
+    alternatives: list[dict[str, Any]] = field(default_factory=list)
     provider: str = "unknown"
+    metrics: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "text": self.text,
             "raw_text": self.raw_text,
             "language": self.language,
+            "languages": self.languages,
+            "mixed_language": self.mixed_language,
             "confidence": round(self.confidence, 4),
+            "avg_logprob": round(self.avg_logprob, 4),
+            "no_speech_prob": round(self.no_speech_prob, 4),
+            "compression_ratio": round(self.compression_ratio, 4),
             "segments": self.segments,
+            "alternatives": self.alternatives,
             "provider": self.provider,
+            "metrics": self.metrics,
         }
 
 
@@ -49,6 +63,22 @@ class STTProvider(ABC):
     def transcribe(self, pcm_bytes: bytes, sample_rate: int = 16000) -> STTResult:
         """Transcribe raw 16-bit Mono PCM bytes into an STTResult."""
         pass
+
+
+# Bilingual Computer Control & Application Context Prompt for Whisper
+BILINGUAL_INITIAL_PROMPT = (
+    "Jarvis, open Google Chrome, YouTube, VS Code, Spotify, Antigravity, Discord, Notepad, Terminal, "
+    "close window, roll down, roll up, scroll down, scroll up, next tab, previous tab, new tab, close tab, "
+    "switch window, minimize window, maximize window, search on Google, search on YouTube, go to sleep. "
+    "Đóng cửa sổ, mở trình duyệt, mở YouTube, mở VS Code, mở Spotify, cuộn xuống, cuộn lên, chuyển tab, tắt tab, "
+    "phóng to, thu nhỏ, tìm kiếm, phát nhạc, đi ngủ đi."
+)
+
+BILINGUAL_HOTWORDS = (
+    "Jarvis Chrome YouTube Spotify VS Code Antigravity Discord Notepad Terminal "
+    "window windows tab tabs scroll roll down up close open switch maximize minimize "
+    "đóng mở cửa sổ trình duyệt cuộn lướt phóng to thu nhỏ chuyển tab"
+)
 
 
 class FasterWhisperProvider(STTProvider):
@@ -102,13 +132,15 @@ class FasterWhisperProvider(STTProvider):
                 self.device,
                 self.compute_type,
             )
+            cpu_threads = max(4, min(8, os.cpu_count() or 4))
             self._model = WhisperModel(
                 self.model_name,
                 device=self.device,
                 compute_type=self.compute_type,
+                cpu_threads=cpu_threads,
                 download_root=os.environ.get("WHISPER_DOWNLOAD_ROOT"),
             )
-            log.info("[STT] Faster-Whisper model ready.")
+            log.info("[STT] Faster-Whisper model ready (threads=%d).", cpu_threads)
         except Exception as e:
             log.warning("[STT] Could not load Faster-Whisper model: %s", e)
             self._model = None
@@ -127,67 +159,86 @@ class FasterWhisperProvider(STTProvider):
             pcm_i16 = np.frombuffer(pcm_bytes, dtype=np.int16)
             audio_f32 = pcm_i16.astype(np.float32) / 32768.0
 
-            # Automatic Gain Control (AGC): Peak normalize quiet mic captures safely
+            # Robust RMS-based Automatic Gain Control (AGC) with safe peak limiting
+            rms = float(np.sqrt(np.mean(audio_f32**2))) if len(audio_f32) > 0 else 0.0
             peak = float(np.max(np.abs(audio_f32))) if len(audio_f32) > 0 else 0.0
-            if peak > 0.003:
-                gain = min(0.85 / peak, 10.0)
-                audio_f32 = np.clip(audio_f32 * gain, -1.0, 1.0)
-            elif peak <= 0.001:
-                return STTResult(text="", raw_text="", language="vi", confidence=0.0, provider="faster-whisper")
 
-            lang = None if self.default_language in ("auto", "none", "") else self.default_language
-            bilingual_prompt = "Mở YouTube, mở trình duyệt, mở Google Chrome, mở VS Code, đóng cửa sổ, chuyển tab."
+            if rms <= 0.0008 or peak <= 0.001:
+                return STTResult(text="", raw_text="", language="en", confidence=0.0, provider="faster-whisper")
+
+            if rms > 0.001 and peak > 0.002:
+                # Target conversational speech RMS ~ 0.09 with safe peak limit
+                gain = min(0.09 / rms, 12.0)
+                if peak * gain > 0.95:
+                    gain = 0.95 / peak
+                audio_f32 = np.clip(audio_f32 * gain, -1.0, 1.0)
+
+            # Determine language: None allows Whisper to auto-detect EN vs VI dynamically
+            target_lang = None if self.default_language in ("auto", "none", "", "null") else self.default_language
+            beam_size = int(os.environ.get("STT_BEAM_SIZE", "3"))
+            best_of = max(beam_size, 3)
+
             segments_gen, info = self._model.transcribe(
                 audio_f32,
-                language=lang,
-                beam_size=5,
+                language=target_lang,
+                beam_size=beam_size,
+                best_of=best_of,
                 vad_filter=False,  # Audio is already segmented by central Silero VAD
-                initial_prompt=bilingual_prompt,
+                initial_prompt=BILINGUAL_INITIAL_PROMPT,
+                hotwords=BILINGUAL_HOTWORDS,
                 condition_on_previous_text=False,
-                repetition_penalty=1.2,
-                no_repeat_ngram_size=3,
+                repetition_penalty=1.15,
                 compression_ratio_threshold=2.4,
                 log_prob_threshold=-1.0,
                 no_speech_threshold=0.6,
-                temperature=[0.0, 0.2, 0.4],
+                temperature=0.0,
             )
 
             segments = list(segments_gen)
             full_text = " ".join(s.text.strip() for s in segments if s.text.strip()).strip()
-            detected_lang = info.language if info else "en"
+            detected_lang = info.language if info else ("vi" if target_lang is None else target_lang)
             lang_prob = float(info.language_probability) if info else 1.0
 
-            # Guard: If language detector guessed an irrelevant language or returned empty on short audio
-            if (detected_lang not in ("vi", "en") or not full_text or lang_prob < 0.60) and lang is None:
+            # Guard: If language detector guessed an irrelevant 3rd language or returned empty on short audio
+            if (detected_lang not in ("vi", "en") or not full_text or lang_prob < 0.50) and target_lang is None:
                 log.info(
-                    "[STT] Language '%s' (prob=%.2f) uncertain/empty -> Re-transcribing with 'vi' prior...",
+                    "[STT] Language '%s' (prob=%.2f) uncertain/empty -> Re-transcribing with bilingual fallback...",
                     detected_lang,
                     lang_prob,
                 )
+                retry_lang = "vi" if (detected_lang == "vi" or not full_text) else "en"
                 retry_gen, retry_info = self._model.transcribe(
                     audio_f32,
-                    language="vi",
-                    beam_size=5,
+                    language=retry_lang,
+                    beam_size=beam_size,
+                    best_of=best_of,
                     vad_filter=False,
-                    initial_prompt=bilingual_prompt,
+                    initial_prompt=BILINGUAL_INITIAL_PROMPT,
+                    hotwords=BILINGUAL_HOTWORDS,
                     condition_on_previous_text=False,
-                    repetition_penalty=1.2,
-                    no_repeat_ngram_size=3,
+                    repetition_penalty=1.1,
                     compression_ratio_threshold=2.4,
                     log_prob_threshold=-1.0,
                     no_speech_threshold=0.6,
-                    temperature=[0.0, 0.2, 0.4],
+                    temperature=0.0,
                 )
                 retry_segments = list(retry_gen)
                 retry_text = " ".join(s.text.strip() for s in retry_segments if s.text.strip()).strip()
                 if retry_text:
                     full_text = retry_text
                     segments = retry_segments
-                    detected_lang = "vi"
-                    lang_prob = 0.90
+                    detected_lang = retry_info.language if retry_info else retry_lang
+                    lang_prob = float(retry_info.language_probability) if retry_info else 0.85
 
-            # Collapse any consecutive duplicate words (anti-stutter de-duplication)
+            # Collapse any consecutive duplicate phrases and words (anti-stutter / anti-repetition de-duplication)
             if full_text:
+                parts = [p.strip() for p in re.split(r'[,.!?;\n]+', full_text) if p.strip()]
+                if len(parts) >= 2:
+                    deduped = []
+                    for p in parts:
+                        if not deduped or p.lower() != deduped[-1].lower():
+                            deduped.append(p)
+                    full_text = ", ".join(deduped)
                 full_text = re.sub(r'(?i)\b(\w+)(?:[\s,;.!?]+\1\b)+', r'\1', full_text).strip()
 
             log.info(
@@ -204,15 +255,25 @@ class FasterWhisperProvider(STTProvider):
                     "text": s.text,
                     "avg_logprob": s.avg_logprob,
                     "no_speech_prob": s.no_speech_prob,
+                    "compression_ratio": getattr(s, "compression_ratio", 1.0),
                 }
                 for s in segments
             ]
+
+            calc_avg_logprob = float(np.mean([s.avg_logprob for s in segments])) if segments else 0.0
+            calc_no_speech_prob = float(np.max([s.no_speech_prob for s in segments])) if segments else 0.0
+            calc_compression_ratio = float(np.mean([getattr(s, "compression_ratio", 1.0) for s in segments])) if segments else 1.0
 
             return STTResult(
                 text=full_text,
                 raw_text=full_text,
                 language=detected_lang,
+                languages=[detected_lang],
+                mixed_language=False,
                 confidence=lang_prob,
+                avg_logprob=calc_avg_logprob,
+                no_speech_prob=calc_no_speech_prob,
+                compression_ratio=calc_compression_ratio,
                 segments=segment_dicts,
                 provider="faster-whisper",
             )

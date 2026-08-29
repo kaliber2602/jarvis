@@ -167,8 +167,8 @@ class JarvisBridge:
             self.emit_closing()
 
     def _broadcast_json(self, payload: dict):
-        """Thread-safe broadcast JSON payload to all connected WebSocket clients."""
-        if not self.loop or not self.running:
+        """Thread-safe broadcast JSON payload to all connected WebSocket clients with bounded latency & memory reaping."""
+        if not self.loop or not self.running or not self.clients:
             return
 
         msg_str = json.dumps(payload)
@@ -179,15 +179,20 @@ class JarvisBridge:
             disconnected = set()
             for client in list(self.clients):
                 try:
-                    await client.send(msg_str)
-                except websockets.exceptions.ConnectionClosed:
+                    await asyncio.wait_for(client.send(msg_str), timeout=0.15)
+                except (websockets.exceptions.ConnectionClosed, asyncio.TimeoutError):
                     disconnected.add(client)
                 except Exception as ex:
                     log.debug("Broadcast error to client: %s", ex)
                     disconnected.add(client)
-            self.clients.difference_update(disconnected)
+            if disconnected:
+                self.clients.difference_update(disconnected)
 
-        asyncio.run_coroutine_threadsafe(_send_all(), self.loop)
+        try:
+            fut = asyncio.run_coroutine_threadsafe(_send_all(), self.loop)
+            fut.add_done_callback(lambda f: f.exception() if not f.cancelled() else None)
+        except Exception:
+            pass
 
     def is_conversation_active(self) -> bool:
         """Check if an interactive conversation session is currently active."""
@@ -328,13 +333,29 @@ class JarvisBridge:
                 self.current_session.touch()
 
     def _session_expiration_loop(self):
-        """Background thread to monitor session inactivity and auto-hide UI."""
+        """Background thread to monitor session inactivity, auto-hide UI, and trim working set memory."""
+        import gc
+        import ctypes
+        last_trim_time = time.monotonic()
+
         while self.running:
             time.sleep(1.0)
+            now = time.monotonic()
             if self.current_session and self.current_state == "listening":
                 if self.current_session.is_expired(self.session_timeout_s):
                     log.info("[JARVIS] Inactivity timeout (%.1fs) reached -> Going to sleep.", self.session_timeout_s)
                     self.emit_closing()
+
+            # Periodic memory trimming when idle (every 30s)
+            if now - last_trim_time >= 30.0:
+                last_trim_time = now
+                if not self.is_conversation_active():
+                    try:
+                        gc.collect()
+                        if sys.platform == "win32":
+                            ctypes.windll.psapi.EmptyWorkingSet(ctypes.windll.kernel32.GetCurrentProcess())
+                    except Exception:
+                        pass
 
     def stop(self) -> None:
         """Gracefully stop the WebSocket server."""
