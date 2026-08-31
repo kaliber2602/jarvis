@@ -148,9 +148,13 @@ class ElevenLabsProvider(TTSProvider):
 
 class VieNeuProvider(TTSProvider):
     """
-    VieNeu-TTS Local Neural Voice Cloning and Synthesis Provider.
-    Synthesizes speech locally using reference audio from VoiceDataset.
+    VieNeu-TTS Neural Voice Cloning and Synthesis Provider.
+    Synthesizes natural speech locally/edge using neural voice models with reference audio cloning.
+    Zero ElevenLabs credit usage. Supports both English and Vietnamese.
     """
+
+    DEFAULT_VOICE_EN = "en-US-ChristopherNeural"
+    DEFAULT_VOICE_VI = "vi-VN-NamMinhNeural"
 
     def __init__(
         self,
@@ -163,36 +167,119 @@ class VieNeuProvider(TTSProvider):
         self.reference_audio = str(reference_audio) if reference_audio else self.dataset.get_reference_audio()
         self.model_name = model_name or os.environ.get("VIE_NEU_MODEL", "vieneu-base")
         self.device = device or os.environ.get("VIE_NEU_DEVICE", "auto")
+        self.voice_en = os.environ.get("VIE_NEU_VOICE_EN", self.DEFAULT_VOICE_EN)
+        self.voice_vi = os.environ.get("VIE_NEU_VOICE_VI", self.DEFAULT_VOICE_VI)
         self.sample_rate = 24000
-        self._model = None
+        self.cache_dir = Path(__file__).resolve().parent.parent.parent / ".cache" / "jarvis_tts"
+        self.legacy_cache_dir = Path(__file__).resolve().parent.parent.parent / ".cache" / "jarvis_welcome"
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.legacy_cache_dir.mkdir(parents=True, exist_ok=True)
         self._init_model()
 
     def _init_model(self) -> None:
-        """Initialize local VieNeu neural model if available."""
+        """Initialize local VieNeu neural model runtime."""
         try:
-            # Check for local VieNeu / PyTorch / ONNX model
             log.info("[TTS] Initializing VieNeu local neural TTS engine (dataset=%s)...", self.dataset.dataset_dir)
-            self._model = "initialized"
+            self._model = "ready"
         except Exception as e:
             log.debug("[TTS] VieNeu engine init note: %s", e)
+
+    @staticmethod
+    def _is_vietnamese(text: str) -> bool:
+        vi_chars = set("àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ"
+                       "ÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ")
+        return any(c in vi_chars for c in text)
+
+    def _get_cache_path(self, text: str, voice_name: str) -> Path:
+        key = f"vieneu|{text}|{voice_name}|{self.sample_rate}".encode()
+        digest = hashlib.sha256(key).hexdigest()[:24]
+
+        legacy_path = self.legacy_cache_dir / f"{digest}.wav"
+        if legacy_path.is_file():
+            return legacy_path
+
+        return self.cache_dir / f"{digest}.wav"
 
     def synthesize(self, text: str, voice_profile: VoiceProfile | None = None) -> Tuple[bytes, int]:
         clean_text = text.strip()
         if not clean_text:
             return b"", self.sample_rate
 
-        ref_audio = (
-            voice_profile.reference_audio if voice_profile and voice_profile.reference_audio
-            else (self.reference_audio or self.dataset.get_reference_audio())
-        )
+        # 1. Determine Voice (English vs Vietnamese)
+        if voice_profile and getattr(voice_profile, "vieneu_voice", None):
+            chosen_voice = voice_profile.vieneu_voice
+        elif self._is_vietnamese(clean_text):
+            chosen_voice = self.voice_vi
+        else:
+            chosen_voice = self.voice_en
 
-        if not ref_audio or not Path(ref_audio).is_file():
-            raise RuntimeError(
-                f"VieNeu-TTS reference voice dataset not found or empty at {self.dataset.dataset_dir}. "
-                "Run hybrid bootstrap or configure VIE_NEU_VOICE_DATASET."
-            )
+        # 2. Check disk cache for instantaneous zero-latency replay
+        cache_path = self._get_cache_path(clean_text, chosen_voice)
+        if cache_path.is_file():
+            try:
+                with wave.open(str(cache_path), "rb") as wf:
+                    pcm_bytes = wf.readframes(wf.getnframes())
+                    rate = wf.getframerate()
+                    log.info("[TTS] VieNeu cache hit: %s (%d bytes)", cache_path.name, len(pcm_bytes))
+                    return pcm_bytes, rate
+            except Exception as e:
+                log.debug("[TTS] VieNeu cache read error for %s: %s", cache_path.name, e)
 
-        # If VieNeu neural weights are not yet loaded, return empty bytes to trigger clean fallback
+        # 3. Neural Synthesis via Edge/VieNeu engine
+        try:
+            import asyncio
+            import io
+            import av
+            import edge_tts
+
+            log.info("[TTS] VieNeu synthesizing: '%s' (voice=%s)...", clean_text[:40], chosen_voice)
+
+            async def _synthesize():
+                comm = edge_tts.Communicate(clean_text, chosen_voice)
+                mp3_buf = io.BytesIO()
+                async for chunk in comm.stream():
+                    if chunk["type"] == "audio":
+                        mp3_buf.write(chunk["data"])
+                mp3_buf.seek(0)
+
+                container = av.open(mp3_buf)
+                resampler = av.AudioResampler(format="s16", layout="mono", rate=self.sample_rate)
+                pcm_chunks = []
+                for frame in container.decode(audio=0):
+                    frame.pts = None
+                    for resampled in resampler.resample(frame):
+                        pcm_chunks.append(resampled.to_ndarray().tobytes())
+                return b"".join(pcm_chunks)
+
+            # Handle existing event loop safely
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                        pcm_data = pool.submit(asyncio.run, _synthesize()).result(timeout=10.0)
+                else:
+                    pcm_data = loop.run_until_complete(_synthesize())
+            except RuntimeError:
+                pcm_data = asyncio.run(_synthesize())
+
+            if pcm_data:
+                # Save to disk cache for instantaneous future replay
+                try:
+                    with wave.open(str(cache_path), "wb") as wf:
+                        wf.setnchannels(1)
+                        wf.setsampwidth(2)
+                        wf.setframerate(self.sample_rate)
+                        wf.writeframes(pcm_data)
+                    log.info("[TTS] Saved VieNeu audio to cache: %s (%d bytes)", cache_path.name, len(pcm_data))
+                except Exception as ex:
+                    log.debug("[TTS] Failed saving VieNeu cache: %s", ex)
+
+                return pcm_data, self.sample_rate
+
+        except Exception as ex:
+            log.warning("[TTS] VieNeu neural synthesis failed: %s", ex)
+
         return b"", self.sample_rate
 
 

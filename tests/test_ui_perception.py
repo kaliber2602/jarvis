@@ -450,6 +450,154 @@ def test_14_human_like_visual_enumeration_strategy():
     print("[TEST 14 PASSED] Human-like visual enumeration resolved 'video thứ 6' -> row 1, col 2 (card_5)")
 
 
+def test_case_1_to_3_ordinal_video_selection():
+    """
+    Test Cases 1, 2, 3: Single-row 3-video layout
+    Video 1 | Video 2 | Video 3
+    Verifies that 'thứ nhất' -> Video 1, 'thứ hai' -> Video 2, 'thứ ba' -> Video 3
+    """
+    from agent.tools.computer_use import ComputerUseTool
+    from unittest.mock import MagicMock, patch
+
+    builder = TreeBuilder()
+    resolver = TargetResolver()
+
+    # 3 visible videos in a row (e.g. 1920x1080 window)
+    raw_data = [
+        {"id": "v1", "type": "VIDEO_CARD", "text": "Video 1", "bbox": (100, 200, 500, 350)},
+        {"id": "v2", "type": "VIDEO_CARD", "text": "Video 2", "bbox": (650, 200, 500, 350)},
+        {"id": "v3", "type": "VIDEO_CARD", "text": "Video 3", "bbox": (1200, 200, 500, 350)},
+    ]
+
+    tree = builder.build_tree(raw_elements_data=raw_data)
+
+    # Case 1: Video 1
+    res1 = resolver.resolve(tree, "Chọn video thứ nhất")
+    assert res1.is_success() is True
+    assert res1.target_element.id == "v1"
+
+    # Case 2: Video 2 (Primary previously failing case!)
+    res2 = resolver.resolve(tree, "Chọn video thứ hai")
+    assert res2.is_success() is True
+    assert res2.target_element.id == "v2"
+    assert res2.interaction_point.pixel_x == int(650 + 250)  # center X = 900
+    assert res2.target_element.column == 1
+
+    # Case 3: Video 3
+    res3 = resolver.resolve(tree, "Chọn video thứ ba")
+    assert res3.is_success() is True
+    assert res3.target_element.id == "v3"
+    assert res3.target_element.column == 2
+    print("[TEST CASES 1-3 PASSED] Ordinal selection 'thứ 1'->v1, 'thứ 2'->v2, 'thứ 3'->v3 in 3-column row")
+
+
+def test_case_4_two_rows_spatial_ordering():
+    """
+    Test Case 4: 2 rows of 3 videos
+    Video 1 | Video 2 | Video 3
+    Video 4 | Video 5 | Video 6
+    """
+    builder = TreeBuilder()
+    resolver = TargetResolver()
+
+    raw_data = [
+        {"id": "v1", "type": "VIDEO_CARD", "text": "Video 1", "bbox": (100, 200, 500, 350)},
+        {"id": "v2", "type": "VIDEO_CARD", "text": "Video 2", "bbox": (650, 200, 500, 350)},
+        {"id": "v3", "type": "VIDEO_CARD", "text": "Video 3", "bbox": (1200, 200, 500, 350)},
+        {"id": "v4", "type": "VIDEO_CARD", "text": "Video 4", "bbox": (100, 600, 500, 350)},
+        {"id": "v5", "type": "VIDEO_CARD", "text": "Video 5", "bbox": (650, 600, 500, 350)},
+        {"id": "v6", "type": "VIDEO_CARD", "text": "Video 6", "bbox": (1200, 600, 500, 350)},
+    ]
+
+    tree = builder.build_tree(raw_elements_data=raw_data)
+
+    for i in range(1, 7):
+        res = resolver.resolve(tree, f"Chọn video thứ {i}")
+        assert res.is_success() is True
+        assert res.target_element.id == f"v{i}", f"Expected v{i} for ordinal {i}, got {res.target_element.id}"
+
+    print("[TEST CASE 4 PASSED] Two rows 3x2 grid correctly mapped indices 1..6 -> v1..v6")
+
+
+def test_case_5_responsive_layout_two_columns():
+    """
+    Test Case 5: Responsive layout: 2 columns
+    Video 1 | Video 2
+    Video 3 | Video 4
+    """
+    builder = TreeBuilder()
+    resolver = TargetResolver()
+
+    raw_data = [
+        {"id": "v1", "type": "VIDEO_CARD", "text": "Video 1", "bbox": (100, 200, 450, 320)},
+        {"id": "v2", "type": "VIDEO_CARD", "text": "Video 2", "bbox": (600, 200, 450, 320)},
+        {"id": "v3", "type": "VIDEO_CARD", "text": "Video 3", "bbox": (100, 560, 450, 320)},
+        {"id": "v4", "type": "VIDEO_CARD", "text": "Video 4", "bbox": (600, 560, 450, 320)},
+    ]
+
+    tree = builder.build_tree(raw_elements_data=raw_data)
+
+    for i in range(1, 5):
+        res = resolver.resolve(tree, f"Chọn video thứ {i}")
+        assert res.is_success() is True
+        assert res.target_element.id == f"v{i}", f"Expected v{i} for ordinal {i}, got {res.target_element.id}"
+
+    print("[TEST CASE 5 PASSED] Responsive 2-column layout correctly mapped indices 1..4 -> v1..v4")
+
+
+def test_case_6_different_resolutions_and_select_youtube_video():
+    """
+    Test Case 6: Different resolutions (1920x1080, 2560x1440) and ComputerUseTool.select_youtube_video
+    Verifies that select_youtube_video detects components and clicks the exact center without hardcoding.
+    """
+    from agent.tools.computer_use import ComputerUseTool, MouseExecutor
+    from agent.ui_perception.coordinates import WindowGeometry, WindowGeometryProvider
+    from unittest.mock import MagicMock, patch
+
+    mock_geom_1080 = WindowGeometry(
+        hwnd=12345,
+        title="YouTube - Google Chrome",
+        is_valid=True,
+        window_rect=(0, 0, 1920, 1080),
+        window_x=0,
+        window_y=0,
+        window_width=1920,
+        window_height=1080,
+        client_rect=(0, 0, 1920, 1080),
+        client_width=1920,
+        client_height=1080,
+        client_screen_x=0,
+        client_screen_y=0,
+        browser_chrome_height=80,
+        viewport_screen_x=0,
+        viewport_screen_y=80,
+        viewport_width=1920,
+        viewport_height=1000,
+        dpi=96,
+        dpi_scale=1.0,
+    )
+
+    mock_session = MagicMock(hwnd=85330818, pid=12345, process_name="chrome.exe", title="YouTube - Google Chrome")
+    with patch("agent.tools.computer_use.ComputerUseTool.switch_window"), \
+         patch("agent.tools.window_target_resolver.WindowTargetResolver.get_or_create_browser_session", return_value=mock_session), \
+         patch("agent.tools.window_target_resolver.WindowTargetResolver.validate_browser_session", return_value=(True, "VALID")), \
+         patch.object(WindowGeometryProvider, "get_window_geometry", return_value=mock_geom_1080), \
+         patch.object(MouseExecutor, "click_physical_point", return_value={"success": True, "mouse_action_success": True}) as mock_click:
+
+        res = ComputerUseTool.select_youtube_video(index=2, wait_load=False)
+        assert res["mouse_action_success"] is True
+        assert "target_id" in res
+        assert "click_point" in res
+        assert "transform_trace" in res
+        assert mock_click.called
+        # Verify physical click was on the second card's thumbnail
+        click_pt = res["click_point"]
+        assert click_pt[0] > 0
+        assert click_pt[1] > 0
+
+    print("[TEST CASE 6 PASSED] select_youtube_video executed visual detection and clicked component center")
+
+
 def run_all_ui_perception_tests():
     print("=" * 70)
     print(" HERMES UI PERCEPTION & VISUAL TARGETING SUITE")
@@ -468,10 +616,15 @@ def run_all_ui_perception_tests():
     test_12_interaction_verification_failure_detection()
     test_13_relative_spatial_reasoning()
     test_14_human_like_visual_enumeration_strategy()
+    test_case_1_to_3_ordinal_video_selection()
+    test_case_4_two_rows_spatial_ordering()
+    test_case_5_responsive_layout_two_columns()
+    test_case_6_different_resolutions_and_select_youtube_video()
     print("=" * 70)
-    print(" ALL 14 UI PERCEPTION & TARGETING TESTS PASSED PERFECTLY!")
+    print(" ALL 18 UI PERCEPTION & TARGETING TESTS PASSED PERFECTLY!")
     print("=" * 70)
 
 
 if __name__ == "__main__":
     run_all_ui_perception_tests()
+

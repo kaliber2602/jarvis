@@ -10,6 +10,7 @@ import re
 from typing import Any, Optional, Sequence
 
 from .composite_builder import CompositeBuilder
+from .coordinates import Coordinate, CoordinateSpace
 from .models import (
     ActionType,
     BoundingBox,
@@ -309,10 +310,6 @@ class TargetResolver:
             if elem.scope == "BROWSER_CHROME" and query.region_type != RegionType.BROWSER_CHROME:
                 continue
 
-            # Exclude ads when querying organic content with ordinals
-            if query.ordinal_index is not None and elem.is_advertisement:
-                continue
-
             # Section filter
             if query.section_name:
                 elem_sec = (elem.section_id or "").upper()
@@ -365,6 +362,8 @@ class TargetResolver:
         # 2. Ordinal / Visual Index Match Score [0.0 - 1.0]
         if query.ordinal_index is not None:
             elem_v_idx = elem.visual_index
+            if elem_v_idx < 0 and elem.visual_ordinal > 0:
+                elem_v_idx = elem.visual_ordinal - 1
             if comp and comp.visual_index >= 0:
                 elem_v_idx = comp.visual_index
 
@@ -504,8 +503,7 @@ class TargetResolver:
             target_id = element.id
             target_t = element.type
 
-        # 2. Compute Center Point with Safe Margin
-        # Target center avoids touching edges
+        # 2. Compute Center Point with Safe Margin in Viewport Space
         safe_x = target_bbox.center_x
         safe_y = target_bbox.center_y
 
@@ -515,9 +513,11 @@ class TargetResolver:
         norm_x = safe_x / float(sw) if sw > 0 else 0.5
         norm_y = safe_y / float(sh) if sh > 0 else 0.5
 
+        vp_coord = Coordinate(x=safe_x, y=safe_y, space=CoordinateSpace.VIEWPORT_SPACE)
+
         return InteractionPoint(
-            pixel_x=int(safe_x),
-            pixel_y=int(safe_y),
+            pixel_x=int(round(safe_x)),
+            pixel_y=int(round(safe_y)),
             normalized_x=norm_x,
             normalized_y=norm_y,
             target_element_id=target_id,
@@ -525,4 +525,5 @@ class TargetResolver:
             action_type=action,
             is_safe=True,
             reason="Bounded center with margin",
+            coordinate=vp_coord,
         )

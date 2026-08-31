@@ -21,7 +21,6 @@
   "urban youtube.": "open youtube",
   "close this window": "close_window",
   "chiavice, go to sleep.": "go to sleep",
-  "play video": "click third video",
   "maximize_window.": "maximize_window",
   "close_window,": "close_window",
   "javas, go to sleep": "go to sleep",
@@ -29,5 +28,9 @@
   "mở chrome": "open chrome",
   "bật chrome": "open chrome",
   "clause window": "close_window",
-  "jarvis, go to sleep": "go to sleep"
+  "jarvis, go to sleep": "go to sleep",
+  "close, this window": "close_window",
+  "close that window.": "close_window",
+  "close it window.": "close_window",
+  "gavis go to sleep.": "go to sleep"
 }

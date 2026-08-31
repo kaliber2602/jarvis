@@ -7,7 +7,18 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 import math
+import time
 from typing import Any, Optional
+
+from .coordinates import (
+    Coordinate,
+    CoordinateResolver,
+    CoordinateSpace,
+    DPIAwarenessManager,
+    PhysicalScreenPoint,
+    WindowGeometry,
+    WindowGeometryProvider,
+)
 
 
 class RegionType(str, Enum):
@@ -129,6 +140,7 @@ class UIState(str, Enum):
 
 class ResolutionStatus(str, Enum):
     SUCCESS = "SUCCESS"
+    CLICK_ACTION_SUCCESS = "CLICK_ACTION_SUCCESS"
     TARGET_NOT_FOUND = "TARGET_NOT_FOUND"
     TARGET_AMBIGUOUS = "TARGET_AMBIGUOUS"
     TARGET_OFFSCREEN = "TARGET_OFFSCREEN"
@@ -138,6 +150,10 @@ class ResolutionStatus(str, Enum):
     LAYOUT_UNCERTAIN = "LAYOUT_UNCERTAIN"
     LOW_CONFIDENCE = "LOW_CONFIDENCE"
     UI_UNSTABLE = "UI_UNSTABLE"
+    INVALID_TARGET_BEFORE_CLICK = "INVALID_TARGET_BEFORE_CLICK"
+    SNAPSHOT_STALE = "SNAPSHOT_STALE"
+    CURSOR_PRECONDITION_FAILED = "CURSOR_PRECONDITION_FAILED"
+    SAFE_REGION_INVALID = "SAFE_REGION_INVALID"
     VERIFICATION_FAILED = "VERIFICATION_FAILED"
 
 
@@ -167,13 +183,14 @@ class Point:
 @dataclass
 class BoundingBox:
     """
-    Normalized or pixel bounding box (x, y, width, height).
+    Normalized or pixel bounding box (x, y, width, height) in an explicit CoordinateSpace.
     x, y represent the top-left corner.
     """
     x: float
     y: float
     width: float
     height: float
+    space: CoordinateSpace = CoordinateSpace.VIEWPORT_SPACE
 
     @property
     def left(self) -> float:
@@ -276,6 +293,7 @@ class UIElement:
     column: int = -1
     index: int = -1
     visual_index: int = -1
+    visual_ordinal: int = -1
     reading_index: int = -1
     interaction_index: int = -1
 
@@ -532,6 +550,9 @@ class InteractionPoint:
     is_safe: bool = True
     safety_margin: float = 0.1
     reason: str = ""
+    coordinate: Optional[Coordinate] = None
+    physical_screen_point: Optional[PhysicalScreenPoint] = None
+    geometry: Optional[WindowGeometry] = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -542,6 +563,8 @@ class InteractionPoint:
             "action": self.action_type.value,
             "is_safe": self.is_safe,
             "reason": self.reason,
+            "coordinate": self.coordinate.to_dict() if self.coordinate else None,
+            "physical_point": self.physical_screen_point.to_dict() if self.physical_screen_point else None,
         }
 
 
@@ -584,3 +607,62 @@ class VerificationResult:
     confidence: float = 1.0
     message: str = ""
     needs_re_localization: bool = False
+
+
+@dataclass
+class SafeClickRegion:
+    """
+    Bounded safe click region within a UI component, stripping out outer border margins,
+    scrollbars, overlays, and child controls (badges, 3-dots menus, channel links, buttons).
+    """
+    component_id: str
+    component_bbox: BoundingBox
+    safe_bbox: BoundingBox  # Inner safe region in component local coordinates
+    preferred_point: Point  # Safe click point in component local coordinates
+    excluded_regions: list[BoundingBox] = field(default_factory=list)
+    reason: str = "thumbnail_safe_region"
+
+    def contains_local_point(self, pt: Point) -> bool:
+        """Check if local point is inside safe_bbox and outside all excluded sub-regions."""
+        if not self.safe_bbox.contains_point(pt):
+            return False
+        for ex in self.excluded_regions:
+            if ex.contains_point(pt):
+                return False
+        return True
+
+
+@dataclass
+class UISnapshot:
+    """
+    Point-in-time snapshot of the UI perception context, explicitly linking window identity,
+    page type, timestamp, stability, and detected components.
+    """
+    snapshot_id: str
+    window_hwnd: int
+    process_id: int
+    process_name: str
+    window_title: str
+    page_type: str  # HOME, SEARCH_RESULTS, WATCH_PAGE, etc.
+    timestamp: float
+    viewport_size: tuple[int, int]
+    dpi_scale: float = 1.0
+    detected_components: list[Any] = field(default_factory=list)
+    stability_score: float = 1.0
+    is_browser: bool = True
+
+    def is_stale(self, max_age_seconds: float = 3.0) -> bool:
+        return (time.time() - self.timestamp) > max_age_seconds
+
+
+@dataclass
+class PreconditionValidationResult:
+    """
+    Comprehensive validation report of all 12 pre-click preconditions.
+    """
+    valid: bool
+    status: ResolutionStatus
+    failed_preconditions: list[str] = field(default_factory=list)
+    checked_preconditions: dict[str, bool] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
+    reason: str = ""

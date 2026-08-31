@@ -76,13 +76,15 @@ class HermesRuntime:
         elif tool_name == "open_url":
             return BrowserTool.open_url(params.get("url", ""), params.get("new_window", False))
         elif tool_name == "switch_window":
-            return ComputerUseTool.switch_window(params.get("app_name"))
+            return ComputerUseTool.switch_window(params.get("app_name", ""), index=params.get("index"))
         elif tool_name == "close_window":
-            return ComputerUseTool.close_window(params.get("app_name"))
+            return ComputerUseTool.close_window(params.get("app_name"), hwnd=params.get("hwnd"))
         elif tool_name == "minimize_window":
-            return ComputerUseTool.minimize_window()
+            return ComputerUseTool.minimize_window(params.get("app_name"))
         elif tool_name == "maximize_window":
-            return ComputerUseTool.maximize_window()
+            return ComputerUseTool.maximize_window(params.get("app_name"))
+        elif tool_name == "restore_window":
+            return ComputerUseTool.restore_window(params.get("app_name"))
         elif tool_name in ("scroll_page", "scroll_window", "scroll_down", "scroll_up", "roll_page", "roll_down", "roll_up"):
             return ComputerUseTool.scroll_page(params.get("direction", "down"), params.get("amount", 6))
         elif tool_name == "select_youtube_video":
@@ -106,9 +108,10 @@ class HermesRuntime:
         elif tool_name == "get_active_window_context":
             return ComputerUseTool.get_active_window_context()
         elif tool_name == "snap_window":
-            return ComputerUseTool.snap_window(params.get("position", "left"))
-        elif tool_name == "manage_tab":
-            return ComputerUseTool.manage_tab(params.get("action", "next"), params.get("index"))
+            return ComputerUseTool.snap_window(params.get("position", "left"), params.get("app_name"))
+        elif tool_name in ("manage_tab", "close_tab", "switch_tab"):
+            tab_action = params.get("action", "close" if tool_name == "close_tab" else ("select" if tool_name == "switch_tab" else "next"))
+            return ComputerUseTool.manage_tab(tab_action, params.get("index"))
         elif tool_name == "press_hotkey":
             return ComputerUseTool.press_hotkey(params.get("hotkey", ""))
         elif tool_name == "find_latest_file":
@@ -150,31 +153,67 @@ class HermesRuntime:
         log.info("[HERMES_RUNTIME] Generated plan for '%s': %s", instruction, [p["tool"] for p in plan["actions"]])
 
         executed_tools = []
-        for step in plan["actions"]:
-            tool_name = step["tool"]
-            params = step["params"]
+        overall_success = True
+        error_msg = None
 
-            emit(EventType.AGENT_TOOL_STARTED, {"tool": tool_name, "params": params})
-            log.info("[HERMES_RUNTIME] Executing tool: %s (%s)", tool_name, params)
+        try:
+            for step in plan["actions"]:
+                tool_name = step["tool"]
+                params = step["params"]
 
-            # Execute tool in executor to avoid blocking the event loop
-            loop = asyncio.get_running_loop()
-            result = await loop.run_in_executor(None, lambda: self._execute_tool_sync(tool_name, params))
-            executed_tools.append({"tool": tool_name, "params": params, "result": result})
+                emit(EventType.AGENT_TOOL_STARTED, {"tool": tool_name, "params": params})
+                log.info("[HERMES_RUNTIME] Executing tool: %s (%s)", tool_name, params)
 
-            emit(EventType.AGENT_TOOL_FINISHED, {"tool": tool_name, "result": result})
+                # Execute tool in executor to avoid blocking the event loop
+                loop = asyncio.get_running_loop()
+                result = await loop.run_in_executor(None, lambda: self._execute_tool_sync(tool_name, params))
+                executed_tools.append({"tool": tool_name, "params": params, "result": result})
 
-        emit(EventType.AGENT_VERIFYING, {"status": "Verifying execution results..."})
+                is_tool_success = True
+                if isinstance(result, dict):
+                    status = result.get("status", "")
+                    if not result.get("success", True) or status == "CLICKED_BUT_UNVERIFIED":
+                        is_tool_success = False
+                        if not error_msg:
+                            error_msg = result.get("error") or result.get("message") or "Target interaction could not be confirmed"
 
-        reply_text = plan.get("speech_response", "Task completed, sir.")
-        emit(EventType.AGENT_COMPLETED, {"response": reply_text, "tools_count": len(executed_tools)})
+                if not is_tool_success:
+                    overall_success = False
 
-        return AgentResponse(
-            session_id=session_id,
-            text=reply_text,
-            success=True,
-            tools_executed=executed_tools,
-        )
+                emit(EventType.AGENT_TOOL_FINISHED, {"tool": tool_name, "result": result})
+
+            emit(EventType.AGENT_VERIFYING, {"status": "Verifying execution results..."})
+
+            # Check if any executed tool had unverified target interaction (e.g. video playback not confirmed)
+            unverified_video = None
+            for ex in executed_tools:
+                if ex.get("tool") == "select_youtube_video":
+                    res_dict = ex.get("result", {})
+                    if isinstance(res_dict, dict):
+                        if res_dict.get("status") == "CLICKED_BUT_UNVERIFIED" or res_dict.get("target_interaction_verified") is False:
+                            unverified_video = ex.get("params", {}).get("index", 1)
+
+            if unverified_video is not None:
+                reply_text = f"Clicked video {unverified_video}, but playback could not be confirmed."
+            elif not overall_success:
+                if error_msg:
+                    reply_text = f"Unable to complete the action: {error_msg}."
+                else:
+                    reply_text = "The action could not be completed, sir."
+            else:
+                reply_text = plan.get("speech_response", "Task completed, sir.")
+
+            emit(EventType.AGENT_COMPLETED, {"response": reply_text, "tools_count": len(executed_tools), "success": overall_success})
+
+            return AgentResponse(
+                session_id=session_id,
+                text=reply_text,
+                success=overall_success,
+                tools_executed=executed_tools,
+            )
+        finally:
+            from .tools.window_target_resolver import WindowTargetResolver
+            WindowTargetResolver.release_target()
 
     def _plan_instruction(
         self,
@@ -202,7 +241,28 @@ class HermesRuntime:
                 "speech_response": ctx.clarification_prompt,
             }
 
-        # 0.2 Try Qwen LLM Reasoning if available and configured
+        # 0.2 Fast-Path Deterministic Action Routing (Section 13 & 14)
+        # Clear, unambiguous desktop commands (close window, select video N, manage tab, snap window)
+        # bypass LLM reasoning loop to guarantee deterministic execution and lowest latency.
+        normalized, was_corrected = VoiceMemory.get_instance().normalize(ctx.normalized_transcript or text)
+        cleaned = normalized.strip().lower()
+
+        is_deterministic_intent = (
+            ctx.intent in ("CLOSE_APPLICATION", "SELECT_YOUTUBE_VIDEO", "MANAGE_TAB", "SNAP_WINDOW", "SWITCH_WINDOW", "MINIMIZE_WINDOW", "MAXIMIZE_WINDOW")
+            or any(k in cleaned for k in (
+                "close window", "close this window", "closed window", "đóng cửa sổ", "tắt cửa sổ", "dong cua so", "tat cua so",
+                "play video", "chọn video", "chon video", "bật video", "bat video", "video 1", "video 2", "video 3", "video 4", "video 5", "video 6",
+                "close tab", "đóng tab", "tắt tab", "dong tab", "tat tab", "next tab", "previous tab",
+                "snap window", "top left", "top right", "bottom left", "bottom right", "split window",
+            ))
+        )
+        if is_deterministic_intent:
+            direct_plan = self._plan_single_action(cleaned, ctx)
+            if direct_plan and direct_plan.get("actions"):
+                log.info("[HERMES_RUNTIME] Fast-path deterministic routing for '%s': %s", text, [a["tool"] for a in direct_plan["actions"]])
+                return direct_plan
+
+        # 0.3 Try Qwen LLM Reasoning if available and configured
         if self.qwen_provider.is_available():
             try:
                 llm_plan = self.qwen_provider.generate_plan(
@@ -218,9 +278,7 @@ class HermesRuntime:
             except Exception as e:
                 log.debug("[HERMES_RUNTIME] Qwen LLM reasoning fallback to rule planner: %s", e)
 
-        # 0.3 Check Voice Memory for direct overrides
-        normalized, was_corrected = VoiceMemory.get_instance().normalize(ctx.normalized_transcript or text)
-        cleaned = normalized.strip().lower()
+        # 0.4 Check Voice Memory for direct overrides
 
         # 0.4 Compound Command Clause Decomposition (e.g. "đóng cửa sổ, chuyển tab", "đóng cửa sổ và mở chrome")
         split_pattern = r",|\s+và\s+|\s+then\s+|\s+rồi\s+|\s+sau đó\s+|\s+and\s+"
@@ -266,36 +324,44 @@ class HermesRuntime:
                 "speech_response": f"Opening {app_name} and locating your recent project, sir.",
             }
 
-        # 2. Tab Navigation & Management
-        if "next_tab" in cleaned or "next tab" in cleaned or "tab tiep theo" in cleaned or "chuyen tab" in cleaned:
+        # 2. Tab Navigation & Management (Strict separation from window management)
+        if any(k in cleaned for k in ("close_tab", "close tab", "dong tab", "tat tab", "đóng tab", "tắt tab", "close this tab", "dong tab nay", "tat tab nay", "đóng tab này", "tắt tab này")):
+            actions.append({"tool": "manage_tab", "params": {"action": "close"}})
+            return {"actions": actions, "speech_response": "Closed tab."}
+
+        if "next_tab" in cleaned or "next tab" in cleaned or "tab tiep theo" in cleaned or "tab tiếp theo" in cleaned or "chuyen tab" in cleaned or "chuyển tab" in cleaned:
             actions.append({"tool": "manage_tab", "params": {"action": "next"}})
             return {"actions": actions, "speech_response": "Switched to next tab."}
 
-        if "previous_tab" in cleaned or "previous tab" in cleaned or "tab truoc" in cleaned or "quay lai tab" in cleaned:
+        if "previous_tab" in cleaned or "previous tab" in cleaned or "tab truoc" in cleaned or "tab trước" in cleaned or "quay lai tab" in cleaned:
             actions.append({"tool": "manage_tab", "params": {"action": "previous"}})
             return {"actions": actions, "speech_response": "Switched to previous tab."}
 
-        if "new_tab" in cleaned or "new tab" in cleaned or "mo tab moi" in cleaned or "tao tab" in cleaned:
+        if "new_tab" in cleaned or "new tab" in cleaned or "mo tab moi" in cleaned or "mở tab mới" in cleaned or "tao tab" in cleaned or "tạo tab" in cleaned:
             actions.append({"tool": "manage_tab", "params": {"action": "new"}})
             return {"actions": actions, "speech_response": "Opened new tab."}
 
-        if "reopen_tab" in cleaned or "reopen tab" in cleaned or "khoi phuc tab" in cleaned or "mo lai tab" in cleaned:
+        if "reopen_tab" in cleaned or "reopen tab" in cleaned or "khoi phuc tab" in cleaned or "khôi phục tab" in cleaned or "mo lai tab" in cleaned:
             actions.append({"tool": "manage_tab", "params": {"action": "reopen"}})
             return {"actions": actions, "speech_response": "Reopened closed tab."}
 
-        tab_select_match = re.search(r"(?:select_tab_|select\s+tab\s+|chọn\s+tab\s+|tab\s+)(\d+|dau\s+tien|first|second|thu\s+hai|thu\s+2|thu\s+3|third|last|cuoi)", cleaned)
-        if tab_select_match:
+        tab_select_match = re.search(
+            r"(?:select_tab_|select\s+tab\s+|chọn\s+tab\s+|chuyen\s+sang\s+tab\s+|chuyển\s+sang\s+tab\s+|switch\s+to\s+tab\s+|tab\s+)"
+            r"(\d+|dau\s+tien|đầu\s+tiên|first|1st|1|second|2nd|thu\s+hai|thứ\s+hai|thu\s+2|thứ\s+2|2|third|3rd|thu\s+ba|thứ\s+ba|thu\s+3|thứ\s+3|3|fourth|4th|thu\s+bon|thứ\s+bốn|thứ\s+tư|thu\s+tu|thu\s+4|thứ\s+4|4|last|cuoi|cuối|cuối\s+cùng)",
+            cleaned
+        )
+        if tab_select_match and not any(k in cleaned for k in ("cửa sổ", "cua so", "window")):
             raw_val = tab_select_match.group(1).strip()
             idx = 1
-            if raw_val in ("1", "dau tien", "first", "thu 1", "thu nhat"):
+            if raw_val in ("1", "dau tien", "đầu tiên", "first", "1st", "thu 1", "thứ 1", "thu nhat", "thứ nhất"):
                 idx = 1
-            elif raw_val in ("2", "second", "thu hai", "thu 2"):
+            elif raw_val in ("2", "second", "2nd", "thu hai", "thứ hai", "thu 2", "thứ 2"):
                 idx = 2
-            elif raw_val in ("3", "third", "thu ba", "thu 3"):
+            elif raw_val in ("3", "third", "3rd", "thu ba", "thứ ba", "thu 3", "thứ 3"):
                 idx = 3
-            elif raw_val in ("4", "fourth", "thu bon", "thu 4"):
+            elif raw_val in ("4", "fourth", "4th", "thu bon", "thứ bốn", "thứ tư", "thu tu", "thu 4", "thứ 4"):
                 idx = 4
-            elif raw_val in ("last", "cuoi", "cuoi cung"):
+            elif raw_val in ("last", "cuoi", "cuối", "cuối cùng", "cuoi cung"):
                 idx = 9
             elif raw_val.isdigit():
                 idx = int(raw_val)
@@ -320,26 +386,73 @@ class HermesRuntime:
             actions.append({"tool": "snap_window", "params": {"position": "bottom_left"}})
             return {"actions": actions, "speech_response": "Snapped window to bottom left."}
 
-        if "snap_left" in cleaned or "snap left" in cleaned or "keo sang trai" in cleaned or "nua trai" in cleaned or "chia doi sang trai" in cleaned or "half left" in cleaned or "half screen left" in cleaned or "split left" in cleaned or "left half" in cleaned:
+        if "snap_left" in cleaned or "snap left" in cleaned or "chia ben trai" in cleaned or "sang ben trai" in cleaned or "nua man hinh ben trai" in cleaned:
             actions.append({"tool": "snap_window", "params": {"position": "left"}})
-            return {"actions": actions, "speech_response": "Snapped window to left half."}
+            return {"actions": actions, "speech_response": "Snapped window to left."}
 
-        if "snap_right" in cleaned or "snap right" in cleaned or "keo sang phai" in cleaned or "nua phai" in cleaned or "chia doi sang phai" in cleaned or "half right" in cleaned or "half screen right" in cleaned or "split right" in cleaned or "right half" in cleaned:
+        if "snap_right" in cleaned or "snap right" in cleaned or "chia ben phai" in cleaned or "sang ben phai" in cleaned or "nua man hinh ben phai" in cleaned:
             actions.append({"tool": "snap_window", "params": {"position": "right"}})
-            return {"actions": actions, "speech_response": "Snapped window to right half."}
+            return {"actions": actions, "speech_response": "Snapped window to right."}
+
+        # 3b. Spatial Window Selection / Switching (e.g. "chuyển sang cửa sổ thứ 2", "cửa sổ thứ 2", "window 2")
+        win_select_match = re.search(r"(?:chọn\s+cửa\s+sổ|chuyen\s+sang\s+cua\s+so|chuyển\s+sang\s+cửa\s+sổ|cửa\s+sổ|cua\s+so|window)\s+(?:thứ\s+|number\s+|so\s+|số\s+)?(\d+|dau\s+tien|đầu\s+tiên|first|1st|1|thu\s+hai|thứ\s+hai|second|2nd|2|thu\s+ba|thứ\s+ba|third|3rd|3|thu\s+bon|thứ\s+bốn|thứ\s+tư|thu\s+tu|fourth|4th|4)", cleaned)
+        if win_select_match and any(w in cleaned for w in ("chuyển", "chuyen", "chọn", "chon", "switch", "thứ", "thu", "số", "so")):
+            raw_w_val = win_select_match.group(1).strip()
+            w_idx = 1
+            if raw_w_val in ("1", "dau tien", "đầu tiên", "first", "1st"):
+                w_idx = 1
+            elif raw_w_val in ("2", "second", "2nd", "thu hai", "thứ hai"):
+                w_idx = 2
+            elif raw_w_val in ("3", "third", "3rd", "thu ba", "thứ ba"):
+                w_idx = 3
+            elif raw_w_val in ("4", "fourth", "4th", "thu bon", "thứ bốn", "thứ tư", "thu tu"):
+                w_idx = 4
+            elif raw_w_val.isdigit():
+                w_idx = int(raw_w_val)
+
+            actions.append({"tool": "switch_window", "params": {"app_name": f"index:{w_idx}"}})
+            return {"actions": actions, "speech_response": f"Switched to window {w_idx}."}
 
         if "center_window" in cleaned or "center" in cleaned or "dua vao giua" in cleaned or "giua man hinh" in cleaned:
             actions.append({"tool": "snap_window", "params": {"position": "center"}})
             return {"actions": actions, "speech_response": "Centered window on screen."}
 
         # 3b. Window Minimization & Maximization
-        if "minimize_window" in cleaned or "minimize" in cleaned or "thu nhỏ" in cleaned or "thu nho" in cleaned or "hạ cửa sổ" in cleaned or "ha cua so" in cleaned:
-            actions.append({"tool": "minimize_window", "params": {}})
-            return {"actions": actions, "speech_response": "Minimized window."}
+        minimize_patterns = (
+            "minimize_window", "minimize", "minimise", "thu nhỏ", "thu nho",
+            "hạ cửa sổ", "ha cua so", "hạ window", "ha window",
+            "an cua so", "ẩn cửa sổ", "ẩn window", "an window",
+            "many my", "many mice"
+        )
+        has_minimize = any(mp in cleaned for mp in minimize_patterns) or bool(
+            re.search(r"\b(?:hạ|ha|ẩn|an)\s+(?:cửa sổ|cua so|window|app|ứng dụng)\b", cleaned)
+        )
+        if has_minimize:
+            target_app = ctx.target_entity.name if ctx.target_entity else None
+            if not target_app:
+                for app_name in ("chrome", "browser", "vscode", "code", "antigravity", "cursor", "spotify", "discord", "notepad", "youtube"):
+                    if app_name in cleaned:
+                        target_app = "chrome" if app_name in ("youtube", "browser") else app_name
+                        break
+            actions.append({"tool": "minimize_window", "params": {"app_name": target_app} if target_app else {}})
+            speech = f"Minimized {target_app}." if target_app else "Minimized window."
+            return {"actions": actions, "speech_response": speech}
 
-        if "maximize_window" in cleaned or "maximize" in cleaned or "phóng to" in cleaned or "phong to" in cleaned or "toàn màn hình" in cleaned or "toan man hinh" in cleaned or "fullscreen" in cleaned:
-            actions.append({"tool": "maximize_window", "params": {}})
-            return {"actions": actions, "speech_response": "Maximized window."}
+        maximize_patterns = (
+            "maximize_window", "maximize", "maximise", "phóng to", "phong to",
+            "phóng to window", "phong to window", "phóng to cửa sổ", "phong to cua so",
+            "toàn màn hình", "toan man hinh", "fullscreen", "max window"
+        )
+        if any(mp in cleaned for mp in maximize_patterns):
+            target_app = ctx.target_entity.name if ctx.target_entity else None
+            if not target_app:
+                for app_name in ("chrome", "browser", "vscode", "code", "antigravity", "cursor", "spotify", "discord", "notepad", "youtube"):
+                    if app_name in cleaned:
+                        target_app = "chrome" if app_name in ("youtube", "browser") else app_name
+                        break
+            actions.append({"tool": "maximize_window", "params": {"app_name": target_app} if target_app else {}})
+            speech = f"Maximized {target_app}." if target_app else "Maximized window."
+            return {"actions": actions, "speech_response": speech}
 
         # 3c. Page Scrolling / Rolling (YouTube, Browser, Active Window)
         scroll_down_patterns = (
@@ -404,8 +517,9 @@ class HermesRuntime:
         close_patterns = (
             "close_window", "close window", "closed window", "close windows",
             "close youtube", "close chrome", "close browser", "close tab", "close app",
-            "dong cua so", "tat cua so", "đóng cửa sổ", "tắt cửa sổ", "dong tab", "tat tab",
-            "quit window", "dong lai", "tat app"
+            "dong cua so", "tat cua so", "đóng cửa sổ", "tắt cửa sổ",
+            "dong window", "tat window", "đóng window", "tắt window",
+            "dong tab", "tat tab", "quit window", "dong lai", "tat app"
         )
         if any(cp in cleaned for cp in close_patterns) or ctx.intent == "CLOSE_APPLICATION":
             target_app = ctx.target_entity.name if ctx.target_entity else None
@@ -486,14 +600,6 @@ class HermesRuntime:
                 speech = f"Searching YouTube for {query}, sir." if is_youtube else f"Opening browser and searching for {query}."
             return {"actions": actions, "speech_response": speech}
 
-        # 7. Minimize / Maximize Window
-        if "minimize_window" in cleaned or "minimize" in cleaned or "minimise" in cleaned or "thu nho" in cleaned or "an cua so" in cleaned or "many my" in cleaned or "many mice" in cleaned:
-            actions.append({"tool": "minimize_window", "params": {}})
-            return {"actions": actions, "speech_response": "Window minimized."}
-
-        if "maximize_window" in cleaned or "maximize" in cleaned or "phong to" in cleaned or "toan man hinh" in cleaned or "fullscreen" in cleaned:
-            actions.append({"tool": "maximize_window", "params": {}})
-            return {"actions": actions, "speech_response": "Window maximized."}
 
         # 8. Open YouTube + Video Selection (Compound Intent)
         if "youtube" in cleaned and any(k in cleaned for k in ("video", "thu 1", "thu 2", "first", "second", "chọn", "select", "play")):

@@ -112,7 +112,7 @@ class LayoutEngine:
         self,
         elements: Sequence[UIElement],
         container: Optional[UIContainer] = None,
-        exclude_ads_from_visual_index: bool = True,
+        exclude_ads_from_visual_index: bool = False,
     ) -> list[UIElement]:
         """
         Performs complete Row-Major Visual Ordering:

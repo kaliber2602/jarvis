@@ -3,6 +3,7 @@ Voice Memory & Phonetic Guessing Engine:
 1. Normalizes and autocorrects misheard/accented speech using phonetic patterns & fuzzy matching.
 2. Supports Vietnamese and Vietnamese-English accent pronunciation variations.
 3. Persists learned user phrase mappings to 'user_voice_memory.json'.
+4. Prevents recursive phrase corruptions (e.g. 'Play the second video' -> 'click click click...').
 """
 
 from __future__ import annotations
@@ -90,55 +91,28 @@ class VoiceMemory:
         "sigh jass cpt": "search chatgpt",
         "snap yeah see the right": "search chatgpt",
 
-        # YouTube Video Selection / Click & Play
-        "play video 1": "click first video",
-        "play video one": "click first video",
-        "play video 2": "click second video",
-        "play video two": "click second video",
-        "play video 3": "click third video",
-        "play first video": "click first video",
-        "play the first video": "click first video",
-        "played a first video": "click first video",
-        "play second video": "click second video",
-        "play the second video": "click second video",
-        "bat video 1": "click first video",
-        "bat video dau tien": "click first video",
-        "mo video 1": "click first video",
-        "phat video 1": "click first video",
-        "phat video dau tien": "click first video",
-        "chon video 1": "click first video",
-        "chon video 2": "click second video",
-        "chon video 3": "click third video",
+        # YouTube Video Selection / Play Accents (Normalized to clean semantic commands)
+        "played a first video": "play first video",
         "les second videos": "click second video",
         "place second videos": "click second video",
         "rick on know second video jealous": "click second video",
         "rick on know second video": "click second video",
-        "play second video service": "click second video",
-        "the second video": "click second video",
-        "second video": "click second video",
-        "click on the second video": "click second video",
-        "chon video thu hai": "click second video",
-        "chon video thu 2": "click second video",
-        "video thu hai": "click second video",
-        "video thu 2": "click second video",
-
-        "first video": "click first video",
-        "the first video": "click first video",
-        "click first video": "click first video",
-        "chon video thu nhat": "click first video",
-        "chon video thu 1": "click first video",
-        "chon video dau tien": "click first video",
-        "video dau tien": "click first video",
-        "video thu 1": "click first video",
-        "video 1": "click first video",
-        "video 2": "click second video",
-        "video 3": "click third video",
-
-        "third video": "click third video",
-        "the third video": "click third video",
-        "play third video": "click third video",
-        "chon video thu ba": "click third video",
-        "chon video thu 3": "click third video",
+        "play second video service": "play second video",
+        "bat video 1": "play video 1",
+        "bat video dau tien": "play first video",
+        "mo video 1": "play video 1",
+        "phat video 1": "play video 1",
+        "phat video dau tien": "play first video",
+        "chon video 1": "select video 1",
+        "chon video 2": "select video 2",
+        "chon video 3": "select video 3",
+        "chon video thu hai": "select video 2",
+        "chon video thu 2": "select video 2",
+        "chon video thu nhat": "select video 1",
+        "chon video thu 1": "select video 1",
+        "chon video dau tien": "select first video",
+        "chon video thu ba": "select video 3",
+        "chon video thu 3": "select video 3",
 
         # Window Positioning & Snapping
         "top right": "top_right",
@@ -202,7 +176,6 @@ class VoiceMemory:
         "alt tab": "switch_window",
         "doi cua so": "switch_window",
         "chuyen cua so": "switch_window",
-        "chuyen tab": "switch_window",
         "cua so tiep theo": "switch_window",
         "switch to chrome": "switch to chrome",
         "switch to vscode": "switch to vscode",
@@ -237,11 +210,17 @@ class VoiceMemory:
         "close wind": "close_window",
         "close win": "close_window",
         "close current window": "close_window",
-        "close tab": "close_window",
+        "close this window": "close_window",
+        "close tab": "close_tab",
+        "close this tab": "close_tab",
         "dong cua so": "close_window",
         "tat cua so": "close_window",
-        "dong tab": "close_window",
-        "tat tab": "close_window",
+        "dong cua so nay": "close_window",
+        "tat cua so nay": "close_window",
+        "dong tab": "close_tab",
+        "tat tab": "close_tab",
+        "dong tab nay": "close_tab",
+        "tat tab nay": "close_tab",
         "dong lai": "close_window",
         "quit window": "close_window",
         "close youtube": "close_window",
@@ -331,6 +310,7 @@ class VoiceMemory:
     def normalize(self, text: str) -> tuple[str, bool]:
         """
         Normalize and guess the intended command from recognized speech.
+        Single-pass substitution guarantees no recursive phrase corruption.
         Returns:
             (predicted_text: str, is_corrected: bool)
         """
@@ -350,22 +330,22 @@ class VoiceMemory:
             log.info("[VOICE_MEMORY] Exact match in phonetic dictionary: '%s' -> '%s'", raw, corrected)
             return corrected, True
 
-        # 3. Whole-word / Phrase regex replacements (sorted longest-key-first)
+        # 3. Single-pass non-overlapping regex replacement
         all_patterns = {**self.BUILTIN_PATTERNS, **self.user_learned}
+        # Sort keys longest-first for greedy matching
         sorted_keys = sorted(all_patterns.keys(), key=len, reverse=True)
-        replaced = raw
-        has_changed = False
+        if sorted_keys:
+            regex_pattern = re.compile(
+                r'\b(' + '|'.join(re.escape(k) for k in sorted_keys) + r')\b',
+                flags=re.IGNORECASE
+            )
+            replaced = regex_pattern.sub(lambda m: all_patterns.get(m.group(0).lower(), m.group(0)), raw).strip()
+            # Collapse any accidentally repeated words (e.g. "click click" -> "click")
+            replaced = re.sub(r'\b(\w+)(?:\s+\1\b)+', r'\1', replaced)
 
-        for misheard in sorted_keys:
-            canonical = all_patterns[misheard]
-            pattern = r'\b' + re.escape(misheard) + r'\b'
-            if re.search(pattern, replaced):
-                replaced = re.sub(pattern, canonical, replaced).strip()
-                has_changed = True
-
-        if has_changed:
-            log.info("[VOICE_MEMORY] Phonetic phrase substitution: '%s' -> '%s'", raw, replaced)
-            return replaced, True
+            if replaced != raw:
+                log.info("[VOICE_MEMORY] Phonetic phrase substitution: '%s' -> '%s'", raw, replaced)
+                return replaced, True
 
         # 4. If phrase is already a known canonical command, do not fuzzy-mutate it
         known_canonical = set(all_patterns.values())

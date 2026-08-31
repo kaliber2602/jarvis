@@ -6,6 +6,7 @@ import asyncio
 import os
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -223,10 +224,35 @@ def test_hermes_client_workflow():
     asyncio.run(_run())
 
 
+def test_youtube_video_selection_response_verification():
+    """Verify that Hermes reports click completed with unconfirmed playback when verification is False."""
+    runtime = HermesRuntime()
+
+    async def _run():
+        with patch.object(
+            runtime,
+            "_execute_tool_sync",
+            return_value={
+                "success": True,
+                "click_completed": True,
+                "mouse_action_success": True,
+                "target_interaction_verified": False,
+                "message": "Clicked YouTube video 2, but playback could not be confirmed.",
+            },
+        ):
+            resp = await runtime.run_plan("test-yt-sess", "play second video")
+            assert resp.success is True
+            assert "playback could not be confirmed" in resp.text.lower()
+            assert "2" in resp.text
+
+    asyncio.run(_run())
+
+
 if __name__ == "__main__":
     test_command_router()
     test_voice_memory_and_learning()
     test_search_and_window_intents()
     test_safety_policy()
     test_hermes_client_workflow()
+    test_youtube_video_selection_response_verification()
     print("All Hermes Agent unit tests passed successfully!")

@@ -17,14 +17,28 @@ TEST_FILES = [
     "test_command_understanding.py",
     "test_language_detector.py",
     "test_agent.py",
+    "test_computer_use_windows.py",
+    "test_window_target_resolver.py",
     "test_ui_perception.py",
+    "test_responsive_coordinate_transformation.py",
+    "test_window_tab_management.py",
     "test_tts_pipeline.py",
     "test_playback_barge_in.py",
     "test_memory.py",
+    "test_browser_lifecycle_hwnd_stability.py",
+    "test_pre_click_deterministic_targeting.py",
+    "test_deterministic_youtube_and_window_management.py",
+    "test_responsive_row_major_sort.py",
+    "test_youtube_card_target_calculation.py",
+    "test_youtube_dom_perception.py",
     "benchmark_bilingual_stt.py",
 ]
 
 def main() -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     tests_dir = Path(__file__).resolve().parent
     root_dir = tests_dir.parent
     os.chdir(root_dir)

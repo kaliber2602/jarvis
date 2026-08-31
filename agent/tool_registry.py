@@ -143,13 +143,41 @@ class ToolRegistry:
 
         return ComputerUseTool.open_application(target_name, args)
 
-    def _tool_close_application(self, app_name: str | None = None) -> dict[str, Any]:
+    def _tool_close_application(self, app_name: str | None = None, hwnd: int | None = None) -> dict[str, Any]:
         """Close an application or active window."""
-        return ComputerUseTool.close_window(app_name)
+        return ComputerUseTool.close_window(app_name, hwnd=hwnd)
 
-    def _tool_focus_application(self, app_name: str | None = None) -> dict[str, Any]:
+    def _tool_close_window(self, app_name: str | None = None, hwnd: int | None = None) -> dict[str, Any]:
+        """Close an application or active window."""
+        return ComputerUseTool.close_window(app_name, hwnd=hwnd)
+
+    def _tool_maximize_window(self, app_name: str | None = None) -> dict[str, Any]:
+        """Maximize the active user application window or specified application."""
+        return ComputerUseTool.maximize_window(app_name)
+
+    def _tool_minimize_window(self, app_name: str | None = None) -> dict[str, Any]:
+        """Minimize the active user application window or specified application."""
+        return ComputerUseTool.minimize_window(app_name)
+
+    def _tool_restore_window(self, app_name: str | None = None) -> dict[str, Any]:
+        """Restore a minimized or maximized window."""
+        return ComputerUseTool.restore_window(app_name)
+
+    def _tool_focus_application(self, app_name: str | None = None, index: int | None = None) -> dict[str, Any]:
         """Focus/switch to application window."""
-        return ComputerUseTool.switch_window(app_name)
+        return ComputerUseTool.switch_window(app_name or "", index=index)
+
+    def _tool_switch_window(self, app_name: str | None = None, index: int | None = None) -> dict[str, Any]:
+        """Switch focus to application window."""
+        return ComputerUseTool.switch_window(app_name or "", index=index)
+
+    def _tool_type_text(self, text: str) -> dict[str, Any]:
+        """Type text into active application window."""
+        return ComputerUseTool.type_text(text)
+
+    def _tool_press_hotkey(self, hotkey: str) -> dict[str, Any]:
+        """Simulate pressing keyboard shortcut."""
+        return ComputerUseTool.press_hotkey(hotkey)
 
     def _tool_search_web(self, query: str, engine: str = "google") -> dict[str, Any]:
         """Search the web via browser."""
@@ -203,6 +231,10 @@ class ToolRegistry:
         """Resolve and interact with UI target using Hermes Visual Perception Engine."""
         return ComputerUseTool.resolve_and_click_target(query, action, app_name)
 
+    def _tool_select_youtube_video(self, index: int = 1, application: str = "chrome", wait_load: bool = True) -> dict[str, Any]:
+        """Select or play the N-th YouTube video using row-major ordering and safe click region."""
+        return ComputerUseTool.select_youtube_video(index=index, application=application, wait_load=wait_load)
+
     def _register_default_tools(self) -> None:
         """Register all default tools."""
         self.register_tool(ToolDefinition(
@@ -228,6 +260,46 @@ class ToolRegistry:
         ))
 
         self.register_tool(ToolDefinition(
+            name="close_window",
+            description="Close a running application or the active foreground window.",
+            parameters=[
+                ToolParameter("app_name", "string", "Name of the application to close, or None for current active window", required=False),
+            ],
+            safety_level=ToolSafetyLevel.MODERATE,
+            handler=self._tool_close_window,
+        ))
+
+        self.register_tool(ToolDefinition(
+            name="maximize_window",
+            description="Maximize the active user application window or specified application window.",
+            parameters=[
+                ToolParameter("app_name", "string", "Optional name of application to maximize", required=False),
+            ],
+            safety_level=ToolSafetyLevel.SAFE,
+            handler=self._tool_maximize_window,
+        ))
+
+        self.register_tool(ToolDefinition(
+            name="minimize_window",
+            description="Minimize the active user application window or specified application window.",
+            parameters=[
+                ToolParameter("app_name", "string", "Optional name of application to minimize", required=False),
+            ],
+            safety_level=ToolSafetyLevel.SAFE,
+            handler=self._tool_minimize_window,
+        ))
+
+        self.register_tool(ToolDefinition(
+            name="restore_window",
+            description="Restore a minimized or maximized application window to its normal state.",
+            parameters=[
+                ToolParameter("app_name", "string", "Optional name of application to restore", required=False),
+            ],
+            safety_level=ToolSafetyLevel.SAFE,
+            handler=self._tool_restore_window,
+        ))
+
+        self.register_tool(ToolDefinition(
             name="focus_application",
             description="Bring an existing application window to the foreground / switch window.",
             parameters=[
@@ -235,6 +307,36 @@ class ToolRegistry:
             ],
             safety_level=ToolSafetyLevel.SAFE,
             handler=self._tool_focus_application,
+        ))
+
+        self.register_tool(ToolDefinition(
+            name="switch_window",
+            description="Bring an existing application window to the foreground / switch window.",
+            parameters=[
+                ToolParameter("app_name", "string", "Name of the application to switch to, or None for Alt+Tab", required=False),
+            ],
+            safety_level=ToolSafetyLevel.SAFE,
+            handler=self._tool_switch_window,
+        ))
+
+        self.register_tool(ToolDefinition(
+            name="type_text",
+            description="Type text into the active application window.",
+            parameters=[
+                ToolParameter("text", "string", "The text to type"),
+            ],
+            safety_level=ToolSafetyLevel.MODERATE,
+            handler=self._tool_type_text,
+        ))
+
+        self.register_tool(ToolDefinition(
+            name="press_hotkey",
+            description="Press key combinations (e.g. 'ctrl+t', 'ctrl+w', 'enter', 'f11', 'esc').",
+            parameters=[
+                ToolParameter("hotkey", "string", "Key combination to press"),
+            ],
+            safety_level=ToolSafetyLevel.MODERATE,
+            handler=self._tool_press_hotkey,
         ))
 
         self.register_tool(ToolDefinition(
@@ -344,3 +446,15 @@ class ToolRegistry:
             safety_level=ToolSafetyLevel.SAFE,
             handler=self._tool_resolve_and_click_target,
         ))
+
+        self.register_tool(ToolDefinition(
+            name="select_youtube_video",
+            description="Select and play a YouTube video by its 1-based row-major visual ordinal.",
+            parameters=[
+                ToolParameter("index", "integer", "1-based visual index of video to select (e.g. 1 for 1st, 2 for 2nd)", required=False, default=1),
+                ToolParameter("application", "string", "Target browser application (default 'chrome')", required=False, default="chrome"),
+            ],
+            safety_level=ToolSafetyLevel.SAFE,
+            handler=self._tool_select_youtube_video,
+        ))
+

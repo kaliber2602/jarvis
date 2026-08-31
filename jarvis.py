@@ -1881,21 +1881,21 @@ class JarvisCoordinator:
                 self.recent_burst_hits = []
                 self.spike_armed = False
                 return
-                self.calibrated = True
-                self.spike_armed = True
-                log.info(
-                    "Microphone calibration complete (baseline noise=%.5f, threshold=%.5f). Ready for commands!",
-                    self.audio_mgr.noise_floor,
-                    threshold,
-                )
-                if sys.platform == "win32":
-                    try:
-                        import ctypes
-                        ctypes.windll.psapi.EmptyWorkingSet(ctypes.windll.kernel32.GetCurrentProcess())
-                    except Exception:
-                        pass
-                if REQUIRE_WAKE_WORD and self.oww_model is not None:
-                    log.info("Say 'Hey Jarvis, I need your help' for Conversation mode, or clap for Commands.")
+            self.calibrated = True
+            self.spike_armed = True
+            log.info(
+                "Microphone calibration complete (baseline noise=%.5f, threshold=%.5f). Ready for commands!",
+                self.audio_mgr.noise_floor,
+                threshold,
+            )
+            if sys.platform == "win32":
+                try:
+                    import ctypes
+                    ctypes.windll.psapi.EmptyWorkingSet(ctypes.windll.kernel32.GetCurrentProcess())
+                except Exception:
+                    pass
+            if REQUIRE_WAKE_WORD and self.oww_model is not None:
+                log.info("Say 'Hey Jarvis, I need your help' for Conversation mode, or clap for Commands.")
 
         # Re-trigger level for claps
         if level < threshold * RETRIGGER_RATIO:
@@ -1935,7 +1935,9 @@ class JarvisCoordinator:
         if self.vosk_recognizer is not None:
             text = ""
             try:
-                if level >= threshold * 0.7:
+                # Sensitive gate: Feed Vosk whenever audio is slightly above baseline noise floor
+                vosk_gate = max(self.audio_mgr.noise_floor * 1.3, 0.0005)
+                if level >= vosk_gate:
                     with self._vosk_lock:
                         if self.vosk_recognizer.AcceptWaveform(pcm_bytes):
                             res = json.loads(self.vosk_recognizer.Result())
@@ -2177,6 +2179,13 @@ class JarvisCoordinator:
                 self._turn_in_flight = False
 
     def _handle_chat_utterance(self, text: str, interpretation: InterpretationContext | None = None) -> None:
+        # Capture current interactive window snapshot before Hermes reasoning or routing
+        try:
+            from agent.tools.window_target_resolver import WindowTargetResolver
+            WindowTargetResolver.capture_foreground_snapshot()
+        except Exception as e:
+            log.debug("Window snapshot capture notice: %s", e)
+
         ctx = interpretation or VoiceNormalizationPipeline.get_instance().process_transcript(text)
         log.info("💬 [CONVERSATION MODE] Processing user command: '%s' (Raw STT: '%s')", text, ctx.raw_transcript)
         bridge.touch_session()

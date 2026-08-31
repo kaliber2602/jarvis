@@ -20,6 +20,7 @@ except ImportError:
     ImageChops = None
     ImageStat = None
 
+from .coordinates import CoordinateSpace, WindowGeometry, WindowGeometryProvider
 from .models import BoundingBox, Point
 
 log = logging.getLogger("hermes_ui.screenshot_manager")
@@ -59,11 +60,11 @@ class ScreenshotManager:
             log.warning("[SCREENSHOT] Error capturing screen: %s", e)
             return None
 
-    def capture_active_window(self) -> Tuple[Optional[Any], BoundingBox, dict[str, Any]]:
+    def capture_active_window(self, hwnd: Optional[int] = None) -> Tuple[Optional[Any], BoundingBox, dict[str, Any]]:
         """
         Capture the active foreground window and return (image, window_bbox, window_metadata).
         """
-        win_info = self.get_active_window_geometry()
+        win_info = self.get_active_window_geometry(hwnd=hwnd)
         w_bbox = win_info["bbox"]
 
         if w_bbox.width <= 0 or w_bbox.height <= 0 or ImageGrab is None:
@@ -71,7 +72,7 @@ class ScreenshotManager:
             img = self.capture_screen()
             sw = self.get_screen_width()
             sh = self.get_screen_height()
-            return img, BoundingBox(0, 0, sw, sh), win_info
+            return img, BoundingBox(0, 0, sw, sh, space=CoordinateSpace.SCREEN_SPACE), win_info
 
         try:
             bbox_tuple = (
@@ -99,75 +100,48 @@ class ScreenshotManager:
             return user32.GetSystemMetrics(1)
         return 1080
 
-    def get_active_window_geometry(self) -> dict[str, Any]:
+    def get_active_window_geometry(self, hwnd: Optional[int] = None) -> dict[str, Any]:
         """
-        Inspect the active foreground window HWND, title, and bounding rectangle.
+        Inspect the active foreground window HWND, title, and bounding rectangle using WindowGeometryProvider.
         """
+        geom: WindowGeometry = WindowGeometryProvider.get_window_geometry(hwnd=hwnd)
+
         sw = self.get_screen_width()
         sh = self.get_screen_height()
 
-        if sys.platform != "win32" or not user32:
+        if not geom.is_valid:
             return {
-                "hwnd": 0,
-                "title": "",
+                "hwnd": geom.hwnd,
+                "title": geom.title,
                 "app": "generic",
-                "bbox": BoundingBox(0, 0, sw, sh),
+                "bbox": BoundingBox(0, 0, sw, sh, space=CoordinateSpace.SCREEN_SPACE),
                 "is_browser": False,
                 "is_youtube": False,
+                "geometry": geom,
             }
 
-        try:
-            hwnd = user32.GetForegroundWindow()
-            if not hwnd:
-                return {
-                    "hwnd": 0,
-                    "title": "",
-                    "app": "generic",
-                    "bbox": BoundingBox(0, 0, sw, sh),
-                    "is_browser": False,
-                    "is_youtube": False,
-                }
+        title_low = geom.title.lower()
+        is_youtube = "youtube" in title_low
+        is_browser = any(b in title_low for b in ("chrome", "google chrome", "edge", "firefox", "brave", "youtube"))
+        app_name = "chrome" if is_browser else ("vscode" if "code" in title_low else "unknown")
 
-            # Window Title
-            length = user32.GetWindowTextLengthW(hwnd)
-            buff = ctypes.create_unicode_buffer(length + 1)
-            user32.GetWindowTextW(hwnd, buff, length + 1)
-            title = buff.value.strip()
+        w_bbox = BoundingBox(
+            x=geom.window_x,
+            y=geom.window_y,
+            width=geom.window_width,
+            height=geom.window_height,
+            space=CoordinateSpace.SCREEN_SPACE,
+        )
 
-            # Window Rect
-            rect = wintypes.RECT()
-            user32.GetWindowRect(hwnd, ctypes.byref(rect))
-            w = max(0, rect.right - rect.left)
-            h = max(0, rect.bottom - rect.top)
-
-            if w <= 0 or h <= 0:
-                w_bbox = BoundingBox(0, 0, sw, sh)
-            else:
-                w_bbox = BoundingBox(rect.left, rect.top, w, h)
-
-            title_low = title.lower()
-            is_youtube = "youtube" in title_low
-            is_browser = any(b in title_low for b in ("chrome", "google chrome", "edge", "firefox", "brave", "youtube"))
-            app_name = "chrome" if is_browser else ("vscode" if "code" in title_low else "unknown")
-
-            return {
-                "hwnd": hwnd,
-                "title": title,
-                "app": app_name,
-                "bbox": w_bbox,
-                "is_browser": is_browser,
-                "is_youtube": is_youtube,
-            }
-        except Exception as e:
-            log.debug("[SCREENSHOT] Error getting window geometry: %s", e)
-            return {
-                "hwnd": 0,
-                "title": "",
-                "app": "generic",
-                "bbox": BoundingBox(0, 0, sw, sh),
-                "is_browser": False,
-                "is_youtube": False,
-            }
+        return {
+            "hwnd": geom.hwnd,
+            "title": geom.title,
+            "app": app_name,
+            "bbox": w_bbox,
+            "is_browser": is_browser,
+            "is_youtube": is_youtube,
+            "geometry": geom,
+        }
 
     def compute_stability_score(self, img_before: Optional[Any], img_after: Optional[Any]) -> float:
         """
