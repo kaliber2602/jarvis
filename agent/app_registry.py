@@ -103,9 +103,7 @@ class AppRegistry:
                 canonical_id="chrome",
                 executable="chrome.exe",
                 aliases=[
-                    "chrome", "google chrome", "chôm", "crôm", "cờ rôm", "trình duyệt",
-                    "browser", "web browser", "graham", "google",
-                    "chình duyệt", "chinh duyet", "trinh duyet", "xanh chình duyệt", "sang chình duyệt"
+                    "chrome", "google chrome", "chôm", "crôm", "cờ rôm", "graham", "google"
                 ],
                 source="curated",
                 description="Web browser by Google",

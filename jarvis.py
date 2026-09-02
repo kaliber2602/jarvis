@@ -1565,18 +1565,37 @@ def run_double_clap_actions() -> None:
     """Run outside the mic loop so sleeps do not stall capture."""
     bridge.set_state("processing")
 
-    # Claude & Binance openers (commented out per user request)
-    # open_claude_in_chrome()
-    # open_binance_btc_in_chrome()
-
-    # Open requested applications: VS Code, Antigravity, Chrome, GitHub
-    open_vscode_window()
-    time.sleep(0.2)
-    open_antigravity_window()
-    time.sleep(0.2)
-    open_chrome_browser()
-    time.sleep(0.3)
-    open_github_in_chrome()
+    # Load custom workspace configuration
+    config_path = os.path.join(os.path.dirname(__file__), "config", "workspace_config.json")
+    actions_executed = 0
+    if os.path.isfile(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                config = json.load(f)
+            actions = config.get("double_clap_actions", [])
+            for action in actions:
+                action_type = action.get("type")
+                target = action.get("target")
+                if action_type == "app" and target:
+                    ToolRegistry.get_instance().execute("open_application", app_name=target)
+                    time.sleep(0.2)
+                    actions_executed += 1
+                elif action_type == "url" and target:
+                    ToolRegistry.get_instance().execute("open_url", url=target, new_window=False)
+                    time.sleep(0.2)
+                    actions_executed += 1
+        except Exception as e:
+            log.error("Failed to execute workspace config: %s", e)
+    
+    # Fallback to hardcoded defaults if config empty or missing
+    if actions_executed == 0:
+        open_vscode_window()
+        time.sleep(0.2)
+        open_antigravity_window()
+        time.sleep(0.2)
+        open_chrome_browser()
+        time.sleep(0.3)
+        open_github_in_chrome()
     play_song(SONG_URI)
 
     # Automatically split/arrange windows on screen (4 slots)
@@ -1952,6 +1971,9 @@ class JarvisCoordinator:
                 text = ""
 
             if text:
+                # Suppress clap detection for 1.2s if any speech is recognized
+                self.typing_suppress_until = now + 1.2
+                self.clap_times = []
                 self._route_waiting_intent(text, now)
 
         # C. Clap Sequence Detection (Command Mode)
@@ -2016,12 +2038,21 @@ class JarvisCoordinator:
             threading.Thread(target=say_jarvis_phrase, args=("Opening Visual Studio Code.",), daemon=True).start()
             return
 
-        if "open chrome" in text or "open browser" in text:
+        if "open chrome" in text:
             log.info("🌐 [INTENT: COMMAND] 'Open Chrome' -> Executing command (UI remains hidden)...")
             self._safe_reset_vosk()
             self.wake_armed_until = 0.0
             open_chrome_browser()
             threading.Thread(target=say_jarvis_phrase, args=("Opening Chrome.",), daemon=True).start()
+            return
+
+        if "open browser" in text or "mở trình duyệt" in text:
+            log.info("🌐 [INTENT: COMMAND] 'Open Browser' -> Executing command (UI remains hidden)...")
+            self._safe_reset_vosk()
+            self.wake_armed_until = 0.0
+            import os
+            threading.Thread(target=os.startfile, args=("https://www.google.com",), daemon=True).start()
+            threading.Thread(target=say_jarvis_phrase, args=("Opening default browser.",), daemon=True).start()
             return
 
     def _handle_claps(self, level: float, threshold: float, now: float) -> None:

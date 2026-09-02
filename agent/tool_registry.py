@@ -126,6 +126,12 @@ class ToolRegistry:
 
     def _tool_open_application(self, app_name: str, path: str | None = None, args: list[str] | None = None) -> dict[str, Any]:
         """Open or launch a desktop application using the AppRegistry or path."""
+        generic_browser_names = ("browser", "web browser", "trình duyệt", "chình duyệt", "chinh duyet", "trinh duyet")
+        if app_name.lower().strip() in generic_browser_names:
+            import os
+            os.startfile("https://www.google.com")
+            return {"success": True, "message": "Opened default browser.", "app": "Default Browser"}
+
         reg = AppRegistry.get_instance()
         matched = reg.find_by_exact_alias(app_name)
 
@@ -235,8 +241,51 @@ class ToolRegistry:
         """Select or play the N-th YouTube video using row-major ordering and safe click region."""
         return ComputerUseTool.select_youtube_video(index=index, application=application, wait_load=wait_load)
 
+    def _tool_add_personal_vocabulary(self, word: str, category: str = "entities") -> dict[str, Any]:
+        """Add a new word to the personal STT vocabulary and hot-reload."""
+        try:
+            import os, json
+            vocab_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "config", "user_vocab.json"))
+            if not os.path.exists(os.path.dirname(vocab_path)):
+                os.makedirs(os.path.dirname(vocab_path))
+            
+            vocab = {"entities": [], "verbs": []}
+            if os.path.isfile(vocab_path):
+                with open(vocab_path, "r", encoding="utf-8") as f:
+                    vocab = json.load(f)
+            
+            if category not in vocab:
+                vocab[category] = []
+            
+            if word not in vocab[category]:
+                vocab[category].append(word)
+                with open(vocab_path, "w", encoding="utf-8") as f:
+                    json.dump(vocab, f, ensure_ascii=False, indent=2)
+                
+                # Hot-reload STT components
+                from .stt.bilingual_stt_resolver import _load_user_vocab
+                from .stt.stt_provider import _load_user_vocab_to_prompts
+                _load_user_vocab()
+                _load_user_vocab_to_prompts()
+                return {"success": True, "message": f"Added '{word}' to vocabulary and hot-reloaded STT."}
+            return {"success": True, "message": f"'{word}' already exists in vocabulary."}
+        except Exception as e:
+            log.error("Failed to add vocabulary: %s", e)
+            return {"success": False, "error": str(e)}
+
     def _register_default_tools(self) -> None:
         """Register all default tools."""
+        self.register_tool(ToolDefinition(
+            name="add_personal_vocabulary",
+            description="Add a new custom word or term to the personal STT vocabulary for better speech recognition (hot-reloads instantly).",
+            parameters=[
+                ToolParameter("word", "string", "The exact spelling of the word or phrase (e.g. 'Kubernetes', 'NextJS')"),
+                ToolParameter("category", "string", "Category: 'entities' (for nouns/names) or 'verbs' (for actions)", required=False, default="entities"),
+            ],
+            safety_level=ToolSafetyLevel.SAFE,
+            handler=self._tool_add_personal_vocabulary,
+        ))
+
         self.register_tool(ToolDefinition(
             name="open_application",
             description="Launch or open a desktop application (e.g. Visual Studio Code, Google Chrome, Spotify, Cursor).",

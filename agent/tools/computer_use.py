@@ -133,7 +133,7 @@ class ComputerUseTool:
             r"Spotify\Spotify.exe",
         ],
         "discord": [
-            r"Discord\Update.exe --processStart Discord.exe",
+            r"Discord\Update.exe",
         ],
         "notepad": [
             r"notepad.exe",
@@ -248,6 +248,9 @@ class ComputerUseTool:
         cmd_list = [exe or app_name]
         if args:
             cmd_list.extend(args)
+            
+        if exe and cleaned_name == "discord" and exe.lower().endswith("update.exe"):
+            cmd_list.extend(["--processStart", "Discord.exe"])
 
         popen_kw: dict = {
             "stdin": subprocess.DEVNULL,
