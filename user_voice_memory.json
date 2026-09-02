@@ -32,5 +32,6 @@
   "close, this window": "close_window",
   "close that window.": "close_window",
   "close it window.": "close_window",
-  "gavis go to sleep.": "go to sleep"
+  "gavis go to sleep.": "go to sleep",
+  "jarvis code to sleep": "go to sleep"
 }
