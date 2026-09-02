@@ -1,0 +1,14 @@
+{
+  "entities": [
+    "Project Xeno",
+    "Tailwind",
+    "NextJS",
+    "Antigravity UI",
+    "SenseVoice"
+  ],
+  "verbs": [
+    "deploy",
+    "build",
+    "compile"
+  ]
+}

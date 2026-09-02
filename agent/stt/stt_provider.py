@@ -66,19 +66,42 @@ class STTProvider(ABC):
 
 
 # Bilingual Computer Control & Application Context Prompt for Whisper
-BILINGUAL_INITIAL_PROMPT = (
+BILINGUAL_INITIAL_PROMPT_BASE = (
     "Jarvis, open Google Chrome, YouTube, VS Code, Spotify, Antigravity, Discord, Notepad, Terminal, "
     "close window, roll down, roll up, scroll down, scroll up, next tab, previous tab, new tab, close tab, "
     "switch window, minimize window, maximize window, search on Google, search on YouTube, go to sleep. "
     "Đóng cửa sổ, mở trình duyệt, mở YouTube, mở VS Code, mở Spotify, cuộn xuống, cuộn lên, chuyển tab, tắt tab, "
     "phóng to, thu nhỏ, tìm kiếm, phát nhạc, đi ngủ đi."
 )
+BILINGUAL_INITIAL_PROMPT = BILINGUAL_INITIAL_PROMPT_BASE
 
-BILINGUAL_HOTWORDS = (
+BILINGUAL_HOTWORDS_BASE = (
     "Jarvis Chrome YouTube Spotify VS Code Antigravity Discord Notepad Terminal "
     "window windows tab tabs scroll roll down up close open switch maximize minimize "
     "đóng mở cửa sổ trình duyệt cuộn lướt phóng to thu nhỏ chuyển tab"
 )
+BILINGUAL_HOTWORDS = BILINGUAL_HOTWORDS_BASE
+
+def _load_user_vocab_to_prompts():
+    global BILINGUAL_INITIAL_PROMPT, BILINGUAL_HOTWORDS
+    BILINGUAL_INITIAL_PROMPT = BILINGUAL_INITIAL_PROMPT_BASE
+    BILINGUAL_HOTWORDS = BILINGUAL_HOTWORDS_BASE
+    try:
+        vocab_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "config", "user_vocab.json"))
+        if os.path.isfile(vocab_path):
+            with open(vocab_path, "r", encoding="utf-8") as f:
+                vocab = json.load(f)
+            entities = vocab.get("entities", [])
+            verbs = vocab.get("verbs", [])
+            
+            if entities or verbs:
+                vocab_str = ", ".join(entities + verbs)
+                BILINGUAL_INITIAL_PROMPT += " " + vocab_str + "."
+                BILINGUAL_HOTWORDS += " " + " ".join(entities + verbs)
+    except Exception as e:
+        log.warning("Failed to load user vocab into STT prompts: %s", e)
+
+_load_user_vocab_to_prompts()
 
 
 class FasterWhisperProvider(STTProvider):

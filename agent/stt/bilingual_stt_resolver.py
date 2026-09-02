@@ -34,6 +34,8 @@ KNOWN_CODE_SWITCH_ENTITIES = {
     "yesterday", "tutorial", "information", "course", "install", "debug", "api",
 }
 
+import json
+
 # Recognizable command action verbs in Vietnamese and English
 KNOWN_COMMAND_VERBS = {
     # Vietnamese
@@ -45,6 +47,22 @@ KNOWN_COMMAND_VERBS = {
     "look up", "play", "pause", "switch", "select", "click", "type", "scroll", "roll", "snap",
     "maximize", "minimize", "sleep",
 }
+
+def _load_user_vocab():
+    try:
+        # Resolve config/user_vocab.json from agent/stt/ directory
+        vocab_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "config", "user_vocab.json"))
+        if os.path.isfile(vocab_path):
+            with open(vocab_path, "r", encoding="utf-8") as f:
+                vocab = json.load(f)
+            for entity in vocab.get("entities", []):
+                KNOWN_CODE_SWITCH_ENTITIES.add(entity.lower())
+            for verb in vocab.get("verbs", []):
+                KNOWN_COMMAND_VERBS.add(verb.lower())
+    except Exception as e:
+        log.warning("Failed to load user vocab: %s", e)
+
+_load_user_vocab()
 
 
 @dataclass

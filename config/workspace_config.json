@@ -1,0 +1,20 @@
+{
+  "double_clap_actions": [
+    {
+      "type": "app",
+      "target": "vscode"
+    },
+    {
+      "type": "app",
+      "target": "antigravity"
+    },
+    {
+      "type": "app",
+      "target": "chrome"
+    },
+    {
+      "type": "url",
+      "target": "https://github.com"
+    }
+  ]
+}
